@@ -188,7 +188,8 @@ class WorkplaceEnvironment(Environment):
         step_num = self._s["step_count"]
         
         # Record action in history
-        action_str = f"{action.action_type}: {action.content[:50]}..."
+        content_preview = action.content[:50] + ("..." if len(action.content) > 50 else "")
+        action_str = f"{action.action_type}: {content_preview}"
         self._s["history"].append(action_str)
         _debug_log(f"Step {step_num}: {action_str}")
         

@@ -1,6 +1,6 @@
 ---
 title: Workplace Env Environment Server
-emoji: 📱
+emoji: 🧠
 colorFrom: purple
 colorTo: purple
 sdk: docker
@@ -9,247 +9,173 @@ app_port: 8000
 base_path: /web
 tags:
   - openenv
+  - reinforcement-learning
 ---
 
-# Workplace Env Environment
+# Workplace Env — Multi-Step Customer Support RL Environment
 
-A simple test environment that echoes back messages. Perfect for testing the env APIs as well as demonstrating environment usage patterns.
+A production-grade reinforcement learning environment simulating a 3-step customer support decision pipeline. An RL agent must classify incoming email intent, generate a contextually appropriate reply, and decide whether to escalate — with a shaped reward signal that requires balancing accuracy across all three subtasks.
+
+**This is not a toy environment.** Wrong classification penalises downstream steps. Escalation requires understanding true intent. The 3-step dependency creates a real credit assignment challenge.
+
+---
 
 ## Quick Start
-
-The simplest way to use the Workplace Env environment is through the `WorkplaceEnv` class:
-
 ```python
 from workplace_env import WorkplaceAction, WorkplaceEnv
 
+with WorkplaceEnv(base_url="http://localhost:8000") as env:
+    result = env.reset()
+    print(result.observation.email)
+
+    result = env.step(WorkplaceAction(action_type="classify", content="refund"))
+    result = env.step(WorkplaceAction(action_type="reply", content="We will process your refund within 3 business days."))
+    result = env.step(WorkplaceAction(action_type="escalate", content="no"))
+    print(result.reward)
+```
+
+Or via Docker:
+```python
+env = WorkplaceEnv.from_docker_image("workplace_env-env:latest")
 try:
-    # Create environment from Docker image
-    workplace_envenv = WorkplaceEnv.from_docker_image("workplace_env-env:latest")
-
-    # Reset
-    result = workplace_envenv.reset()
-    print(f"Reset: {result.observation.echoed_message}")
-
-    # Send multiple messages
-    messages = ["Hello, World!", "Testing echo", "Final message"]
-
-    for msg in messages:
-        result = workplace_envenv.step(WorkplaceAction(message=msg))
-        print(f"Sent: '{msg}'")
-        print(f"  → Echoed: '{result.observation.echoed_message}'")
-        print(f"  → Length: {result.observation.message_length}")
-        print(f"  → Reward: {result.reward}")
-
+    result = env.reset()
+    ...
 finally:
-    # Always clean up
-    workplace_envenv.close()
+    env.close()
 ```
 
-That's it! The `WorkplaceEnv.from_docker_image()` method handles:
-- Starting the Docker container
-- Waiting for the server to be ready
-- Connecting to the environment
-- Container cleanup when you call `close()`
+---
 
-## Building the Docker Image
-
-Before using the environment, you need to build the Docker image:
-
+## Running Locally
 ```bash
-# From project root
-docker build -t workplace_env-env:latest -f server/Dockerfile .
+# Terminal 1: Start server
+uv run server
+
+# Terminal 2: Run the agent
+python inference.py
+
+# Run enhanced agent with rich output
+python inference_enhanced.py
+
+# Run validation tests
+python test_production_grade.py
 ```
+
+---
 
 ## Deploying to Hugging Face Spaces
-
-You can easily deploy your OpenEnv environment to Hugging Face Spaces using the `openenv push` command:
-
 ```bash
-# From the environment directory (where openenv.yaml is located)
+# From environment directory (where openenv.yaml is located)
 openenv push
 
-# Or specify options
-openenv push --namespace my-org --private
+# With options
+openenv push --repo-id my-org/my-env --private
 ```
 
-The `openenv push` command will:
-1. Validate that the directory is an OpenEnv environment (checks for `openenv.yaml`)
-2. Prepare a custom build for Hugging Face Docker space (enables web interface)
-3. Upload to Hugging Face (ensuring you're logged in)
+The `openenv push` command validates the directory, prepares a Docker build, and uploads to Hugging Face.
 
-### Prerequisites
+After deployment, your space exposes:
+- **Web Interface** at `/web`
+- **API Docs** at `/docs`
+- **Health Check** at `/health`
+- **WebSocket** at `/ws`
 
-- Authenticate with Hugging Face: The command will prompt for login if not already authenticated
-
-### Options
-
-- `--directory`, `-d`: Directory containing the OpenEnv environment (defaults to current directory)
-- `--repo-id`, `-r`: Repository ID in format 'username/repo-name' (defaults to 'username/env-name' from openenv.yaml)
-- `--base-image`, `-b`: Base Docker image to use (overrides Dockerfile FROM)
-- `--private`: Deploy the space as private (default: public)
-
-### Examples
-
-```bash
-# Push to your personal namespace (defaults to username/env-name from openenv.yaml)
-openenv push
-
-# Push to a specific repository
-openenv push --repo-id my-org/my-env
-
-# Push with a custom base image
-openenv push --base-image ghcr.io/meta-pytorch/openenv-base:latest
-
-# Push as a private space
-openenv push --private
-
-# Combine options
-openenv push --repo-id my-org/my-env --base-image custom-base:latest --private
-```
-
-After deployment, your space will be available at:
-`https://huggingface.co/spaces/<repo-id>`
-
-The deployed space includes:
-- **Web Interface** at `/web` - Interactive UI for exploring the environment
-- **API Documentation** at `/docs` - Full OpenAPI/Swagger interface
-- **Health Check** at `/health` - Container health monitoring
-- **WebSocket** at `/ws` - Persistent session endpoint for low-latency interactions
+---
 
 ## Environment Details
 
-### Action
-**WorkplaceAction**: Contains a single field
-- `message` (str) - The message to echo back
+### Actions
+**WorkplaceAction** — One per step:
 
-### Observation
-**WorkplaceObservation**: Contains the echo response and metadata
-- `echoed_message` (str) - The message echoed back
-- `message_length` (int) - Length of the message
-- `reward` (float) - Reward based on message length (length × 0.1)
-- `done` (bool) - Always False for echo environment
-- `metadata` (dict) - Additional info like step count
+| Field | Type | Description |
+|-------|------|-------------|
+| `action_type` | str | `classify`, `reply`, or `escalate` |
+| `content` | str | Category name, reply text, or escalation decision |
+| `confidence` | float (optional) | Agent self-assessment (0.0–1.0) |
+| `explanation` | str (optional) | Reasoning for the action |
 
-### Reward
-The reward is calculated as: `message_length × 0.1`
-- "Hi" → reward: 0.2
-- "Hello, World!" → reward: 1.3
-- Empty message → reward: 0.0
+### Observations
+**WorkplaceObservation** — Returned after every reset/step:
 
-## Advanced Usage
+| Field | Type | Description |
+|-------|------|-------------|
+| `email` | str | Customer email to handle |
+| `category_options` | list | Valid categories: `refund`, `complaint`, `query` |
+| `history` | list | Actions taken so far this episode |
+| `scenario_difficulty` | str | `easy` / `medium` / `hard` |
+| `urgency` | str | `low` / `medium` / `high` |
+| `sentiment` | str | `negative` / `neutral` / `positive` / `mixed` |
+| `complexity_score` | int | 1–5 scale |
+| `scenario_metadata` | dict | Ground truth label, escalation requirement, min reply length |
+| `reward` | float | Step reward (weighted composite, see below) |
+| `done` | bool | True after 3 steps |
 
-### Connecting to an Existing Server
+### Reward Structure
 
-If you already have a Workplace Env environment server running, you can connect directly:
+Rewards are weighted by task importance:
 
-```python
-from workplace_env import WorkplaceEnv
+| Step | Task | Weight | Max Reward |
+|------|------|--------|------------|
+| 1 | Classify | 40% | 0.40 |
+| 2 | Reply | 35% | 0.35 |
+| 3 | Escalate | 25% | 0.25 |
 
-# Connect to existing server
-workplace_envenv = WorkplaceEnv(base_url="<ENV_HTTP_URL_HERE>")
+**Total maximum per episode: 1.00**
 
-# Use as normal
-result = workplace_envenv.reset()
-result = workplace_envenv.step(WorkplaceAction(message="Hello!"))
-```
+A perfect agent scores ≥ 0.95 by correctly classifying intent, writing an empathetic keyword-rich reply, and making the right escalation decision.
 
-Note: When connecting to an existing server, `workplace_envenv.close()` will NOT stop the server.
+#### Reward Design Principles
 
-### Using the Context Manager
+- **Partial credit**: Related-category classification earns 0.2–0.4 instead of 0.0
+- **Consistency penalty**: Reply reward is reduced by 0.2 if classification was wrong (error propagation)
+- **Escalation policy**: Complaints must be escalated; queries and refunds must not. Over-escalation is penalised
+- **Timing penalty**: Escalating before step 2 is penalised (bypassing the workflow)
+- **Keyword grading**: Replies are scored on category-specific vocabulary (empathy for complaints, process language for refunds, etc.)
 
-The client supports context manager usage for automatic connection management:
+---
 
-```python
-from workplace_env import WorkplaceAction, WorkplaceEnv
+## Scenario Dataset
 
-# Connect with context manager (auto-connects and closes)
-with WorkplaceEnv(base_url="http://localhost:8000") as env:
-    result = env.reset()
-    print(f"Reset: {result.observation.echoed_message}")
-    # Multiple steps with low latency
-    for msg in ["Hello", "World", "!"]:
-        result = env.step(WorkplaceAction(message=msg))
-        print(f"Echoed: {result.observation.echoed_message}")
-```
+18 scenarios across 3 difficulty levels:
 
-The client uses WebSocket connections for:
-- **Lower latency**: No HTTP connection overhead per request
-- **Persistent session**: Server maintains your environment state
-- **Efficient for episodes**: Better for many sequential steps
+| Difficulty | Count | Description |
+|------------|-------|-------------|
+| Easy | 7 | Clear single intent, neutral tone |
+| Medium | 7 | Mixed signals, negative sentiment, some urgency |
+| Hard | 4 | Ambiguous, multi-intent, edge cases |
 
-### Concurrent WebSocket Sessions
+Each scenario includes: email text, true label, difficulty, sentiment, urgency, complexity score, escalation requirement, and minimum reply length.
 
-The server supports multiple concurrent WebSocket connections. To enable this,
-modify `server/app.py` to use factory mode:
+Scenarios cycle deterministically for reproducible training.
 
-```python
-# In server/app.py - use factory mode for concurrent sessions
-app = create_app(
-    WorkplaceEnvironment,  # Pass class, not instance
-    WorkplaceAction,
-    WorkplaceObservation,
-    max_concurrent_envs=4,  # Allow 4 concurrent sessions
-)
-```
+---
 
-Then multiple clients can connect simultaneously:
+## Why This Is Hard for a Naive Agent
 
-```python
-from workplace_env import WorkplaceAction, WorkplaceEnv
-from concurrent.futures import ThreadPoolExecutor
+1. **Classification cascades**: A wrong label in step 1 triggers a consistency penalty in step 2, making the total reward lower than the sum of individual mistakes.
+2. **Escalation is non-trivial**: The agent cannot default to always-escalate (penalised for over-escalation) or never-escalate (penalised for missed complaints).
+3. **Reply quality is rubric-based**: Generic replies fail keyword checks; the agent must learn category-specific language.
+4. **Difficulty progression**: Hard scenarios have ambiguous emails where the primary intent is not explicit.
 
-def run_episode(client_id: int):
-    with WorkplaceEnv(base_url="http://localhost:8000") as env:
-        result = env.reset()
-        for i in range(10):
-            result = env.step(WorkplaceAction(message=f"Client {client_id}, step {i}"))
-        return client_id, result.observation.message_length
-
-# Run 4 episodes concurrently
-with ThreadPoolExecutor(max_workers=4) as executor:
-    results = list(executor.map(run_episode, range(4)))
-```
-
-## Development & Testing
-
-### Direct Environment Testing
-
-Test the environment logic directly without starting the HTTP server:
-
-```bash
-# From the server directory
-python3 server/workplace_env_environment.py
-```
-
-This verifies that:
-- Environment resets correctly
-- Step executes actions properly
-- State tracking works
-- Rewards are calculated correctly
-
-### Running Locally
-
-Run the server locally for development:
-
-```bash
-uvicorn server.app:app --reload
-```
+---
 
 ## Project Structure
-
 ```
 workplace_env/
-├── .dockerignore         # Docker build exclusions
-├── __init__.py            # Module exports
-├── README.md              # This file
-├── openenv.yaml           # OpenEnv manifest
-├── pyproject.toml         # Project metadata and dependencies
-├── uv.lock                # Locked dependencies (generated)
-├── client.py              # WorkplaceEnv client
-├── models.py              # Action and Observation models
+├── __init__.py                    # Module exports
+├── README.md                      # This file
+├── DESIGN.md                      # RL design rationale
+├── IMPROVEMENTS.md                # Upgrade documentation
+├── openenv.yaml                   # OpenEnv manifest
+├── pyproject.toml                 # Project metadata
+├── client.py                      # WorkplaceEnv client (WebSocket)
+├── models.py                      # Action, Observation, GradeResult
+├── data.py                        # 18 scenario dataset
+├── inference.py                   # Basic agent
+├── inference_enhanced.py          # Enhanced agent with rich output
+├── test_production_grade.py       # Validation tests (9/9 passing)
 └── server/
-    ├── __init__.py        # Server module exports
-    ├── workplace_env_environment.py  # Core environment logic
-    ├── app.py             # FastAPI application (HTTP + WebSocket endpoints)
-    └── Dockerfile         # Container image definition
+    ├── workplace_env_environment.py  # Core RL logic
+    ├── app.py                        # FastAPI app
+    └── Dockerfile                    # Container image
 ```
