@@ -2,8 +2,16 @@
 
 from typing import List, Optional, Tuple
 
+try:
+    from ..config import get_config
+except ImportError:  # pragma: no cover
+    from core.config import get_config
+
 from .base import DEFAULT_BASE_URL, RetryConfig
 from .strategies import EnhancedInference, StandardInference
+
+
+_CFG = get_config()
 
 
 def run_agent(
@@ -11,8 +19,8 @@ def run_agent(
     reveal_label: bool = False,
     title: str = "WORKPLACE ENVIRONMENT AGENT",
     base_url: str = DEFAULT_BASE_URL,
-    timeout: float = 10.0,
-    max_attempts: int = 3,
+    timeout: float = _CFG.inference.timeout_seconds,
+    max_attempts: int = _CFG.inference.retry_attempts,
 ):
     """Legacy entrypoint preserved for existing scripts.
 

@@ -10,15 +10,27 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 import requests
 
-DEFAULT_BASE_URL = "http://localhost:8000"
+try:
+    from ..config import get_config
+    from ..exceptions import InferenceError
+    from ..logging_config import get_logger
+except ImportError:  # pragma: no cover
+    from core.config import get_config
+    from core.exceptions import InferenceError
+    from core.logging_config import get_logger
+
+
+_CFG = get_config()
+LOGGER = get_logger(__name__)
+DEFAULT_BASE_URL = _CFG.inference.base_url
 
 
 @dataclass(frozen=True)
 class RetryConfig:
     """Retry/backoff configuration for HTTP calls."""
 
-    max_attempts: int = 3
-    backoff_seconds: float = 0.5
+    max_attempts: int = _CFG.inference.retry_attempts
+    backoff_seconds: float = _CFG.inference.retry_backoff_seconds
 
 
 class BaseInference(ABC):
@@ -34,7 +46,7 @@ class BaseInference(ABC):
         self,
         *,
         base_url: str = DEFAULT_BASE_URL,
-        timeout: float = 10.0,
+        timeout: float = _CFG.inference.timeout_seconds,
         retry: Optional[RetryConfig] = None,
     ):
         self.base_url = base_url
@@ -62,6 +74,7 @@ class BaseInference(ABC):
 
         for attempt in range(1, attempts + 1):
             try:
+                LOGGER.debug("POST %s attempt %s/%s", path, attempt, attempts)
                 response = requests.post(
                     url,
                     json=payload,
@@ -71,6 +84,13 @@ class BaseInference(ABC):
                 if response.ok:
                     return response.json()
 
+                LOGGER.warning(
+                    "HTTP %s on %s attempt %s/%s",
+                    response.status_code,
+                    path,
+                    attempt,
+                    attempts,
+                )
                 print(f"\n❌ HTTP {response.status_code} on {path} (attempt {attempt}/{attempts})")
                 try:
                     print(json.dumps(response.json(), indent=2))
@@ -78,11 +98,13 @@ class BaseInference(ABC):
                     print(response.text)
                 response.raise_for_status()
             except requests.Timeout:
+                LOGGER.warning("Timeout after %ss on %s attempt %s/%s", self.timeout, path, attempt, attempts)
                 print(
                     f"\n⏱️ Timeout after {self.timeout}s on {path} "
                     f"(attempt {attempt}/{attempts})"
                 )
             except Exception as exc:  # pragma: no cover
+                LOGGER.exception("Request failed on %s attempt %s/%s", path, attempt, attempts)
                 print(f"\n❌ Request failed on {path} (attempt {attempt}/{attempts}): {exc}")
 
             if attempt < attempts:
@@ -139,7 +161,10 @@ class BaseInference(ABC):
         print("\n[RESET]")
         reset_resp = self._post("/reset", {})
         if not reset_resp:
-            return None
+            raise InferenceError(
+                "Failed to reset inference episode",
+                details={"base_url": self.base_url},
+            )
 
         observation = reset_resp.get("observation", {})
         self._print_metadata(observation)
@@ -157,7 +182,10 @@ class BaseInference(ABC):
 
             step_resp = self._step(action_type, content)
             if not step_resp:
-                return None
+                raise InferenceError(
+                    "Failed during inference step",
+                    details={"action_type": action_type, "step": i},
+                )
 
             reward = float(step_resp.get("reward", 0.0))
             done = bool(step_resp.get("done", False))

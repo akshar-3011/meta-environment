@@ -63,6 +63,164 @@ python test_production_grade.py
 
 ---
 
+## CLI Commands
+
+The project now includes a Typer-based CLI with three user-friendly commands:
+
+- `run-inference` → generate action plan for an email
+- `run-grader` → score a single action
+- `run-pipeline` → execute full inference + grading workflow
+
+### Run Inference
+
+```bash
+uv run run-inference --email "I need help, this issue has not been resolved."
+```
+
+### Run Grader
+
+```bash
+uv run run-grader \
+    --action-type reply \
+    --content "We are sorry for the inconvenience and will resolve this quickly." \
+    --actual-category complaint \
+    --step-count 2
+```
+
+### Run Full Pipeline
+
+```bash
+uv run run-pipeline \
+    --email "My ticket is still unresolved and I need support now." \
+    --actual-category complaint \
+    --strategy enhanced
+```
+
+All commands output structured JSON with the same `{ success, score, breakdown }` shape used by the API.
+
+---
+
+## Production Configuration & Logging
+
+The project now uses a central config loader (`core/config.py`) with `.env` support.
+
+1. Copy environment template:
+
+```bash
+cp .env.example .env
+```
+
+2. Update values as needed (ports, retry settings, log level, debug mode).
+
+### Key Runtime Variables
+
+- `API_HOST`
+- `API_SERVER_PORT`
+- `API_PIPELINE_PORT`
+- `API_MAX_CONCURRENT_ENVS`
+- `INFERENCE_BASE_URL`
+- `INFERENCE_TIMEOUT_SECONDS`
+- `INFERENCE_RETRY_ATTEMPTS`
+- `INFERENCE_RETRY_BACKOFF_SECONDS`
+- `APP_LOG_LEVEL`
+- `ENV_DEBUG`
+
+### Logging
+
+- Uses Python `logging` with centralized setup in `core/logging_config.py`
+- Default format is structured and timestamped
+- Set `APP_LOG_LEVEL=DEBUG` for verbose diagnostics
+
+### Error Handling
+
+Custom exception hierarchy in `core/exceptions.py`:
+
+- `WorkplaceEnvError`
+- `ConfigurationError`
+- `InferenceError`
+- `GradingError`
+- `PipelineError`
+
+API endpoints convert these into structured JSON error responses.
+
+---
+
+## Pipeline API (FastAPI)
+
+This repo also provides a dedicated API layer for orchestration use-cases:
+
+- `POST /infer` → generate inference actions
+- `POST /grade` → evaluate one action
+- `POST /pipeline` → run inference + grading end-to-end
+
+### Run the Pipeline API
+
+```bash
+uv run pipeline-api
+```
+
+Default port: `8010`
+
+### Example Requests
+
+`POST /infer`
+
+```json
+{
+    "email": "Your support team has not replied to my issue.",
+    "strategy": "enhanced",
+    "category_options": ["refund", "complaint", "query"],
+    "scenario_difficulty": "medium",
+    "urgency": "high",
+    "sentiment": "negative",
+    "complexity_score": 3
+}
+```
+
+`POST /grade`
+
+```json
+{
+    "action_type": "reply",
+    "content": "We are sorry for the inconvenience and will resolve this quickly.",
+    "actual_category": "complaint",
+    "step_count": 2,
+    "scenario_difficulty": "medium",
+    "min_reply_length": 30,
+    "previous_actions": {
+        "classify": 0.4
+    }
+}
+```
+
+`POST /pipeline`
+
+```json
+{
+    "email": "I need help. My issue is unresolved and this is frustrating.",
+    "actual_category": "complaint",
+    "strategy": "standard",
+    "scenario_difficulty": "medium",
+    "min_reply_length": 30
+}
+```
+
+### Response Shape
+
+All endpoints return structured JSON:
+
+```json
+{
+    "success": true,
+    "score": 0.82,
+    "breakdown": {
+        "...": "details"
+    }
+}
+```
+
+---
+
 ## Deploying to Hugging Face Spaces
 ```bash
 # From environment directory (where openenv.yaml is located)

@@ -8,23 +8,30 @@ except Exception as e:  # pragma: no cover
     ) from e
 
 try:
+    from ..core.config import get_config
+    from ..core.logging_config import setup_logging
     from ..core.models import WorkplaceAction, WorkplaceObservation
     from ..environment import WorkplaceEnvironment
 except ImportError:  # pragma: no cover
+    from core.config import get_config
+    from core.logging_config import setup_logging
     from core.models import WorkplaceAction, WorkplaceObservation
     from environment import WorkplaceEnvironment
 
+
+setup_logging()
+CFG = get_config()
 
 app = create_app(
     WorkplaceEnvironment,
     WorkplaceAction,
     WorkplaceObservation,
     env_name="workplace_env",
-    max_concurrent_envs=1,
+    max_concurrent_envs=CFG.api.max_concurrent_envs,
 )
 
 
-def main(host: str = "0.0.0.0", port: int = 8000):
+def main(host: str = CFG.api.host, port: int = CFG.api.server_port):
     import uvicorn
 
     uvicorn.run(app, host=host, port=port)
@@ -34,6 +41,6 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument("--port", type=int, default=CFG.api.server_port)
     args = parser.parse_args()
     main(port=args.port)

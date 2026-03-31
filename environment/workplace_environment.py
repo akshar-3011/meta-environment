@@ -6,21 +6,30 @@ from typing import Any, Dict, List, Optional
 from openenv.core import Environment
 
 try:
+    from ..core.config import get_config
+    from ..core.exceptions import PipelineError
     from ..core.graders import CATEGORY_OPTIONS, RewardPolicy, RuleBasedRewardPolicy
+    from ..core.logging_config import get_logger, setup_logging
     from ..core.models import WorkplaceAction, WorkplaceObservation
     from ..data import get_default_repository, ScenarioRepository
 except ImportError:  # pragma: no cover
+    from core.config import get_config
+    from core.exceptions import PipelineError
     from core.graders import CATEGORY_OPTIONS, RewardPolicy, RuleBasedRewardPolicy
+    from core.logging_config import get_logger, setup_logging
     from core.models import WorkplaceAction, WorkplaceObservation
     from data import get_default_repository, ScenarioRepository
 
 
-DEBUG = False
+setup_logging()
+CFG = get_config()
+LOGGER = get_logger(__name__)
+DEBUG = CFG.environment.debug
 
 
 def _debug_log(msg: str):
     if DEBUG:
-        print(f"[DEBUG] {msg}")
+        LOGGER.debug(msg)
 
 
 @dataclass
@@ -44,7 +53,7 @@ class WorkplaceEnvironment(Environment):
 
     def __init__(
         self,
-        debug: bool = False,
+        debug: bool = CFG.environment.debug,
         reward_policy: Optional[RewardPolicy] = None,
         scenario_repository: Optional[ScenarioRepository] = None,
     ):
@@ -139,7 +148,11 @@ class WorkplaceEnvironment(Environment):
         except Exception as exc:  # pragma: no cover
             _debug_log(f"Step error: {exc}")
             self._state.history.append(f"error: {exc}")
-            return self._make_obs(reward=0.0, done=True)
+            LOGGER.exception("Environment step failed")
+            raise PipelineError(
+                "Environment step execution failed",
+                details={"exception": str(exc), "step_count": self._state.step_count},
+            ) from exc
 
     def state(self) -> Dict[str, Any]:
         return {

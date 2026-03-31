@@ -26,6 +26,7 @@ dependencies = [
     # "gymnasium>=0.29.0",
     # "openspiel>=1.0.0",
     # "smolagents>=1.22.0,<2",
+    "typer>=0.12.0",
 ]
 
 [project.optional-dependencies]
@@ -38,6 +39,11 @@ dev = [
 # Server entry point - enables running via: uv run --project . server
 # or: python -m workplace_env.server.app
 server = "workplace_env.server.app:main"
+pipeline-api = "workplace_env.api.pipeline_app:main"
+workplace-cli = "workplace_env.main:main"
+run-inference = "workplace_env.main:run_inference_entry"
+run-grader = "workplace_env.main:run_grader_entry"
+run-pipeline = "workplace_env.main:run_pipeline_entry"
 
 [tool.setuptools]
 include-package-data = true
