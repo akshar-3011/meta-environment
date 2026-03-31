@@ -1,6 +1,12 @@
 """Core grader exports."""
 
-from .interfaces import RewardPolicy
+from .framework import (
+    AccuracyGrader,
+    RuleBasedGrader,
+    SemanticSimilarityGrader,
+    WeightedParallelGradingEngine,
+)
+from .interfaces import BaseGrader, EvaluationContext, GraderResult, RewardPolicy
 from .rule_based import (
     RuleBasedRewardPolicy,
     CATEGORY_OPTIONS,
@@ -11,7 +17,14 @@ from .rule_based import (
 )
 
 __all__ = [
+    "BaseGrader",
+    "EvaluationContext",
+    "GraderResult",
     "RewardPolicy",
+    "AccuracyGrader",
+    "SemanticSimilarityGrader",
+    "RuleBasedGrader",
+    "WeightedParallelGradingEngine",
     "RuleBasedRewardPolicy",
     "CATEGORY_OPTIONS",
     "grade_classification",
