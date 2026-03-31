@@ -41,5 +41,16 @@ server = "workplace_env.server.app:main"
 
 [tool.setuptools]
 include-package-data = true
-packages = ["workplace_env", "workplace_env.server"]
+packages = [
+    "workplace_env",
+    "workplace_env.server",
+    "workplace_env.api",
+    "workplace_env.core",
+    "workplace_env.core.models",
+    "workplace_env.core.graders",
+    "workplace_env.core.inference",
+    "workplace_env.environment",
+    "workplace_env.data",
+    "workplace_env.tests",
+]
 package-dir = { "workplace_env" = ".", "workplace_env.server" = "server" }

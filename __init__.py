@@ -7,7 +7,7 @@
 """Workplace Env Environment."""
 
 from .client import WorkplaceEnv
-from .models import WorkplaceAction, WorkplaceObservation
+from .core.models import WorkplaceAction, WorkplaceObservation
 
 __all__ = [
     "WorkplaceAction",

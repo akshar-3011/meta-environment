@@ -12,7 +12,7 @@ from openenv.core import EnvClient
 from openenv.core.client_types import StepResult
 from openenv.core.env_server.types import State
 
-from .models import WorkplaceAction, WorkplaceObservation
+from .core.models import WorkplaceAction, WorkplaceObservation
 
 
 class WorkplaceEnv(
@@ -51,6 +51,11 @@ class WorkplaceEnv(
             done=payload.get("done", False),
             reward=payload.get("reward"),
             metadata=obs_data.get("metadata", {}),
+            scenario_difficulty=obs_data.get("scenario_difficulty", ""),
+            urgency=obs_data.get("urgency", ""),
+            sentiment=obs_data.get("sentiment", ""),
+            complexity_score=obs_data.get("complexity_score", 0),
+            scenario_metadata=obs_data.get("scenario_metadata", {}),
         )
 
         return StepResult(
@@ -58,8 +63,8 @@ class WorkplaceEnv(
             reward=payload.get("reward"),
             done=payload.get("done", False),
         )
-
-    def _parse_state(self, payload: Dict) -> State:
+    
+    def _parse_state(self, payload: Dict) -> State:     
         """Parse server response into State object."""
         return State(
             episode_id=payload.get("episode_id"),
