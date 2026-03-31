@@ -36,4 +36,3 @@ uvicorn==0.39.0
 zipp==3.23.0
 openenv-core[core]>=0.2.2
 requests>=2.31.0
-typer>=0.12.0
