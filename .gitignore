@@ -1,5 +1,40 @@
-.venv/
+# Python cache
 __pycache__/
 *.pyc
+*.pyo
+
+# Virtual environment
+.venv/
+
+# macOS
+.DS_Store
+__MACOSX/
+
+# Logs & temp
+*.log
+*.tmp
+*.bak
+
+# IDE
+.vscode/
+.idea/
+
+# Archives
+*.zip
+
+# Outputs
+cache/
 outputs/
+results/
+*.csv
+*.png
+*.json
+
+# Env files
 .env
+.env.*
+
+# Build
+build/
+dist/
+*.egg-info/
