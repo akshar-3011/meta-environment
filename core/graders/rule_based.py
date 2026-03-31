@@ -1,8 +1,8 @@
 """Rule-based reward policy backed by modular evaluation framework."""
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-from .interfaces import EvaluationContext, RewardPolicy
+from .interfaces import BaseGrader, EvaluationContext, RewardPolicy
 from .framework import (
     AccuracyGrader,
     RuleBasedGrader,
@@ -36,27 +36,41 @@ HARSH_PHRASES = ["not my problem", "figure it out", "stop emailing", "nothing we
 class RuleBasedRewardPolicy(RewardPolicy):
     """Deterministic reward policy that composes modular graders in parallel."""
 
-    def __init__(self):
+    def __init__(
+        self,
+        *,
+        extra_graders: Optional[Dict[str, Sequence[Tuple[BaseGrader, float]]]] = None,
+    ):
+        extra = extra_graders or {}
+        classify_graders: List[Tuple[BaseGrader, float]] = [
+            (AccuracyGrader(), 0.25),
+            (SemanticSimilarityGrader(), 0.15),
+            (RuleBasedGrader(self._rule_grade_classification), 0.60),
+        ]
+        classify_graders.extend(list(extra.get("classify", [])))
+
+        reply_graders: List[Tuple[BaseGrader, float]] = [
+            (AccuracyGrader(), 0.15),
+            (SemanticSimilarityGrader(), 0.15),
+            (RuleBasedGrader(self._rule_grade_reply), 0.70),
+        ]
+        reply_graders.extend(list(extra.get("reply", [])))
+
+        escalation_graders: List[Tuple[BaseGrader, float]] = [
+            (AccuracyGrader(), 0.20),
+            (SemanticSimilarityGrader(), 0.10),
+            (RuleBasedGrader(self._rule_grade_escalation), 0.70),
+        ]
+        escalation_graders.extend(list(extra.get("escalate", [])))
+
         self._classification_engine = WeightedParallelGradingEngine(
-            [
-                (AccuracyGrader(), 0.25),
-                (SemanticSimilarityGrader(), 0.15),
-                (RuleBasedGrader(self._rule_grade_classification), 0.60),
-            ]
+            classify_graders
         )
         self._reply_engine = WeightedParallelGradingEngine(
-            [
-                (AccuracyGrader(), 0.15),
-                (SemanticSimilarityGrader(), 0.15),
-                (RuleBasedGrader(self._rule_grade_reply), 0.70),
-            ]
+            reply_graders
         )
         self._escalation_engine = WeightedParallelGradingEngine(
-            [
-                (AccuracyGrader(), 0.20),
-                (SemanticSimilarityGrader(), 0.10),
-                (RuleBasedGrader(self._rule_grade_escalation), 0.70),
-            ]
+            escalation_graders
         )
 
     def _build_context(

@@ -1,9 +1,4 @@
-"""Validation tests for modular production-grade workplace environment."""
-
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+"""Regression tests for core models/data invariants and deterministic grading."""
 
 from workplace_env.core.models import GradeResult, WorkplaceAction, WorkplaceObservation
 from workplace_env.core.graders import (
@@ -132,30 +127,3 @@ def test_scenario_cycling():
     first = indices[: len(SCENARIOS)]
     second = indices[len(SCENARIOS) :]
     assert first == second
-
-
-def run_all_tests() -> int:
-    tests = [
-        test_imports,
-        test_scenario_metadata,
-        test_grading_deterministic,
-        test_reward_weighting,
-        test_observation_creation,
-        test_action_creation,
-        test_grade_result,
-        test_reward_clamping,
-        test_scenario_cycling,
-    ]
-
-    failed = 0
-    for test in tests:
-        try:
-            test()
-        except Exception:
-            failed += 1
-
-    return 0 if failed == 0 else 1
-
-
-if __name__ == "__main__":
-    raise SystemExit(run_all_tests())

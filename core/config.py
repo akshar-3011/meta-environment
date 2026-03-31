@@ -75,6 +75,19 @@ class InferenceConfig:
 
 
 @dataclass(frozen=True)
+class CacheConfig:
+    enabled: bool = True
+    inference_ttl_seconds: int = 300
+    max_entries: int = 1024
+
+
+@dataclass(frozen=True)
+class BenchmarkConfig:
+    default_runs: int = 1
+    default_concurrency: int = 4
+
+
+@dataclass(frozen=True)
 class EnvironmentConfig:
     debug: bool = False
 
@@ -85,6 +98,8 @@ class AppConfig:
     logging: LoggingConfig
     api: ApiConfig
     inference: InferenceConfig
+    cache: CacheConfig
+    benchmark: BenchmarkConfig
     environment: EnvironmentConfig
 
 
@@ -111,6 +126,15 @@ def load_config() -> AppConfig:
             timeout_seconds=_get_float("INFERENCE_TIMEOUT_SECONDS", 10.0),
             retry_attempts=_get_int("INFERENCE_RETRY_ATTEMPTS", 3),
             retry_backoff_seconds=_get_float("INFERENCE_RETRY_BACKOFF_SECONDS", 0.5),
+        ),
+        cache=CacheConfig(
+            enabled=_get_bool("CACHE_ENABLED", True),
+            inference_ttl_seconds=_get_int("CACHE_INFERENCE_TTL_SECONDS", 300),
+            max_entries=_get_int("CACHE_MAX_ENTRIES", 1024),
+        ),
+        benchmark=BenchmarkConfig(
+            default_runs=_get_int("BENCHMARK_DEFAULT_RUNS", 1),
+            default_concurrency=_get_int("BENCHMARK_DEFAULT_CONCURRENCY", 4),
         ),
         environment=EnvironmentConfig(
             debug=_get_bool("ENV_DEBUG", False),

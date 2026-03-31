@@ -1,173 +1,236 @@
----
-title: Workplace Env Environment Server
-emoji: 🧠
-colorFrom: purple
-colorTo: purple
-sdk: docker
-pinned: false
-app_port: 8000
-base_path: /web
-tags:
-  - openenv
-  - reinforcement-learning
----
+# Workplace Env
 
-# Workplace Env — Multi-Step Customer Support RL Environment
+A production-grade, modular reinforcement learning environment for multi-step customer support workflows.
 
-A production-grade reinforcement learning environment simulating a 3-step customer support decision pipeline. An RL agent must classify incoming email intent, generate a contextually appropriate reply, and decide whether to escalate — with a shaped reward signal that requires balancing accuracy across all three subtasks.
+This project simulates a realistic 3-step support pipeline where an agent must:
 
-**This is not a toy environment.** Wrong classification penalises downstream steps. Escalation requires understanding true intent. The 3-step dependency creates a real credit assignment challenge.
+1. classify customer intent,
+2. generate a response,
+3. decide whether to escalate.
 
----
+The environment provides structured rewards, a strategy-based inference system, a modular grading engine, CLI tooling, and a FastAPI service layer for integration and experimentation.
 
-## Quick Start
-```python
-from workplace_env import WorkplaceAction, WorkplaceEnv
+## Project overview
 
-with WorkplaceEnv(base_url="http://localhost:8000") as env:
-    result = env.reset()
-    print(result.observation.email)
+`workplace_env` is designed for teams building and evaluating decision-making agents in support scenarios. It combines deterministic evaluation rules with extensible architecture patterns, making it suitable for:
 
-    result = env.step(WorkplaceAction(action_type="classify", content="refund"))
-    result = env.step(WorkplaceAction(action_type="reply", content="We will process your refund within 3 business days."))
-    result = env.step(WorkplaceAction(action_type="escalate", content="no"))
-    print(result.reward)
+- RL environment prototyping,
+- policy benchmarking,
+- inference strategy comparison,
+- API-first orchestration.
+
+The codebase emphasizes maintainability through clear module boundaries (`core`, `environment`, `api`, `data`, `tests`) and production concerns such as logging, config management, and structured errors.
+
+## Architecture diagram (text-based)
+
+```text
+                                                            +----------------------+
+                                                            |  CLI (Typer)         |
+                                                            |  main.py             |
+                                                            +----------+-----------+
+                                                                                 |
+                                                                                 v
+ +------------------------+    +---------+----------+    +----------------------+
+ |  FastAPI Layer         |    |  Core Domain       |    |  OpenEnv Runtime     |
+ |  api/pipeline_app.py   +--->+  - Inference       +--->+  server/app.py       |
+ |  api/app.py            |    |  - Graders         |    |  environment loop    |
+ +-----------+------------+    |  - Models          |    +----------+-----------+
+                         |                 |  - Config/Logging  |               |
+                         v                 +---------+----------+               v
+ +-----------+------------+              |               +----------+-----------+
+ |  Structured Responses  |              v               |  Data Layer          |
+ |  success/error payload |    +---------+----------+    |  scenarios + metadata|
+ +------------------------+    |  Environment       |    |  data/, data.py      |
+                                                             |  workplace_env.py  |    +----------------------+
+                                                             +--------------------+
 ```
 
-Or via Docker:
-```python
-env = WorkplaceEnv.from_docker_image("workplace_env-env:latest")
-try:
-    result = env.reset()
-    ...
-finally:
-    env.close()
-```
+## Features
 
----
+- **Modular architecture** with clear separation of concerns.
+- **Multi-strategy inference**:
+    - `StandardInference`
+    - `EnhancedInference`
+    - `AsyncInference`
+- **Inference result caching** with TTL + bounded in-memory cache
+- **Weighted modular grading framework**:
+    - accuracy grader
+    - semantic similarity grader
+    - rule-based grader
+- **Grader plugin system** (`module:attribute` dynamic loading)
+- **Benchmark mode** for strategy/model comparison
+- **Result visualization** via ASCII charts and JSONL logs
+- **End-to-end pipeline API** with validated request models.
+- **CLI commands** for quick inference/grading/pipeline runs.
+- **Production foundations**:
+    - centralized `.env` config (`core/config.py`)
+    - unified logging (`core/logging_config.py`)
+    - typed custom exceptions (`core/exceptions.py`)
+- **Pytest suite** for inference, graders, API endpoints, and regression checks.
 
-## Running Locally
-```bash
-# Terminal 1: Start server
-uv run server
+## Installation steps
 
-# Terminal 2: Run the agent
-python inference.py
+### Prerequisites
 
-# Run enhanced agent with rich output
-python inference_enhanced.py
+- Python `>= 3.10`
+- Recommended: `uv` for fast environment and dependency management
 
-# Run validation tests
-python test_production_grade.py
-```
-
----
-
-## CLI Commands
-
-The project now includes a Typer-based CLI with three user-friendly commands:
-
-- `run-inference` → generate action plan for an email
-- `run-grader` → score a single action
-- `run-pipeline` → execute full inference + grading workflow
-
-### Run Inference
-
-```bash
-uv run run-inference --email "I need help, this issue has not been resolved."
-```
-
-### Run Grader
+### 1) Clone repository
 
 ```bash
-uv run run-grader \
-    --action-type reply \
-    --content "We are sorry for the inconvenience and will resolve this quickly." \
-    --actual-category complaint \
-    --step-count 2
+git clone https://github.com/akshar-3011/meta-environment.git
+cd meta-environment/workplace_env
 ```
 
-### Run Full Pipeline
+### 2) Create environment and install dependencies
+
+Using `uv` (recommended):
 
 ```bash
-uv run run-pipeline \
-    --email "My ticket is still unresolved and I need support now." \
-    --actual-category complaint \
-    --strategy enhanced
+uv sync
 ```
 
-All commands output structured JSON with the same `{ success, score, breakdown }` shape used by the API.
+Or using `pip`:
 
----
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+pip install -e .[dev]
+```
 
-## Production Configuration & Logging
-
-The project now uses a central config loader (`core/config.py`) with `.env` support.
-
-1. Copy environment template:
+### 3) Configure environment variables
 
 ```bash
 cp .env.example .env
 ```
 
-2. Update values as needed (ports, retry settings, log level, debug mode).
+Then update values in `.env` as needed (ports, retry config, log level, debug mode).
 
-### Key Runtime Variables
+Advanced runtime knobs:
 
-- `API_HOST`
-- `API_SERVER_PORT`
-- `API_PIPELINE_PORT`
-- `API_MAX_CONCURRENT_ENVS`
-- `INFERENCE_BASE_URL`
-- `INFERENCE_TIMEOUT_SECONDS`
-- `INFERENCE_RETRY_ATTEMPTS`
-- `INFERENCE_RETRY_BACKOFF_SECONDS`
-- `APP_LOG_LEVEL`
-- `ENV_DEBUG`
+- `CACHE_ENABLED`
+- `CACHE_INFERENCE_TTL_SECONDS`
+- `CACHE_MAX_ENTRIES`
+- `BENCHMARK_DEFAULT_RUNS`
+- `BENCHMARK_DEFAULT_CONCURRENCY`
 
-### Logging
+## Usage examples
 
-- Uses Python `logging` with centralized setup in `core/logging_config.py`
-- Default format is structured and timestamped
-- Set `APP_LOG_LEVEL=DEBUG` for verbose diagnostics
+### Python client usage
 
-### Error Handling
+```python
+from workplace_env import WorkplaceAction, WorkplaceEnv
 
-Custom exception hierarchy in `core/exceptions.py`:
+with WorkplaceEnv(base_url="http://localhost:8000") as env:
+        obs = env.reset().observation
 
-- `WorkplaceEnvError`
-- `ConfigurationError`
-- `InferenceError`
-- `GradingError`
-- `PipelineError`
+        env.step(WorkplaceAction(action_type="classify", content="complaint"))
+        env.step(WorkplaceAction(action_type="reply", content="We are sorry and will resolve this quickly."))
+        result = env.step(WorkplaceAction(action_type="escalate", content="yes"))
 
-API endpoints convert these into structured JSON error responses.
+        print("reward:", result.reward)
+```
 
----
+### Start services
 
-## Pipeline API (FastAPI)
+OpenEnv server:
 
-This repo also provides a dedicated API layer for orchestration use-cases:
+```bash
+uv run server
+```
 
-- `POST /infer` → generate inference actions
-- `POST /grade` → evaluate one action
-- `POST /pipeline` → run inference + grading end-to-end
-
-### Run the Pipeline API
+Pipeline API server:
 
 ```bash
 uv run pipeline-api
 ```
 
-Default port: `8010`
+### CLI usage
 
-### Example Requests
+Run inference:
 
-`POST /infer`
+```bash
+uv run run-inference --email "I have not received a response for days" --strategy enhanced
+```
+
+Run grader:
+
+```bash
+uv run run-grader --action-type reply --content "We are sorry and will resolve this." --actual-category complaint --step-count 2
+```
+
+Run full pipeline:
+
+```bash
+uv run run-pipeline --email "My issue is unresolved" --actual-category complaint --strategy standard
+```
+
+Run full pipeline with cache disabled and plugin grader:
+
+```bash
+uv run run-pipeline \
+    --email "My issue is unresolved" \
+    --actual-category complaint \
+    --no-cache \
+    --plugin my_plugins.graders:PolitenessGrader \
+    --plugin-weight 0.05
+```
+
+Run benchmark mode (sync):
+
+```bash
+uv run run-benchmark --strategies standard,enhanced,async --iterations 3
+```
+
+Run benchmark mode (async with visualization + logs):
+
+```bash
+uv run run-benchmark \
+    --strategies standard,enhanced,async \
+    --iterations 5 \
+    --async-run \
+    --concurrency 8 \
+    --show-chart \
+    --log-file ./artifacts/benchmark.jsonl
+```
+
+### Run tests
+
+```bash
+python -m pytest -q
+```
+
+Targeted test modules:
+
+```bash
+python -m pytest -q tests/test_inference.py tests/test_graders.py tests/test_api.py
+```
+
+## API documentation
+
+Base URL (default): `http://localhost:8010`
+
+Interactive docs (when server is running):
+
+- Swagger UI: `/docs`
+
+### Endpoints
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `GET` | `/health` | Health check |
+| `POST` | `/infer` | Generate action plan |
+| `POST` | `/grade` | Grade one action |
+| `POST` | `/pipeline` | Execute inference + grading flow |
+
+### `POST /infer`
+
+Request:
 
 ```json
 {
-    "email": "Your support team has not replied to my issue.",
+    "email": "Support has not replied to my issue",
     "strategy": "enhanced",
     "category_options": ["refund", "complaint", "query"],
     "scenario_difficulty": "medium",
@@ -177,143 +240,129 @@ Default port: `8010`
 }
 ```
 
-`POST /grade`
+Response (shape):
+
+```json
+{
+    "success": true,
+    "score": 1.0,
+    "breakdown": {
+        "strategy": "enhanced",
+        "action_count": 3,
+        "actions": []
+    }
+}
+```
+
+### `POST /grade`
+
+Request:
 
 ```json
 {
     "action_type": "reply",
-    "content": "We are sorry for the inconvenience and will resolve this quickly.",
+    "content": "We are sorry and will resolve this quickly.",
     "actual_category": "complaint",
     "step_count": 2,
     "scenario_difficulty": "medium",
     "min_reply_length": 30,
     "previous_actions": {
-        "classify": 0.4
+        "classify": 0.9
     }
 }
 ```
 
-`POST /pipeline`
-
-```json
-{
-    "email": "I need help. My issue is unresolved and this is frustrating.",
-    "actual_category": "complaint",
-    "strategy": "standard",
-    "scenario_difficulty": "medium",
-    "min_reply_length": 30
-}
-```
-
-### Response Shape
-
-All endpoints return structured JSON:
+Response:
 
 ```json
 {
     "success": true,
-    "score": 0.82,
+    "score": 0.21,
     "breakdown": {
-        "...": "details"
+        "action_type": "reply",
+        "final_reward": 0.21
     }
 }
 ```
 
----
+### `POST /pipeline`
 
-## Deploying to Hugging Face Spaces
-```bash
-# From environment directory (where openenv.yaml is located)
-openenv push
+Request:
 
-# With options
-openenv push --repo-id my-org/my-env --private
+```json
+{
+    "email": "My issue is unresolved and frustrating",
+    "actual_category": "complaint",
+    "strategy": "standard",
+    "scenario_difficulty": "easy",
+    "min_reply_length": 30
+}
 ```
 
-The `openenv push` command validates the directory, prepares a Docker build, and uploads to Hugging Face.
+Response:
 
-After deployment, your space exposes:
-- **Web Interface** at `/web`
-- **API Docs** at `/docs`
-- **Health Check** at `/health`
-- **WebSocket** at `/ws`
+```json
+{
+    "success": true,
+    "score": 0.88,
+    "breakdown": {
+        "total_steps": 3,
+        "steps": []
+    }
+}
+```
 
----
+### Error response format
 
-## Environment Details
+All errors are returned in a structured shape:
 
-### Actions
-**WorkplaceAction** — One per step:
+```json
+{
+    "success": false,
+    "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "Invalid request payload",
+        "details": {}
+    }
+}
+```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `action_type` | str | `classify`, `reply`, or `escalate` |
-| `content` | str | Category name, reply text, or escalation decision |
-| `confidence` | float (optional) | Agent self-assessment (0.0–1.0) |
-| `explanation` | str (optional) | Reasoning for the action |
+## Project structure
 
-### Observations
-**WorkplaceObservation** — Returned after every reset/step:
+```text
+workplace_env/
+├── api/                # FastAPI apps and endpoint orchestration
+├── core/               # Config, logging, exceptions, inference, graders, models
+├── data/               # Scenario repository abstractions
+├── environment/        # OpenEnv-compatible environment implementation
+├── tests/              # Pytest suite (inference, graders, API, regression)
+├── main.py             # CLI entrypoint
+├── client.py           # Python client integration
+└── pyproject.toml      # Packaging, dependencies, scripts
+```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `email` | str | Customer email to handle |
-| `category_options` | list | Valid categories: `refund`, `complaint`, `query` |
-| `history` | list | Actions taken so far this episode |
-| `scenario_difficulty` | str | `easy` / `medium` / `hard` |
-| `urgency` | str | `low` / `medium` / `high` |
-| `sentiment` | str | `negative` / `neutral` / `positive` / `mixed` |
-| `complexity_score` | int | 1–5 scale |
-| `scenario_metadata` | dict | Ground truth label, escalation requirement, min reply length |
-| `reward` | float | Step reward (weighted composite, see below) |
-| `done` | bool | True after 3 steps |
+## Future improvements
 
-### Reward Structure
+- Add benchmark tooling for strategy-vs-strategy evaluation over full scenario sets.
+- Add richer semantic grading models (embeddings / LLM-judge adapters).
+- Add per-endpoint auth and rate limiting for production deployments.
+- Add CI pipeline with coverage thresholds and static analysis gates.
+- Add container-first local developer workflow (`docker-compose` for API + tests).
+- Expose metrics (`Prometheus`/OpenTelemetry) for reward distribution and latency.
 
-Rewards are weighted by task importance:
+## Contributing
 
-| Step | Task | Weight | Max Reward |
-|------|------|--------|------------|
-| 1 | Classify | 40% | 0.40 |
-| 2 | Reply | 35% | 0.35 |
-| 3 | Escalate | 25% | 0.25 |
+Contributions are welcome. For substantial changes, please open an issue first to discuss scope and design.
 
-**Total maximum per episode: 1.00**
+When contributing:
 
-A perfect agent scores ≥ 0.95 by correctly classifying intent, writing an empathetic keyword-rich reply, and making the right escalation decision.
+- include tests for behavioral changes,
+- keep modules cohesive and typed,
+- preserve structured response contracts (`success`, `score`, `breakdown` / `error`).
 
-#### Reward Design Principles
+## License
 
-- **Partial credit**: Related-category classification earns 0.2–0.4 instead of 0.0
-- **Consistency penalty**: Reply reward is reduced by 0.2 if classification was wrong (error propagation)
-- **Escalation policy**: Complaints must be escalated; queries and refunds must not. Over-escalation is penalised
-- **Timing penalty**: Escalating before step 2 is penalised (bypassing the workflow)
-- **Keyword grading**: Replies are scored on category-specific vocabulary (empathy for complaints, process language for refunds, etc.)
-
----
-
-## Scenario Dataset
-
-18 scenarios across 3 difficulty levels:
-
-| Difficulty | Count | Description |
-|------------|-------|-------------|
-| Easy | 7 | Clear single intent, neutral tone |
-| Medium | 7 | Mixed signals, negative sentiment, some urgency |
-| Hard | 4 | Ambiguous, multi-intent, edge cases |
-
-Each scenario includes: email text, true label, difficulty, sentiment, urgency, complexity score, escalation requirement, and minimum reply length.
-
-Scenarios cycle deterministically for reproducible training.
-
----
-
-## Why This Is Hard for a Naive Agent
-
-1. **Classification cascades**: A wrong label in step 1 triggers a consistency penalty in step 2, making the total reward lower than the sum of individual mistakes.
-2. **Escalation is non-trivial**: The agent cannot default to always-escalate (penalised for over-escalation) or never-escalate (penalised for missed complaints).
-3. **Reply quality is rubric-based**: Generic replies fail keyword checks; the agent must learn category-specific language.
-4. **Difficulty progression**: Hard scenarios have ambiguous emails where the primary intent is not explicit.
+This project follows the repository license terms.
 
 ---
 

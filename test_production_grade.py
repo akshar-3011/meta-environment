@@ -1,10 +1,6 @@
-"""Backward-compatible test launcher.
+"""Backward-compatible pytest shim.
 
-Canonical test module now lives in `tests/test_production_grade.py`.
+Canonical tests live in `tests/` and are discovered by pytest.
 """
 
-from tests.test_production_grade import run_all_tests
-
-
-if __name__ == "__main__":
-    raise SystemExit(run_all_tests())
+from tests.test_production_grade import *  # noqa: F401,F403

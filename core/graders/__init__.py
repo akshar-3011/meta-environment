@@ -7,6 +7,7 @@ from .framework import (
     WeightedParallelGradingEngine,
 )
 from .interfaces import BaseGrader, EvaluationContext, GraderResult, RewardPolicy
+from .plugins import GraderPluginRegistry, create_default_registry
 from .rule_based import (
     RuleBasedRewardPolicy,
     CATEGORY_OPTIONS,
@@ -21,6 +22,8 @@ __all__ = [
     "EvaluationContext",
     "GraderResult",
     "RewardPolicy",
+    "GraderPluginRegistry",
+    "create_default_registry",
     "AccuracyGrader",
     "SemanticSimilarityGrader",
     "RuleBasedGrader",
