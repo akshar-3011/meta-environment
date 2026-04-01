@@ -47,9 +47,13 @@ class EpisodeState:
 
 
 class WorkplaceEnvironment(Environment):
-    """Production-oriented OpenEnv environment with modular dependencies."""
+    """Production-oriented OpenEnv environment with modular dependencies.
 
-    _state = EpisodeState()
+    Each instance owns its own EpisodeState so concurrent WebSocket sessions
+    cannot corrupt each other's state. The original class-level `_state`
+    attribute was a singleton shared across all instances — equivalent to the
+    global `_SHARED_STATE` dict in the original codebase.
+    """
 
     def __init__(
         self,
@@ -62,8 +66,9 @@ class WorkplaceEnvironment(Environment):
         self._policy = reward_policy or RuleBasedRewardPolicy()
         self._scenario_repo = scenario_repository or get_default_repository()
         self._scenarios = self._scenario_repo.list_scenarios()
-
-        if not self._state.current and self._scenarios:
+        # Instance-owned state — no sharing between concurrent sessions.
+        self._state = EpisodeState()
+        if self._scenarios:
             self._state.current = self._scenarios[0]
 
     def _next_scenario(self) -> Dict[str, Any]:
@@ -155,10 +160,14 @@ class WorkplaceEnvironment(Environment):
             ) from exc
 
     def state(self) -> Dict[str, Any]:
+        """Return current episode state for debug / introspection.
+
+        NOTE: scenario label and requires_escalation are intentionally excluded.
+        The /state endpoint is publicly accessible and must not expose answer keys.
+        """
         return {
             "episode_count": self._state.episode_count,
             "step_count": self._state.step_count,
-            "scenario_label": self._state.current.get("label", ""),
             "difficulty": self._state.current.get("difficulty", "unknown"),
             "cumulative_reward": self._state.cumulative_reward,
             "action_rewards": dict(self._state.action_rewards),

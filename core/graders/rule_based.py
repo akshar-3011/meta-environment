@@ -83,7 +83,16 @@ class RuleBasedRewardPolicy(RewardPolicy):
         scenario_difficulty: str = "easy",
         min_reply_length: int = 30,
         previous_actions: Optional[Dict[str, float]] = None,
+        requires_escalation: Optional[bool] = None,
     ) -> EvaluationContext:
+        # Prefer the caller-supplied requires_escalation (from the scenario's own
+        # field) over the ESCALATION_REQUIRED policy dict.  Removes the duplicate
+        # source-of-truth identified in the architecture analysis.
+        escalation_flag = (
+            requires_escalation
+            if requires_escalation is not None
+            else ESCALATION_REQUIRED.get(actual_category, False)
+        )
         return EvaluationContext(
             action_type=action_type,
             content=content or "",
@@ -95,6 +104,7 @@ class RuleBasedRewardPolicy(RewardPolicy):
             metadata={
                 "expected_keywords": REQUIRED_KEYWORDS.get(actual_category, []),
                 "related_labels": RELATED_LABELS.get(actual_category, []),
+                "requires_escalation": escalation_flag,
             },
         )
 
@@ -169,7 +179,13 @@ class RuleBasedRewardPolicy(RewardPolicy):
     def _rule_grade_escalation(self, context: EvaluationContext) -> Tuple[float, str, Dict[str, Any]]:
         decision = (context.content or "").lower().strip()
         did_escalate = decision in ["yes", "true", "urgent", "1", "escalate"]
-        should_escalate = ESCALATION_REQUIRED.get(context.actual_category, False)
+        # Prefer the scenario's own requires_escalation field (passed via context
+        # metadata) over the hardcoded ESCALATION_REQUIRED fallback dict.
+        # This eliminates the duplicate source-of-truth (Bug 3).
+        should_escalate = context.metadata.get(
+            "requires_escalation",
+            ESCALATION_REQUIRED.get(context.actual_category, False),
+        )
 
         score = 0.0
         reason = ""
@@ -262,6 +278,7 @@ class RuleBasedRewardPolicy(RewardPolicy):
         scenario_difficulty: str = "easy",
         min_reply_length: int = 30,
         previous_actions: Optional[Dict[str, float]] = None,
+        requires_escalation: Optional[bool] = None,
     ) -> Tuple[float, Dict]:
         content = content or ""
         previous_actions = previous_actions or {}
@@ -274,6 +291,7 @@ class RuleBasedRewardPolicy(RewardPolicy):
             scenario_difficulty=scenario_difficulty,
             min_reply_length=min_reply_length,
             previous_actions=previous_actions,
+            requires_escalation=requires_escalation,
         )
 
         breakdown = {

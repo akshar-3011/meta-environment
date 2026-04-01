@@ -1,8 +1,29 @@
 """Core Pydantic/domain models for the workplace environment."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
+from pydantic import BaseModel, ConfigDict, Field
 from openenv.core.env_server.types import Action, Observation
+
+
+class Scenario(BaseModel):
+    """A single customer-support scenario used for one RL episode.
+
+    Validated at dataset load time so malformed entries surface immediately
+    as a ValidationError rather than silently producing wrong rewards at
+    runtime.  Frozen to prevent accidental mutation after load.
+    """
+
+    email: str
+    label: Literal["refund", "complaint", "query"]
+    difficulty: Literal["easy", "medium", "hard"]
+    sentiment: Literal["negative", "neutral", "positive", "mixed"]
+    urgency: Literal["low", "medium", "high"]
+    complexity: int = Field(ge=1, le=5)
+    requires_escalation: bool
+    min_reply_length: int = Field(ge=10)
+
+    model_config = ConfigDict(frozen=True)
 
 
 class WorkplaceObservation(Observation):
