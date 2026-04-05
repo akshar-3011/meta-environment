@@ -3,7 +3,10 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from openenv.core import Environment
+try:
+    from openenv.core import Environment
+except ImportError:
+    from pydantic import BaseModel as Environment
 
 try:
     from ..core.config import get_config

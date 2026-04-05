@@ -54,6 +54,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
         uv sync --no-editable; \
     fi
 
+RUN python -c "from openenv.core import Environment; print('openenv.core OK')"
+
 # Final runtime stage
 FROM ${BASE_IMAGE}
 

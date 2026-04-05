@@ -64,6 +64,7 @@ class PipelineRequest(BaseModel):
     email: str = Field(min_length=1)
     actual_category: Literal["refund", "complaint", "query"]
     strategy: InferenceStrategy = InferenceStrategy.standard
+    task: Optional[Literal["refund", "complaint", "query"]] = None
     scenario_difficulty: str = "easy"
     min_reply_length: int = Field(default=30, ge=1)
 
@@ -171,6 +172,30 @@ def health() -> Dict[str, Any]:
     return {"success": True, "data": {"status": "ok"}}
 
 
+@app.get("/tasks")
+def list_tasks() -> Dict[str, Any]:
+    return {
+        "success": True,
+        "tasks": [
+            {
+                "name": "refund",
+                "description": "Handle refund requests",
+                "actions": ["classify", "reply", "escalate"],
+            },
+            {
+                "name": "complaint",
+                "description": "Handle customer complaints",
+                "actions": ["classify", "reply", "escalate"],
+            },
+            {
+                "name": "query",
+                "description": "Handle general queries",
+                "actions": ["classify", "reply", "escalate"],
+            },
+        ],
+    }
+
+
 @app.post("/infer")
 def infer(request: InferRequest) -> Dict[str, Any]:
     LOGGER.info("/infer request received with strategy=%s", request.strategy.value)
@@ -226,6 +251,16 @@ def pipeline(request: PipelineRequest) -> Dict[str, Any]:
         actions = strategy.build_actions(observation)
     except Exception as exc:
         raise InferenceError("Failed to generate pipeline actions", details={"strategy": request.strategy.value, "exception": str(exc)}) from exc
+
+    task_action_relevance: Dict[str, set[str]] = {
+        "refund": {"classify", "reply"},
+        "complaint": {"classify", "reply", "escalate"},
+        "query": {"classify", "reply"},
+    }
+
+    if request.task is not None:
+        allowed_actions = task_action_relevance.get(request.task, {"classify", "reply", "escalate"})
+        actions = [(action_type, content) for action_type, content in actions if action_type in allowed_actions]
 
     previous_actions: Dict[str, float] = {}
     cumulative = 0.0

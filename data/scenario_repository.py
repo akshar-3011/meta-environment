@@ -1,12 +1,23 @@
 """Scenario repository abstractions for environment data access."""
 
 from abc import ABC, abstractmethod
+from importlib.util import module_from_spec, spec_from_file_location
+from pathlib import Path
 from typing import Any, Dict, List
 
-try:
-    from ..data import SCENARIOS  # Backward-compatible source of truth
-except ImportError:  # pragma: no cover
-    from data import SCENARIOS
+
+def _load_legacy_scenarios() -> List[Dict[str, Any]]:
+    legacy_path = Path(__file__).resolve().parent.parent / "data.py"
+    spec = spec_from_file_location("_workplace_env_legacy_data", legacy_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("Unable to load legacy scenario data")
+
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return list(module.SCENARIOS)
+
+
+SCENARIOS = _load_legacy_scenarios()
 
 
 class ScenarioRepository(ABC):
@@ -32,3 +43,15 @@ _DEFAULT_REPOSITORY = StaticScenarioRepository(SCENARIOS)
 
 def get_default_repository() -> ScenarioRepository:
     return _DEFAULT_REPOSITORY
+
+
+def get_refund_repository() -> ScenarioRepository:
+    return StaticScenarioRepository([s for s in SCENARIOS if s["label"] == "refund"])
+
+
+def get_complaint_repository() -> ScenarioRepository:
+    return StaticScenarioRepository([s for s in SCENARIOS if s["label"] == "complaint"])
+
+
+def get_query_repository() -> ScenarioRepository:
+    return StaticScenarioRepository([s for s in SCENARIOS if s["label"] == "query"])

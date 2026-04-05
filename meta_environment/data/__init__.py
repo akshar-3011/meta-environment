@@ -50,4 +50,24 @@ def get_default_repository() -> ScenarioRepository:
     return _DEFAULT_REPOSITORY
 
 
-__all__ = ["SCENARIOS", "ScenarioRepository", "StaticScenarioRepository", "get_default_repository"]
+def get_refund_repository() -> ScenarioRepository:
+    return StaticScenarioRepository([s for s in SCENARIOS if s["label"] == "refund"])
+
+
+def get_complaint_repository() -> ScenarioRepository:
+    return StaticScenarioRepository([s for s in SCENARIOS if s["label"] == "complaint"])
+
+
+def get_query_repository() -> ScenarioRepository:
+    return StaticScenarioRepository([s for s in SCENARIOS if s["label"] == "query"])
+
+
+__all__ = [
+    "SCENARIOS",
+    "ScenarioRepository",
+    "StaticScenarioRepository",
+    "get_default_repository",
+    "get_refund_repository",
+    "get_complaint_repository",
+    "get_query_repository",
+]

@@ -3,7 +3,11 @@
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
-from openenv.core.env_server.types import Action, Observation
+
+try:
+    from openenv.core.env_server.types import Action, Observation
+except ImportError:
+    from pydantic import BaseModel as Action, BaseModel as Observation
 
 
 class Scenario(BaseModel):
