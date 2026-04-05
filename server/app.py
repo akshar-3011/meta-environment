@@ -37,6 +37,11 @@ def main(host: str = "0.0.0.0", port: int = 8000):
     return _main(host=host, port=port)
 
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 if __name__ == "__main__":
     import argparse
 
