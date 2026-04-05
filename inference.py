@@ -49,7 +49,7 @@ def run_episode(env_base_url: str) -> float:
     category_options: List[str] = [str(x) for x in observation.get("category_options", [])]
     difficulty = observation.get("difficulty", "unknown")
 
-    print("[START] episode", flush=True)
+    print(f"[START] task=workplace_env env=workplace_env model={MODEL_NAME}", flush=True)
 
     total_reward = 0.0
     reply_text = ""
@@ -77,7 +77,7 @@ def run_episode(env_base_url: str) -> float:
     classify_reward = float(classify_step.get("reward", 0.0))
     total_reward += classify_reward
     print(
-        f"[STEP] action_type=classify content={classify_content[:60]} reward={classify_reward}",
+        f"[STEP] step=1 action=classify reward={classify_reward:.2f} done=false error=null",
         flush=True,
     )
 
@@ -106,7 +106,7 @@ def run_episode(env_base_url: str) -> float:
     reply_reward = float(reply_step.get("reward", 0.0))
     total_reward += reply_reward
     print(
-        f"[STEP] action_type=reply content={reply_content[:60]} reward={reply_reward}",
+        f"[STEP] step=2 action=reply reward={reply_reward:.2f} done=false error=null",
         flush=True,
     )
 
@@ -130,13 +130,17 @@ def run_episode(env_base_url: str) -> float:
         {"action": {"action_type": "escalate", "content": escalate_content}},
     )
     escalate_reward = float(escalate_step.get("reward", 0.0))
+    escalate_done = "true" if bool(escalate_step.get("done", False)) else "false"
     total_reward += escalate_reward
     print(
-        f"[STEP] action_type=escalate content={escalate_content[:60]} reward={escalate_reward}",
+        f"[STEP] step=3 action=escalate reward={escalate_reward:.2f} done={escalate_done} error=null",
         flush=True,
     )
 
-    print(f"[END] total_reward={total_reward}", flush=True)
+    print(
+        f"[END] success=true steps=3 rewards={classify_reward:.2f},{reply_reward:.2f},{escalate_reward:.2f}",
+        flush=True,
+    )
     return total_reward
 
 
