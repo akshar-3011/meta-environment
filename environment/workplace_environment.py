@@ -10,17 +10,32 @@ except ImportError:
 
 try:
     from ..core.config import get_config
-    from ..core.exceptions import PipelineError
-    from ..core.graders import CATEGORY_OPTIONS, RewardPolicy, RuleBasedRewardPolicy
-    from ..core.logging_config import get_logger, setup_logging
-    from ..core.models import WorkplaceAction, WorkplaceObservation
-    from ..data import get_default_repository, ScenarioRepository
 except ImportError:  # pragma: no cover
     from core.config import get_config
+
+try:
+    from ..core.exceptions import PipelineError
+except ImportError:  # pragma: no cover
     from core.exceptions import PipelineError
+
+try:
+    from ..core.graders import CATEGORY_OPTIONS, RewardPolicy, RuleBasedRewardPolicy
+except ImportError:  # pragma: no cover
     from core.graders import CATEGORY_OPTIONS, RewardPolicy, RuleBasedRewardPolicy
+
+try:
+    from ..core.logging_config import get_logger, setup_logging
+except ImportError:  # pragma: no cover
     from core.logging_config import get_logger, setup_logging
-    from core.models import WorkplaceAction, WorkplaceObservation
+
+try:
+    from ..models import WorkplaceAction, WorkplaceObservation
+except ImportError:  # pragma: no cover
+    from models import WorkplaceAction, WorkplaceObservation
+
+try:
+    from ..data import get_default_repository, ScenarioRepository
+except ImportError:  # pragma: no cover
     from data import get_default_repository, ScenarioRepository
 
 

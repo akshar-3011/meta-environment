@@ -68,6 +68,20 @@ The codebase emphasizes maintainability through clear module boundaries (`core`,
     - typed custom exceptions (`core/exceptions.py`)
 - **Pytest suite** for inference, graders, API endpoints, and regression checks.
 
+## Tasks
+
+The environment evaluates three customer-support task tracks, each following the same 3-step workflow: `classify` → `reply` → `escalate`.
+
+- **refund**
+    - Description: Handle refund requests.
+    - Difficulty levels: `easy`, `medium`, `hard`.
+- **complaint**
+    - Description: Handle customer complaints.
+    - Difficulty levels: `easy`, `medium`, `hard`.
+- **query**
+    - Description: Handle general customer queries.
+    - Difficulty levels: `easy`, `medium`, `hard`.
+
 ## Installation steps
 
 ### Prerequisites
