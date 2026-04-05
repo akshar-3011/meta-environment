@@ -4,4 +4,14 @@ type: space
 runtime: fastapi
 app: server.app:app
 port: 8000
+tasks:
+  - name: refund
+    description: Agent must classify, reply, and escalate for refund scenarios
+    difficulty_levels: [easy, medium, hard]
+  - name: complaint
+    description: Agent must classify, reply, and escalate for complaint scenarios
+    difficulty_levels: [easy, medium, hard]
+  - name: query
+    description: Agent must classify, reply, and escalate for query scenarios
+    difficulty_levels: [easy, medium, hard]
 
