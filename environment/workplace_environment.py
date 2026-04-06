@@ -177,6 +177,7 @@ class WorkplaceEnvironment(Environment):
                 details={"exception": str(exc), "step_count": self._state.step_count},
             ) from exc
 
+    @property
     def state(self) -> Dict[str, Any]:
         """Return current episode state for debug / introspection.
 

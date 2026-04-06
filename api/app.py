@@ -1,5 +1,7 @@
 """FastAPI app wiring for the workplace environment."""
 
+import inspect
+
 try:
     from openenv.core.env_server.http_server import create_app
 except Exception:  # pragma: no cover
@@ -21,13 +23,15 @@ except ImportError:  # pragma: no cover
 setup_logging()
 CFG = get_config()
 
-app = create_app(
-    WorkplaceEnvironment,
-    WorkplaceAction,
-    WorkplaceObservation,
+_sig = inspect.signature(create_app)
+_kwargs = dict(
     env_name="workplace_env",
     max_concurrent_envs=CFG.api.max_concurrent_envs,
 )
+_args = [WorkplaceEnvironment, WorkplaceAction, WorkplaceObservation]
+_accepted = set(_sig.parameters.keys())
+_kwargs = {k: v for k, v in _kwargs.items() if k in _accepted}
+app = create_app(*_args, **_kwargs)
 
 
 def main(host: str = CFG.api.host, port: int = CFG.api.server_port):

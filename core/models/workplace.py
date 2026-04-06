@@ -36,6 +36,8 @@ class WorkplaceObservation(Observation):
     email: str
     category_options: List[str]
     history: List[str]
+    reward: Optional[float] = None
+    done: bool = False
     scenario_difficulty: Optional[str] = None
     urgency: Optional[str] = None
     sentiment: Optional[str] = None
