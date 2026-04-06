@@ -4,14 +4,46 @@ type: space
 runtime: fastapi
 app: server.app:app
 port: 8000
+
+# Agent must execute a 3-step workflow per episode:
+#   classify (action_type=classify)  → reply (action_type=reply)  → escalate (action_type=escalate)
+# Each step returns a reward in [0.0, 1.0] weighted by step importance.
+# Max episode reward ≈ 1.0.
+
 tasks:
   - name: refund
-    description: Agent must classify, reply, and escalate for refund scenarios
+    description: >
+      Agent receives a customer email requesting a refund.
+      It must classify the email as 'refund', write an empathetic resolution reply,
+      and correctly decide not to escalate (refund cases do not require escalation).
+    difficulty: easy
     difficulty_levels: [easy, medium, hard]
-  - name: complaint
-    description: Agent must classify, reply, and escalate for complaint scenarios
-    difficulty_levels: [easy, medium, hard]
-  - name: query
-    description: Agent must classify, reply, and escalate for query scenarios
-    difficulty_levels: [easy, medium, hard]
+    steps: 3
+    actions: [classify, reply, escalate]
+    grader: rule_based
+    baseline_score: 0.71
 
+  - name: complaint
+    description: >
+      Agent receives a negative-sentiment complaint email (damaged item, double charge,
+      unresponsive support, etc.). It must classify as 'complaint', write an empathetic
+      and solution-oriented reply, and correctly escalate to a senior team when warranted.
+    difficulty: medium
+    difficulty_levels: [easy, medium, hard]
+    steps: 3
+    actions: [classify, reply, escalate]
+    grader: rule_based
+    baseline_score: 0.33
+
+  - name: query
+    description: >
+      Agent receives an ambiguous information-request email, often phrased with
+      frustration or sarcasm (e.g. delivery status, shipping options). It must
+      correctly classify as 'query' (not complaint), write a helpful informative reply,
+      and correctly withhold escalation.
+    difficulty: hard
+    difficulty_levels: [easy, medium, hard]
+    steps: 3
+    actions: [classify, reply, escalate]
+    grader: rule_based
+    baseline_score: 0.31
