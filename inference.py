@@ -270,7 +270,8 @@ def run_episode(task_name: str) -> Dict[str, Any]:
             flush=True,
         )
 
-    success: bool = len(errors) == 0
+    rewards = [classify_reward, reply_reward, escalate_reward]
+    success: bool = sum(rewards) >= 0.5
     print(
         f"[END] success={'true' if success else 'false'} steps=3"
         f" rewards={classify_reward:.2f},{reply_reward:.2f},{escalate_reward:.2f}",
