@@ -59,10 +59,12 @@ try:
     from environment.workplace_environment import WorkplaceEnvironment
     from data import get_default_repository
     from models import WorkplaceAction
+    from core.inference.strategies import EmailAwareInference
 except ImportError:
     from workplace_env.environment.workplace_environment import WorkplaceEnvironment
     from workplace_env.data import get_default_repository
     from workplace_env.models import WorkplaceAction
+    from workplace_env.core.inference.strategies import EmailAwareInference
 
 
 # ---------------------------------------------------------------------------
@@ -86,20 +88,20 @@ def call_llm(
     system_prompt: str,
     user_prompt: str,
     category_options: Optional[List[str]] = None,
+    email: str = "",
 ) -> str:
     """Call the chat model; fall back to mock when HF_TOKEN is absent."""
     if _client is None:
+        agent = EmailAwareInference()
+        category = agent._classify_email(email) if email else "query"
+        
         # Deterministic mock — checks prompt type from system instruction
         if "escalate" in system_prompt.lower():
-            return "no"
+            return "yes" if category == "complaint" else "no"
         if "classify" in system_prompt.lower() or "category" in user_prompt.lower():
-            return category_options[0] if category_options else "query"
-        # Generic reply that scores reward keywords for all three categories
-        return (
-            "Thank you for reaching out! We sincerely apologize for any inconvenience. "
-            "We will help you resolve this and process your refund request promptly. "
-            "Please let us know if you need further information — we are happy to assist."
-        )
+            return category
+        # Return fallback reply
+        return agent._REPLIES.get(category, agent._REPLIES["query"])
 
     response = _client.chat.completions.create(
         model=MODEL_NAME,
@@ -183,7 +185,7 @@ def run_episode(task_name: str) -> Dict[str, Any]:
             f"Difficulty: {difficulty}\n"
             "Return only the category name — one word."
         )
-        raw = call_llm(classify_system, classify_user, category_options=category_options)
+        raw = call_llm(classify_system, classify_user, category_options=category_options, email=email)
         classify_content = raw.strip().split()[0].lower()
         if classify_content not in category_options and category_options:
             classify_content = category_options[0]
@@ -217,7 +219,7 @@ def run_episode(task_name: str) -> Dict[str, Any]:
             f"Difficulty: {difficulty}\n"
             "Write a helpful reply of at least 30 characters."
         )
-        reply_content = call_llm(reply_system, reply_user).strip()
+        reply_content = call_llm(reply_system, reply_user, email=email).strip()
         if len(reply_content) < 30:
             reply_content = (
                 reply_content + " We understand your concern and will help promptly."
@@ -251,7 +253,7 @@ def run_episode(task_name: str) -> Dict[str, Any]:
             f"Difficulty: {difficulty}\n"
             "Should this be escalated? Return yes or no only."
         )
-        raw = call_llm(escalate_system, escalate_user).strip().lower()
+        raw = call_llm(escalate_system, escalate_user, email=email).strip().lower()
         escalate_content = "yes" if raw == "yes" else "no"
 
         step_obs = _obs_dict(env.step(WorkplaceAction(action_type="escalate", content=escalate_content)))

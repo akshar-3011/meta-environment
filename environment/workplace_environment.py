@@ -167,6 +167,18 @@ class WorkplaceEnvironment(Environment):
             self._state.cumulative_reward += reward_value
 
             done = step_num >= 3
+            if done:
+                import json
+                log_data = {
+                    "episode": self._state.episode_count,
+                    "difficulty": self._state.current.get("difficulty", "unknown"),
+                    "total_reward": round(self._state.cumulative_reward, 2),
+                    "classify": round(self._state.action_rewards.get("classify", 0.0), 2),
+                    "reply": round(self._state.action_rewards.get("reply", 0.0), 2),
+                    "escalate": round(self._state.action_rewards.get("escalate", 0.0), 2),
+                }
+                LOGGER.info(json.dumps(log_data))
+                
             return self._make_obs(reward=reward_value, done=done)
         except Exception as exc:  # pragma: no cover
             _debug_log(f"Step error: {exc}")

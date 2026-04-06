@@ -33,6 +33,25 @@ _accepted = set(_sig.parameters.keys())
 _kwargs = {k: v for k, v in _kwargs.items() if k in _accepted}
 app = create_app(*_args, **_kwargs)
 
+app.title = "Workplace Env — Customer Support Triage"
+app.description = "OpenEnv environment for 3-step support workflow"
+app.version = "1.0.0"
+
+from fastapi.responses import HTMLResponse
+
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    return """
+    <h1>Workplace Env</h1>
+    <p>Status: running</p>
+    <ul>
+        <li>POST /reset — start episode</li>
+        <li>POST /step — submit action</li>
+        <li>GET /state — current state</li>
+        <li>GET /health — health check</li>
+    </ul>
+    """
+
 
 def main(host: str = CFG.api.host, port: int = CFG.api.server_port):
     import uvicorn

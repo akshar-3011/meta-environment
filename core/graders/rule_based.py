@@ -19,9 +19,9 @@ RELATED_LABELS = {
 }
 
 REQUIRED_KEYWORDS = {
-    "refund": ["refund", "return", "process", "business days"],
-    "complaint": ["sorry", "apologize", "understand", "resolve"],
-    "query": ["happy to help", "please", "contact", "let us know", "information"],
+    "refund": ["refund", "return", "process", "business days", "apologize", "3-5 business", "processed", "amount"],
+    "complaint": ["sorry", "apologize", "understand", "resolve", "immediately", "priority", "team", "contact you"],
+    "query": ["happy to help", "please", "contact", "let us know", "information", "details", "answer", "clarify", "provide"],
 }
 
 ESCALATION_REQUIRED = {
@@ -172,6 +172,13 @@ class RuleBasedRewardPolicy(RewardPolicy):
             score += 0.1
             components.append("solution_oriented")
             details["solution_component"] = 0.1
+
+        has_greeting = any(g in text for g in ["dear", "hello", "thank you"])
+        has_signoff = any(s in text for s in ["regards", "sincerely", "team"])
+        if has_greeting and has_signoff:
+            score += 0.05
+            components.append("professionalism_bonus")
+            details["professionalism_bonus"] = 0.05
 
         score = max(0.0, min(1.0, score))
         return score, f"Reply scoring: {', '.join(components)}", details
