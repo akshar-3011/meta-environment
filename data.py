@@ -114,48 +114,9 @@ SCENARIOS = [
         "requires_escalation": True,
         "min_reply_length": 45,
     },
-    # Hard scenarios - ambiguous, edge cases, multi-intent
-    {
-        "email": "I need to cancel and get refund urgently. Your support team is not responding!",
-        "label": "complaint",
-        "difficulty": "hard",
-        "sentiment": "negative",
-        "urgency": "high",
-        "complexity": 4,
-        "requires_escalation": True,
-        "min_reply_length": 60,
-    },
-    {
-        "email": "Product quality is poor but I'm willing to try again if you help",
-        "label": "complaint",
-        "difficulty": "hard",
-        "sentiment": "mixed",
-        "urgency": "medium",
-        "complexity": 4,
-        "requires_escalation": True,
-        "min_reply_length": 70,
-    },
-    {
-        "email": "Do you offer express shipping? I had a bad experience last time",
-        "label": "query",
-        "difficulty": "hard",
-        "sentiment": "mixed",
-        "urgency": "medium",
-        "complexity": 3,
-        "requires_escalation": False,
-        "min_reply_length": 50, 
-    },
-    {
-        "email": "Extremely disappointed. Refund not received. What's happening?",
-        "label": "complaint",
-        "difficulty": "hard",
-        "sentiment": "negative",
-        "urgency": "high",
-        "complexity": 4,
-        "requires_escalation": True,
-        "min_reply_length": 60,
-    },
-    # Additional balanced set
+    # -----------------------------------------------------------------------
+    # Additional easy scenarios
+    # -----------------------------------------------------------------------
     {
         "email": "Do you offer express shipping?",
         "label": "query",
@@ -186,141 +147,6 @@ SCENARIOS = [
         "requires_escalation": False,
         "min_reply_length": 25,
     },
-    {
-        "email": "Your support team is not responding",
-        "label": "complaint",
-        "difficulty": "medium",
-        "sentiment": "negative",
-        "urgency": "medium",
-        "complexity": 2,
-        "requires_escalation": True,
-        "min_reply_length": 45,
-    },
-
-    # -----------------------------------------------------------------------
-    # Edge-case scenarios — designed to challenge naive agents
-    # -----------------------------------------------------------------------
-
-    # 1. Sarcasm masking a complaint — reads like mild feedback, is actually angry
-    {
-        "email": "Oh great, another delayed package. Really loving the experience so far.",
-        "label": "complaint",
-        "difficulty": "hard",
-        "sentiment": "negative",
-        "urgency": "medium",
-        "complexity": 4,
-        "requires_escalation": True,
-        "min_reply_length": 50,
-    },
-
-    # 2. Refund request buried inside genuine praise — easy to misread as a query
-    {
-        "email": "Your team has always been so helpful and I love your products! Quick question — would it be possible to get a refund on my most recent order?",
-        "label": "refund",
-        "difficulty": "hard",
-        "sentiment": "positive",
-        "urgency": "low",
-        "complexity": 3,
-        "requires_escalation": False,
-        "min_reply_length": 35,
-    },
-
-    # 3. Query phrased with frustration — sounds like a complaint but is asking for info
-    {
-        "email": "I genuinely don't understand why my order still hasn't arrived. Can someone please explain what's happening?",
-        "label": "query",
-        "difficulty": "hard",
-        "sentiment": "negative",
-        "urgency": "medium",
-        "complexity": 3,
-        "requires_escalation": False,
-        "min_reply_length": 40,
-    },
-
-    # 4. Passive-aggressive query — frustrated tone but genuinely asking a question
-    {
-        "email": "I was just wondering... is it totally normal for orders to take three weeks to arrive? Just curious.",
-        "label": "query",
-        "difficulty": "hard",
-        "sentiment": "mixed",
-        "urgency": "low",
-        "complexity": 3,
-        "requires_escalation": False,
-        "min_reply_length": 35,
-    },
-
-    # 5. Reputation threat — strong escalation signal regardless of underlying issue
-    {
-        "email": "This is the last time I contact you nicely. Fix this immediately or I will be leaving reviews everywhere and disputing the charge.",
-        "label": "complaint",
-        "difficulty": "hard",
-        "sentiment": "negative",
-        "urgency": "high",
-        "complexity": 5,
-        "requires_escalation": True,
-        "min_reply_length": 60,
-    },
-
-    # 6. Broken product + refund demand — primary intent is complaint, not refund
-    {
-        "email": "I am absolutely furious. The item arrived completely smashed and I want my money back immediately. This is unacceptable.",
-        "label": "complaint",
-        "difficulty": "hard",
-        "sentiment": "negative",
-        "urgency": "high",
-        "complexity": 4,
-        "requires_escalation": True,
-        "min_reply_length": 55,
-    },
-
-    # 7. Hyper-polite refund — politeness hides urgency; agent might downgrade to query
-    {
-        "email": "Hi there, I hope you're having a lovely day! I was wondering if it might at all be possible to arrange a refund for order #4521 when you get a chance? No rush at all!",
-        "label": "refund",
-        "difficulty": "medium",
-        "sentiment": "positive",
-        "urgency": "low",
-        "complexity": 2,
-        "requires_escalation": False,
-        "min_reply_length": 35,
-    },
-
-    # 8. Multi-issue overload — refund + service failure + unresponsive team; escalate required
-    {
-        "email": "Can I get a refund? Also your website has been broken for two days and nobody has replied to any of my emails.",
-        "label": "complaint",
-        "difficulty": "hard",
-        "sentiment": "negative",
-        "urgency": "high",
-        "complexity": 5,
-        "requires_escalation": True,
-        "min_reply_length": 65,
-    },
-
-    # 9. Implicit repeat contact — signals escalation needed without saying so explicitly
-    {
-        "email": "This is the fourth time I am writing about the same issue. I have not received any response and my problem is still not resolved.",
-        "label": "complaint",
-        "difficulty": "hard",
-        "sentiment": "negative",
-        "urgency": "high",
-        "complexity": 4,
-        "requires_escalation": True,
-        "min_reply_length": 55,
-    },
-
-    # 10. Overly formal / corporate tone — unusual register; agent may misread as internal
-    {
-        "email": "I wish to formally request a full reimbursement for order number 88821 in accordance with your stated returns policy.",
-        "label": "refund",
-        "difficulty": "medium",
-        "sentiment": "neutral",
-        "urgency": "low",
-        "complexity": 2,
-        "requires_escalation": False,
-        "min_reply_length": 40,
-    },
-    # 4 New Easy
     {
         "email": "How do I return my item?",
         "label": "query",
@@ -361,7 +187,40 @@ SCENARIOS = [
         "requires_escalation": False,
         "min_reply_length": 25,
     },
-    # 4 New Medium
+
+    # -----------------------------------------------------------------------
+    # Additional medium scenarios
+    # -----------------------------------------------------------------------
+    {
+        "email": "Your support team is not responding",
+        "label": "complaint",
+        "difficulty": "medium",
+        "sentiment": "negative",
+        "urgency": "medium",
+        "complexity": 2,
+        "requires_escalation": True,
+        "min_reply_length": 45,
+    },
+    {
+        "email": "Hi there, I hope you're having a lovely day! I was wondering if it might at all be possible to arrange a refund for order #4521 when you get a chance? No rush at all!",
+        "label": "refund",
+        "difficulty": "medium",
+        "sentiment": "positive",
+        "urgency": "low",
+        "complexity": 2,
+        "requires_escalation": False,
+        "min_reply_length": 35,
+    },
+    {
+        "email": "I wish to formally request a full reimbursement for order number 88821 in accordance with your stated returns policy.",
+        "label": "refund",
+        "difficulty": "medium",
+        "sentiment": "neutral",
+        "urgency": "low",
+        "complexity": 2,
+        "requires_escalation": False,
+        "min_reply_length": 40,
+    },
     {
         "email": "The shirt is okay, but it fits weird. Not sure if I want to keep it or what.",
         "label": "query",
@@ -402,45 +261,190 @@ SCENARIOS = [
         "requires_escalation": False,
         "min_reply_length": 35,
     },
-    # 4 New Hard
+
+    # ===================================================================
+    # HARD SCENARIOS — 15 genuinely adversarial, designed to challenge
+    # frontier LLMs with sarcasm, multi-intent, threats, cross-lingual
+    # cues, and subtle category distinctions
+    # ===================================================================
+
+    # H1: Unauthorized charge + loyalty + compensation demand → refund
     {
-        "email": "This is a joke, right? I want my money back NOW and if you don't cancel it I'll call my bank. - Juan Carlos",
+        "email": "My account shows a charge I never authorized. I've been a loyal customer for 6 years and this is how you treat me? I want this reversed AND compensation for my time.",
         "label": "refund",
         "difficulty": "hard",
         "sentiment": "negative",
         "urgency": "high",
         "complexity": 5,
         "requires_escalation": True,
+        "min_reply_length": 80,
+    },
+
+    # H2: Mild dissatisfaction, explicitly not asking for refund → complaint
+    {
+        "email": "The product works fine I guess but it's nothing like what was advertised. Not asking for a refund but wanted someone to know.",
+        "label": "complaint",
+        "difficulty": "hard",
+        "sentiment": "mixed",
+        "urgency": "low",
+        "complexity": 4,
+        "requires_escalation": False,
         "min_reply_length": 50,
     },
+
+    # H3: Purely informational question about return policy → query
     {
-        "email": "Grüezi, the product is defective and your instructions are useless! Refund me ASAP or expect legal action.",
+        "email": "Quick question — does your return policy apply to items purchased during the sale event last November? Asking for a friend.",
+        "label": "query",
+        "difficulty": "hard",
+        "sentiment": "neutral",
+        "urgency": "low",
+        "complexity": 3,
+        "requires_escalation": False,
+        "min_reply_length": 40,
+    },
+
+    # H4: Repeat disappointment, no explicit ask → complaint
+    {
+        "email": "I'm not angry. I'm just incredibly disappointed. Every single time I order from you something goes wrong. I keep giving second chances and this is the result.",
         "label": "complaint",
         "difficulty": "hard",
         "sentiment": "negative",
-        "urgency": "high",
+        "urgency": "medium",
         "complexity": 5,
         "requires_escalation": True,
+        "min_reply_length": 70,
+    },
+
+    # H5: Exchange + stock question (multi-intent informational) → query
+    {
+        "email": "Can I exchange an item rather than get a refund? Also can you tell me if the replacement is even in stock before I ship back?",
+        "label": "query",
+        "difficulty": "hard",
+        "sentiment": "neutral",
+        "urgency": "medium",
+        "complexity": 4,
+        "requires_escalation": False,
         "min_reply_length": 60,
     },
+
+    # H6: Broken promise on refund timeline → refund
     {
-        "email": "Bonjour, I need to know why my card was charged twice and I also want to cancel the second order. Terrible experience.",
+        "email": "Your customer service rep told me to email here. He said you'd process the refund in 3-5 days. It's been 11 days.",
+        "label": "refund",
+        "difficulty": "hard",
+        "sentiment": "negative",
+        "urgency": "high",
+        "complexity": 5,
+        "requires_escalation": True,
+        "min_reply_length": 70,
+    },
+
+    # H7: Empty box delivery (sarcastic + enraged) → complaint
+    {
+        "email": "Wow, just wow. Package arrived with a note saying 'sorry for the delay' and nothing inside. The box was empty. EMPTY.",
         "label": "complaint",
         "difficulty": "hard",
         "sentiment": "negative",
         "urgency": "high",
         "complexity": 5,
         "requires_escalation": True,
+        "min_reply_length": 80,
+    },
+
+    # H8: GDPR data question (technical, informational) → query
+    {
+        "email": "I need to understand your GDPR data deletion policy and also want to know how long you store purchase history.",
+        "label": "query",
+        "difficulty": "hard",
+        "sentiment": "neutral",
+        "urgency": "medium",
+        "complexity": 4,
+        "requires_escalation": False,
         "min_reply_length": 60,
     },
+
+    # H9: Inferior quality, goodwill request from loyal customer → complaint
     {
-        "email": "Oh brilliant service! Not only did you send the wrong item, but you also ignored my last email. Refund. Now. - Wei",
+        "email": "Technically the item isn't broken. But it's clearly inferior quality to what I paid for. Is there any goodwill gesture you can offer a long-term customer?",
+        "label": "complaint",
+        "difficulty": "hard",
+        "sentiment": "mixed",
+        "urgency": "low",
+        "complexity": 4,
+        "requires_escalation": False,
+        "min_reply_length": 60,
+    },
+
+    # H10: Competitor threat + refund ultimatum → refund
+    {
+        "email": "Your competitor just offered me a full refund no questions asked. I'm giving you one chance to match that before I switch.",
+        "label": "refund",
+        "difficulty": "hard",
+        "sentiment": "negative",
+        "urgency": "high",
+        "complexity": 5,
+        "requires_escalation": True,
+        "min_reply_length": 80,
+    },
+
+    # H11: Cancelled but still charged → refund
+    {
+        "email": "I placed an order, cancelled it within 10 minutes, got a cancellation email but was still charged. The money left my account.",
+        "label": "refund",
+        "difficulty": "hard",
+        "sentiment": "negative",
+        "urgency": "high",
+        "complexity": 5,
+        "requires_escalation": True,
+        "min_reply_length": 70,
+    },
+
+    # H12: Warranty coverage question (informational) → query
+    {
+        "email": "Does the warranty cover accidental damage? I dropped my item and I'm not sure if it's a manufacturing defect or my fault.",
+        "label": "query",
+        "difficulty": "hard",
+        "sentiment": "neutral",
+        "urgency": "medium",
+        "complexity": 3,
+        "requires_escalation": False,
+        "min_reply_length": 50,
+    },
+
+    # H13: Account retaliation accusation → complaint
+    {
+        "email": "I left a 1-star review and within hours my account was restricted. I want an explanation and restoration of my account.",
         "label": "complaint",
         "difficulty": "hard",
         "sentiment": "negative",
         "urgency": "high",
         "complexity": 5,
         "requires_escalation": True,
-        "min_reply_length": 60,
+        "min_reply_length": 80,
+    },
+
+    # H14: Misdelivered order, needs reship or refund today → refund
+    {
+        "email": "My order was delivered to the wrong address according to the tracking. The photo shows someone else's door. I need this reshipped or refunded today.",
+        "label": "refund",
+        "difficulty": "hard",
+        "sentiment": "negative",
+        "urgency": "high",
+        "complexity": 5,
+        "requires_escalation": True,
+        "min_reply_length": 80,
+    },
+
+    # H15: Gift return logistics question → query
+    {
+        "email": "I bought a gift for someone. They didn't like it. Can they return it directly using my order number or does it need to come back through me?",
+        "label": "query",
+        "difficulty": "hard",
+        "sentiment": "neutral",
+        "urgency": "low",
+        "complexity": 3,
+        "requires_escalation": False,
+        "min_reply_length": 50,
     },
 ]

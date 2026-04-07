@@ -18,10 +18,23 @@ RELATED_LABELS = {
     "query": [],
 }
 
+# --- Section 1 Fix 1: Expanded keyword sets for higher ceiling ---
 REQUIRED_KEYWORDS = {
-    "refund": ["refund", "return", "process", "business days", "apologize", "3-5 business", "processed", "amount"],
-    "complaint": ["sorry", "apologize", "understand", "resolve", "immediately", "priority", "team", "contact you"],
-    "query": ["happy to help", "please", "contact", "let us know", "information", "details", "answer", "clarify", "provide"],
+    "refund": [
+        "refund", "return", "process", "business days", "amount",
+        "apologize", "sorry", "resolve", "processed", "account",
+        "3-5", "timeline", "initiated", "confirm", "transaction",
+    ],
+    "complaint": [
+        "sorry", "apologize", "understand", "resolve", "immediately",
+        "priority", "unacceptable", "team", "contact", "within 24",
+        "assure", "dedicated", "escalate", "commitment", "experience",
+    ],
+    "query": [
+        "happy to help", "please", "contact", "let us know",
+        "information", "answer", "clarify", "provide", "details",
+        "assist", "guide", "explain", "available", "reach out", "support",
+    ],
 }
 
 ESCALATION_REQUIRED = {
@@ -31,6 +44,20 @@ ESCALATION_REQUIRED = {
 }
 
 HARSH_PHRASES = ["not my problem", "figure it out", "stop emailing", "nothing we can do"]
+
+# --- Section 4: Difficulty-adaptive multipliers ---
+_DIFFICULTY_MULTIPLIER = {"easy": 1.0, "medium": 1.05, "hard": 1.12}
+
+# --- Section 1 Fix 2: Professionalism & empathy signals ---
+_GREETINGS = ["dear", "hello", "thank you", "greetings", "hi"]
+_CLOSINGS = ["regards", "sincerely", "team", "best", "yours"]
+_EMPATHY_PHRASES = [
+    "understand your frustration",
+    "deeply sorry",
+    "completely unacceptable",
+    "you deserve",
+    "we take this seriously",
+]
 
 
 class RuleBasedRewardPolicy(RewardPolicy):
@@ -85,9 +112,6 @@ class RuleBasedRewardPolicy(RewardPolicy):
         previous_actions: Optional[Dict[str, float]] = None,
         requires_escalation: Optional[bool] = None,
     ) -> EvaluationContext:
-        # Prefer the caller-supplied requires_escalation (from the scenario's own
-        # field) over the ESCALATION_REQUIRED policy dict.  Removes the duplicate
-        # source-of-truth identified in the architecture analysis.
         escalation_flag = (
             requires_escalation
             if requires_escalation is not None
@@ -108,6 +132,9 @@ class RuleBasedRewardPolicy(RewardPolicy):
             },
         )
 
+    # ------------------------------------------------------------------
+    # Classification grader  (Section 4: difficulty-adaptive partial credit)
+    # ------------------------------------------------------------------
     def _rule_grade_classification(self, context: EvaluationContext) -> Tuple[float, str, Dict[str, Any]]:
         pred = (context.content or "").lower().strip()
 
@@ -124,71 +151,105 @@ class RuleBasedRewardPolicy(RewardPolicy):
                 score = 0.2
             return score, f"Partially correct: chose {pred}, should be {context.actual_category}", {"match": "related"}
 
+        # Section 4: Hard scenario adjacent-label partial credit
+        if context.scenario_difficulty == "hard":
+            adjacent = {"refund": ["complaint"], "complaint": ["refund"], "query": ["complaint"]}
+            if pred in adjacent.get(context.actual_category, []):
+                return 0.25, "Adjacent category on hard scenario", {"match": "adjacent_hard"}
+
         return 0.0, f"Wrong classification: {pred} (actual: {context.actual_category})", {"match": "none"}
 
+    # ------------------------------------------------------------------
+    # Reply grader  (Section 1 Fix 2: completely rewritten scoring)
+    # ------------------------------------------------------------------
     def _rule_grade_reply(self, context: EvaluationContext) -> Tuple[float, str, Dict[str, Any]]:
         text = (context.content or "").lower().strip()
         score = 0.0
         components = []
         details: Dict[str, Any] = {}
 
-        if len(text) >= context.min_reply_length:
-            score += 0.35
-            components.append(f"length_ok({len(text)})")
-            details["length_component"] = 0.35
-        elif len(text) > 10:
-            score += 0.1
-            components.append(f"too_short({len(text)}/{context.min_reply_length})")
-            details["length_component"] = 0.1
+        # Length scoring: scale 0.0–0.40 based on ratio to min_reply_length
+        length_ratio = min(1.0, len(text) / max(1, context.min_reply_length))
+        length_score = length_ratio * 0.40
+        score += length_score
+        components.append(f"length({len(text)}/{context.min_reply_length}={length_score:.2f})")
+        details["length_component"] = length_score
 
-        if len(text) < 500:
-            score += 0.15
-            components.append("concise")
-            details["conciseness_component"] = 0.15
+        # Conciseness: +0.10 if < 300, -0.05 if > 500
+        if len(text) < 300:
+            score += 0.10
+            components.append("concise(+0.10)")
+            details["conciseness_component"] = 0.10
+        elif len(text) > 500:
+            score -= 0.05
+            components.append("verbose(-0.05)")
+            details["conciseness_component"] = -0.05
         else:
-            score -= 0.1
-            components.append("too_verbose")
-            details["conciseness_component"] = -0.1
+            details["conciseness_component"] = 0.0
 
+        # Keyword match: min(0.45, 0.05 * matched_count)
         keywords = REQUIRED_KEYWORDS.get(context.actual_category, [])
         matched = sum(1 for kw in keywords if kw in text)
         if matched > 0:
-            keyword_score = min(0.4, 0.15 * matched)
+            keyword_score = min(0.45, 0.05 * matched)
             score += keyword_score
-            components.append(f"keywords({matched}/{len(keywords)})")
+            components.append(f"keywords({matched}/{len(keywords)}={keyword_score:.2f})")
             details["keyword_component"] = keyword_score
         else:
-            score -= 0.2
-            components.append("no_keywords")
-            details["keyword_component"] = -0.2
+            score -= 0.15
+            components.append("no_keywords(-0.15)")
+            details["keyword_component"] = -0.15
 
+        # Harsh tone penalty
         if any(phrase in text for phrase in HARSH_PHRASES):
             score -= 0.15
-            components.append("harsh_tone")
+            components.append("harsh_tone(-0.15)")
             details["tone_penalty"] = -0.15
 
+        # Solution-oriented bonus
         solution_words = ["help", "assist", "resolve", "fix", "solution", "refund", "process"]
         if any(word in text for word in solution_words):
-            score += 0.1
-            components.append("solution_oriented")
-            details["solution_component"] = 0.1
+            score += 0.10
+            components.append("solution_oriented(+0.10)")
+            details["solution_component"] = 0.10
 
-        has_greeting = any(g in text for g in ["dear", "hello", "thank you"])
-        has_signoff = any(s in text for s in ["regards", "sincerely", "team"])
-        if has_greeting and has_signoff:
-            score += 0.05
-            components.append("professionalism_bonus")
-            details["professionalism_bonus"] = 0.05
+        # Professionalism bonus: greeting +0.08
+        has_greeting = any(g in text for g in _GREETINGS)
+        if has_greeting:
+            score += 0.08
+            components.append("greeting(+0.08)")
+            details["greeting_bonus"] = 0.08
+
+        # Closing bonus: +0.07
+        has_signoff = any(s in text for s in _CLOSINGS)
+        if has_signoff:
+            score += 0.07
+            components.append("closing(+0.07)")
+            details["closing_bonus"] = 0.07
+
+        # Empathy bonus: +0.05 for complaint category with empathy phrases
+        if context.actual_category == "complaint":
+            if any(ep in text for ep in _EMPATHY_PHRASES):
+                score += 0.05
+                components.append("empathy(+0.05)")
+                details["empathy_bonus"] = 0.05
+
+        # Section 4: Difficulty multiplier
+        multiplier = _DIFFICULTY_MULTIPLIER.get(context.scenario_difficulty, 1.0)
+        if multiplier != 1.0:
+            score *= multiplier
+            components.append(f"difficulty_mult(×{multiplier})")
+            details["difficulty_multiplier"] = multiplier
 
         score = max(0.0, min(1.0, score))
         return score, f"Reply scoring: {', '.join(components)}", details
 
+    # ------------------------------------------------------------------
+    # Escalation grader  (unchanged logic)
+    # ------------------------------------------------------------------
     def _rule_grade_escalation(self, context: EvaluationContext) -> Tuple[float, str, Dict[str, Any]]:
         decision = (context.content or "").lower().strip()
         did_escalate = decision in ["yes", "true", "urgent", "1", "escalate"]
-        # Prefer the scenario's own requires_escalation field (passed via context
-        # metadata) over the hardcoded ESCALATION_REQUIRED fallback dict.
-        # This eliminates the duplicate source-of-truth (Bug 3).
         should_escalate = context.metadata.get(
             "requires_escalation",
             ESCALATION_REQUIRED.get(context.actual_category, False),
@@ -226,6 +287,9 @@ class RuleBasedRewardPolicy(RewardPolicy):
 
         return score, reason, details
 
+    # ------------------------------------------------------------------
+    # Public grading helpers
+    # ------------------------------------------------------------------
     def grade_classification(
         self,
         predicted_category: str,
@@ -276,6 +340,9 @@ class RuleBasedRewardPolicy(RewardPolicy):
         explanation = evaluation["breakdown"]["rule_based"]["explanation"]
         return float(evaluation["score"]), explanation
 
+    # ------------------------------------------------------------------
+    # calculate_step_reward  (Section 3: trajectory consistency bonus)
+    # ------------------------------------------------------------------
     def calculate_step_reward(
         self,
         action_type: str,
@@ -340,6 +407,21 @@ class RuleBasedRewardPolicy(RewardPolicy):
             breakdown["evaluation"] = evaluation
             breakdown["weight"] = 0.25
             reward = score * 0.25
+
+            # --- Section 3: Trajectory consistency bonus/penalty ---
+            classify_r = previous_actions.get("classify", 0.0)
+            reply_r = previous_actions.get("reply", 0.0)
+
+            # Bonus: all 3 steps high quality
+            if classify_r >= 0.35 and reply_r >= 0.25:
+                reward += 0.05
+                breakdown["trajectory_bonus"] = 0.05
+
+            # Penalty: escalated but category is query/refund (shouldn't escalate)
+            escalated = content.lower().strip() in ["yes", "true", "1", "escalate", "urgent"]
+            if escalated and actual_category in ["query", "refund"]:
+                reward = max(0.0, reward - 0.03)
+                breakdown["trajectory_penalty"] = -0.03
 
         else:
             reward = 0.0

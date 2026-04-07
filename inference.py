@@ -1,8 +1,11 @@
 """Inference script for the workplace_env OpenEnv environment.
 
 Runs the WorkplaceEnvironment **in-process** — no live server required.
-Executes one episode per task (refund / complaint / query), matching the
-task names declared in openenv.yaml.
+Executes one episode per task (easy-triage / medium-triage / hard-triage),
+matching the task names declared in openenv.yaml.
+
+Each task picks one scenario from the matching difficulty tier and runs
+the full 3-step workflow: classify → reply → escalate.
 
 Mandatory environment variables:
     API_BASE_URL  - LLM endpoint  (default: HuggingFace router)
@@ -68,20 +71,17 @@ except ImportError:
 
 
 # ---------------------------------------------------------------------------
-# Task → difficulty pinning (shows easy → medium → hard progression)
+# Task definitions — names must match openenv.yaml exactly
 # ---------------------------------------------------------------------------
-TASK_DIFFICULTY: Dict[str, str] = {
-    "refund": "easy",
-    "complaint": "medium",
-    "query": "hard",
-}
-
-# Task names must match openenv.yaml exactly
-TASKS: List[str] = ["refund", "complaint", "query"]
+TASKS: List[Dict[str, str]] = [
+    {"name": "easy-triage",   "difficulty": "easy"},
+    {"name": "medium-triage", "difficulty": "medium"},
+    {"name": "hard-triage",   "difficulty": "hard"},
+]
 
 
 # ---------------------------------------------------------------------------
-# LLM helper — falls back to a deterministic mock when no token is set
+# LLM helper — falls back to EmailAwareInference when no token is set
 # ---------------------------------------------------------------------------
 
 def call_llm(
@@ -94,7 +94,7 @@ def call_llm(
     if _client is None:
         agent = EmailAwareInference()
         category = agent._classify_email(email) if email else "query"
-        
+
         # Deterministic mock — checks prompt type from system instruction
         if "escalate" in system_prompt.lower():
             return "yes" if category == "complaint" else "no"
@@ -114,21 +114,14 @@ def call_llm(
 
 
 # ---------------------------------------------------------------------------
-# Environment factory — filter scenarios to the right label + difficulty
+# Environment factory — filter scenarios to the right difficulty
 # ---------------------------------------------------------------------------
 
-def _make_env(task_name: str) -> WorkplaceEnvironment:
+def _make_env(difficulty: str) -> WorkplaceEnvironment:
     """Return a WorkplaceEnvironment pre-seeded with matching scenarios."""
-    difficulty = TASK_DIFFICULTY[task_name]
     all_scenarios = get_default_repository().list_scenarios()
 
-    # Prefer label + difficulty match; fall back to label-only if needed
-    filtered = [
-        s for s in all_scenarios
-        if s.get("label") == task_name and s.get("difficulty") == difficulty
-    ]
-    if not filtered:
-        filtered = [s for s in all_scenarios if s.get("label") == task_name]
+    filtered = [s for s in all_scenarios if s.get("difficulty") == difficulty]
     if not filtered:
         filtered = all_scenarios  # ultimate fallback
 
@@ -152,14 +145,15 @@ def _obs_dict(obs) -> Dict[str, Any]:
 # Episode runner — one task = one classify → reply → escalate episode
 # ---------------------------------------------------------------------------
 
-def run_episode(task_name: str) -> Dict[str, Any]:
-    """Run a single episode for *task_name* and print spec-compliant lines."""
-    env = _make_env(task_name)
+def run_episode(task: Dict[str, str]) -> Dict[str, Any]:
+    """Run a single episode for *task* and print spec-compliant lines."""
+    task_name = task["name"]
+    difficulty = task["difficulty"]
+    env = _make_env(difficulty)
     obs = _obs_dict(env.reset())
 
     email: str = str(obs.get("email", ""))
     category_options: List[str] = [str(x) for x in obs.get("category_options", [])]
-    difficulty: str = TASK_DIFFICULTY[task_name]
 
     # [START] — exactly one per episode, no other stdout before this
     print(
@@ -305,7 +299,7 @@ if __name__ == "__main__":
     for r in results:
         status = "success" if r["success"] else "FAILED"
         print(
-            f"  [{status:7s}] task={r['task']:9s} difficulty={r['difficulty']:6s}"
+            f"  [{status:7s}] task={r['task']:13s} difficulty={r['difficulty']:6s}"
             f"  total={r['total_reward']:.3f}"
             f"  (classify={r['classify_reward']:.2f}"
             f" reply={r['reply_reward']:.2f}"
