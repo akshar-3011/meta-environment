@@ -66,22 +66,22 @@ All fields are returned after every `reset()` and `step()` call:
 
 ## Tasks
 
-Each task is one episode: `classify → reply → escalate`. Task names match the primary email category the episode is drawn from.
+Each task is one episode: `classify → reply → escalate`. Tasks are organized by difficulty level with scenarios drawn from all categories.
 
-### `refund` — Easy
-**Scenario:** Clear refund requests with neutral-to-positive sentiment.  
-**Challenge:** Identify the correct category, write a concise resolution reply, and correctly decide not to escalate.  
-**Grader:** Classification accuracy (40%), reply quality/keywords (35%), escalation correctness (25%).
+### `easy-triage` — Easy
+**Scenario:** Clear single-intent emails with neutral sentiment (simple refund requests, basic delivery queries).  
+**Challenge:** Identify the correct category, write a concise reply, and correctly decide escalation.  
+**Grader:** Classification accuracy (40%), reply quality (35%), escalation correctness (25%).
 
-### `complaint` — Medium
-**Scenario:** Negative-sentiment complaints including damaged items, double charges, unresponsive support.  
-**Challenge:** Distinguish complaints from refund requests, write empathetic replies, and correctly escalate when the case warrants senior review.  
-**Grader:** Same rubric, but correct escalation (`yes`) is required and more heavily penalised if missed.
+### `medium-triage` — Medium
+**Scenario:** Mixed-sentiment emails with some ambiguity — frustrated but polite refund requests, complaints that overlap with queries, formal language variations.  
+**Challenge:** Correctly distinguish intent despite emotional signals, write empathetic replies, and make nuanced escalation decisions.  
+**Grader:** Same rubric with difficulty multiplier (×1.05) rewarding good performance on harder cases.
 
-### `query` — Hard
-**Scenario:** Ambiguous information requests — often phrased with frustration, sarcasm, or mixed signals (e.g. query + latent complaint).  
-**Challenge:** Resist misclassifying frustrated queries as complaints, write informative replies, and correctly hold escalation.  
-**Grader:** Same rubric; SemanticSimilarity component matters more because keyword matching is harder for query replies.
+### `hard-triage` — Hard
+**Scenario:** Adversarial emails with sarcasm, multi-intent, competitor threats, GDPR questions, loyalty signals, retaliation accusations, misdelivery urgency — designed to fool keyword heuristics.  
+**Challenge:** Requires nuanced understanding of customer intent behind surface language. 15 scenarios covering edge cases that challenge frontier LLMs.  
+**Grader:** Same rubric with difficulty multiplier (×1.12), adjacent-label partial credit for ambiguous cases, and trajectory consistency bonus.
 
 ---
 
@@ -91,25 +91,27 @@ Rewards are **dense** — every step returns a score in `[0.0, 1.0]` with a weig
 
 | Step | Weight | Signal |
 |---|---|---|
-| `classify` | 0.40 | Exact match → 1.0; related label → 0.2–0.4; wrong → 0.0 |
-| `reply` | 0.35 | Length OK (+0.35), concise (+0.15), keywords matched (+0.15×n), solution-oriented (+0.10); penalised for missing keywords (−0.20) or harsh tone (−0.15) |
-| `escalate` | 0.25 | Correct decision → 0.9–1.0; wrong direction → 0.1–0.3; early escalation is penalised (×0.7) |
+| `classify` | 0.40 | Exact match → 1.0; related label → 0.2–0.4; wrong → 0.0; hard adjacent partial credit → 0.25 |
+| `reply` | 0.35 | Length (0.0–0.40 scaled), keywords (0.05×n, max 0.45), concise (+0.10/−0.05), solution (+0.10), greeting (+0.08), closing (+0.07), empathy (+0.05 for complaints), difficulty multiplier |
+| `escalate` | 0.25 | Correct decision → 0.9–1.0; wrong direction → 0.1–0.3; early escalation (×0.7); trajectory bonus (+0.05 when prior steps high-quality); trajectory penalty (−0.03 for incorrect over-escalation) |
 
-**Max episode reward:** ≈ 1.0 (sum of weighted step scores, clamped per step).
+**Max episode reward:** ≈ 0.93 (sum of weighted step scores with bonuses, clamped per step).
 
 The `reply` step additionally applies a **consistency penalty** (−0.20 × 0.35) when the classification score was below 0.5, creating a trajectory coupling signal that rewards coherent multi-step reasoning.
+
+**Difficulty-adaptive grading:** Hard scenarios receive a ×1.12 multiplier on reply scores, medium ×1.05, rewarding agents that perform well on more challenging cases.
 
 ---
 
 ## Baseline Scores
 
-Scores below are from the deterministic mock agent (no LLM, rule-based responses). They serve as a reproducible lower bound. A frontier LLM agent is expected to score significantly higher, especially on `complaint` and `query`.
+Scores below are from the deterministic mock agent (no LLM, `EmailAwareInference` heuristic). They serve as a reproducible lower bound. A frontier LLM agent is expected to score significantly higher, especially on hard-triage.
 
-| Task | Difficulty | Classify | Reply | Escalate | **Total** |
-|---|---|---|---|---|---|
-| `refund` | easy | 0.40 | 0.08 | 0.23 | **0.71** |
-| `complaint` | medium | 0.14 | 0.17 | 0.02 | **0.33** |
-| `query` | hard | 0.00 | 0.08 | 0.23 | **0.31** |
+| Task | Difficulty | Classify | Reply | Escalate | **Total** | **Score** |
+|---|---|---|---|---|---|---|
+| `easy-triage` | easy | 0.40 | 0.14 | 0.23 | **0.78** | **0.78** |
+| `medium-triage` | medium | 0.40 | 0.15 | 0.25 | **0.80** | **0.80** |
+| `hard-triage` | hard | 0.00 | 0.06 | 0.23 | **0.29** | **0.29** |
 
 > Scores are reproducible: `python inference.py 2>/dev/null` (no `HF_TOKEN` required).
 
@@ -238,7 +240,7 @@ workplace_env/
 │   └── app.py                # OpenEnv create_app wiring
 ├── data/
 │   └── scenario_repository.py     # Scenario loader
-└── data.py                   # 30+ annotated customer support scenarios
+└── data.py                   # 39 annotated customer support scenarios (11 easy, 13 medium, 15 hard)
 ```
 
 ---

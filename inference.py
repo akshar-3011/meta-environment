@@ -267,9 +267,14 @@ def run_episode(task: Dict[str, str]) -> Dict[str, Any]:
         )
 
     rewards = [classify_reward, reply_reward, escalate_reward]
-    success: bool = sum(rewards) >= 0.5
+    # Max possible per step: classify=0.4, reply=0.35, escalate=0.25+0.05(bonus) = 1.05
+    MAX_TOTAL_REWARD = 1.0
+    score = min(max(sum(rewards) / MAX_TOTAL_REWARD, 0.0), 1.0)
+    SUCCESS_SCORE_THRESHOLD = 0.5
+    success: bool = score >= SUCCESS_SCORE_THRESHOLD
     print(
         f"[END] success={'true' if success else 'false'} steps=3"
+        f" score={score:.2f}"
         f" rewards={classify_reward:.2f},{reply_reward:.2f},{escalate_reward:.2f}",
         flush=True,
     )
@@ -281,6 +286,7 @@ def run_episode(task: Dict[str, str]) -> Dict[str, Any]:
         "reply_reward": reply_reward,
         "escalate_reward": escalate_reward,
         "total_reward": classify_reward + reply_reward + escalate_reward,
+        "score": score,
         "success": success,
     }
 
@@ -300,7 +306,7 @@ if __name__ == "__main__":
         status = "success" if r["success"] else "FAILED"
         print(
             f"  [{status:7s}] task={r['task']:13s} difficulty={r['difficulty']:6s}"
-            f"  total={r['total_reward']:.3f}"
+            f"  score={r['score']:.2f}  total={r['total_reward']:.3f}"
             f"  (classify={r['classify_reward']:.2f}"
             f" reply={r['reply_reward']:.2f}"
             f" escalate={r['escalate_reward']:.2f})",
