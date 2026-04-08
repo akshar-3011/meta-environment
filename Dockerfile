@@ -10,7 +10,7 @@
 # - Standalone environments (with openenv from PyPI/Git)
 # The build script (openenv build) handles context detection and sets appropriate build args.
 
-ARG BASE_IMAGE=ghcr.io/meta-pytorch/openenv-base:latest
+ARG BASE_IMAGE=ghcr.io/meta-pytorch/openenv-base:0.2.2
 FROM ${BASE_IMAGE} AS builder
 
 WORKDIR /app
@@ -61,11 +61,22 @@ FROM ${BASE_IMAGE}
 
 WORKDIR /app
 
+# Install curl for healthcheck (C1 fix — curl was only in builder stage)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create non-root user for security (C10 fix)
+RUN useradd --create-home --shell /bin/bash appuser
+
 # Copy the virtual environment from builder
 COPY --from=builder /app/env/.venv /app/.venv
 
 # Copy the environment code
 COPY --from=builder /app/env /app/env
+
+# Ensure appuser owns the app directory
+RUN chown -R appuser:appuser /app
 
 # Set PATH to use the virtual environment
 ENV PATH="/app/.venv/bin:$PATH"
@@ -73,8 +84,11 @@ ENV PATH="/app/.venv/bin:$PATH"
 # Set PYTHONPATH so imports work correctly from project root and env package
 ENV PYTHONPATH="/app:/app/env:$PYTHONPATH"
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+# Switch to non-root user
+USER appuser
+
+# Health check — curl is now installed in runtime stage
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # Run the FastAPI server

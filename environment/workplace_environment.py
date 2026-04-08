@@ -1,5 +1,6 @@
 """Environment orchestration with explicit state and dependency injection."""
 
+import json
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -42,12 +43,6 @@ except ImportError:  # pragma: no cover
 setup_logging()
 CFG = get_config()
 LOGGER = get_logger(__name__)
-DEBUG = CFG.environment.debug
-
-
-def _debug_log(msg: str):
-    if DEBUG:
-        LOGGER.debug(msg)
 
 
 @dataclass
@@ -68,9 +63,11 @@ class WorkplaceEnvironment(Environment):
     """Production-oriented OpenEnv environment with modular dependencies.
 
     Each instance owns its own EpisodeState so concurrent WebSocket sessions
-    cannot corrupt each other's state. The original class-level `_state`
-    attribute was a singleton shared across all instances — equivalent to the
-    global `_SHARED_STATE` dict in the original codebase.
+    cannot corrupt each other's state.
+
+    C2 Fix: Debug flag is instance-owned (self._debug) instead of a global
+    module-level variable.  This prevents one instance from silently changing
+    the debug behavior of all other instances.
     """
 
     def __init__(
@@ -79,8 +76,8 @@ class WorkplaceEnvironment(Environment):
         reward_policy: Optional[RewardPolicy] = None,
         scenario_repository: Optional[ScenarioRepository] = None,
     ):
-        global DEBUG
-        DEBUG = debug
+        # C2 Fix: store debug as instance variable, not global
+        self._debug = debug
         self._policy = reward_policy or RuleBasedRewardPolicy()
         self._scenario_repo = scenario_repository or get_default_repository()
         self._scenarios = self._scenario_repo.list_scenarios()
@@ -89,11 +86,16 @@ class WorkplaceEnvironment(Environment):
         if self._scenarios:
             self._state.current = self._scenarios[0]
 
+    def _debug_log(self, msg: str) -> None:
+        """Instance-level debug logging (C2 Fix)."""
+        if self._debug:
+            LOGGER.debug(msg)
+
     def _next_scenario(self) -> Dict[str, Any]:
         idx = self._state.scenario_index % len(self._scenarios)
         self._state.scenario_index += 1
         scenario = self._scenarios[idx]
-        _debug_log(f"Loaded scenario {idx}: {scenario['email'][:50]}...")
+        self._debug_log(f"Loaded scenario {idx}: {scenario['email'][:50]}...")
         return scenario
 
     def _make_obs(self, reward: Optional[float] = None, done: bool = False) -> WorkplaceObservation:
@@ -110,6 +112,8 @@ class WorkplaceEnvironment(Environment):
             complexity_score=scenario.get("complexity", 1),
             scenario_metadata={
                 "min_reply_length": scenario.get("min_reply_length", 20),
+                # C4 support: expose requires_escalation so graders can read it
+                "requires_escalation": scenario.get("requires_escalation", False),
             },
         )
 
@@ -123,19 +127,20 @@ class WorkplaceEnvironment(Environment):
             scenario_difficulty=scenario.get("difficulty", "easy"),
             min_reply_length=scenario.get("min_reply_length", 30),
             previous_actions=self._state.action_rewards,
+            requires_escalation=scenario.get("requires_escalation"),
         )
 
         self._state.step_details.append(breakdown)
-        _debug_log(
+        self._debug_log(
             f"Step {step_count} ({action.action_type}): "
             f"reward={reward_value:.3f}, {breakdown.get('explanation', '')}"
         )
         return reward_value
 
     def reset(self) -> WorkplaceObservation:
-        _debug_log("=" * 60)
-        _debug_log(f"RESET (episode {self._state.episode_count})")
-        _debug_log("=" * 60)
+        self._debug_log("=" * 60)
+        self._debug_log(f"RESET (episode {self._state.episode_count})")
+        self._debug_log("=" * 60)
 
         self._state.history = []
         self._state.step_count = 0
@@ -150,7 +155,7 @@ class WorkplaceEnvironment(Environment):
     def step(self, action: WorkplaceAction) -> WorkplaceObservation:
         try:
             if action.action_type not in ["classify", "reply", "escalate"]:
-                _debug_log(f"Invalid action type: {action.action_type}")
+                self._debug_log(f"Invalid action type: {action.action_type}")
                 return self._make_obs(reward=0.0, done=True)
 
             self._state.step_count += 1
@@ -160,7 +165,7 @@ class WorkplaceEnvironment(Environment):
             content_preview = content[:50] + ("..." if len(content) > 50 else "")
             action_str = f"{action.action_type}: {content_preview}"
             self._state.history.append(action_str)
-            _debug_log(f"Step {step_num}: {action_str}")
+            self._debug_log(f"Step {step_num}: {action_str}")
 
             reward_value = self._grade_step(action, step_num)
             self._state.action_rewards[action.action_type] = reward_value
@@ -168,7 +173,6 @@ class WorkplaceEnvironment(Environment):
 
             done = step_num >= 3
             if done:
-                import json
                 log_data = {
                     "episode": self._state.episode_count,
                     "difficulty": self._state.current.get("difficulty", "unknown"),
@@ -181,7 +185,7 @@ class WorkplaceEnvironment(Environment):
                 
             return self._make_obs(reward=reward_value, done=done)
         except Exception as exc:  # pragma: no cover
-            _debug_log(f"Step error: {exc}")
+            self._debug_log(f"Step error: {exc}")
             self._state.history.append(f"error: {exc}")
             LOGGER.exception("Environment step failed")
             raise PipelineError(

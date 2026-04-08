@@ -280,10 +280,12 @@ class RuleBasedRewardPolicy(RewardPolicy):
             reason += " (early escalation penalty)"
             details["timing_penalty"] = 0.3
 
-        if did_escalate and context.step_count == 2:
-            score = min(1.0, score + 0.1)
-            reason += " (good timing)"
-            details["timing_bonus"] = 0.1
+        # C7 Fix: timing bonus was checking step_count == 2 which is unreachable
+        # because escalate is always step 3. Changed to >= 3 for on-time escalation.
+        if did_escalate and context.step_count >= 3:
+            score = min(1.0, score + 0.05)
+            reason += " (on-time escalation)"
+            details["timing_bonus"] = 0.05
 
         return score, reason, details
 

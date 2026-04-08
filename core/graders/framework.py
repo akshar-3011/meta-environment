@@ -1,11 +1,13 @@
-"""Modular grading framework: concrete graders + weighted parallel aggregation."""
+"""Modular grading framework: concrete graders + weighted sequential aggregation."""
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
+import logging
 from typing import Any, Callable, Dict, List, Sequence, Tuple
 
 from .interfaces import BaseGrader, EvaluationContext, GraderResult, clamp01
+
+LOGGER = logging.getLogger(__name__)
 
 
 def _tokenize(text: str) -> List[str]:
@@ -47,7 +49,13 @@ class AccuracyGrader(BaseGrader):
             )
 
         if action == "escalate":
-            should_escalate = context.actual_category == "complaint"
+            # C4 Fix: Read requires_escalation from context.metadata instead of
+            # hardcoding actual_category == "complaint".  This correctly handles
+            # hard scenarios where label != "complaint" but escalation is required.
+            should_escalate = context.metadata.get(
+                "requires_escalation",
+                context.actual_category == "complaint",  # safe fallback
+            )
             did_escalate = content in {"yes", "true", "urgent", "1", "escalate"}
             score = 1.0 if should_escalate == did_escalate else 0.0
             return GraderResult(score=score, explanation="Escalation decision correctness")
@@ -87,7 +95,12 @@ class SemanticSimilarityGrader(BaseGrader):
             )
 
         if action == "escalate":
-            expected = "yes" if context.actual_category == "complaint" else "no"
+            # C4 Fix: Use requires_escalation from metadata
+            should_escalate = context.metadata.get(
+                "requires_escalation",
+                context.actual_category == "complaint",
+            )
+            expected = "yes" if should_escalate else "no"
             score = _jaccard(content, expected)
             return GraderResult(score=score, explanation="Escalation semantic agreement")
 
@@ -110,13 +123,14 @@ class RuleBasedGrader(BaseGrader):
 
 
 class WeightedParallelGradingEngine:
-    """Runs multiple graders in parallel and combines with weighted aggregation.
+    """Runs multiple graders sequentially and combines with weighted aggregation.
 
-    Output contract:
-      {
-        "score": float,
-        "breakdown": {...}
-      }
+    N1 Fix: Replaced ThreadPoolExecutor with sequential evaluation.
+    Pure-Python graders do not benefit from threads (GIL prevents parallelism).
+    Sequential execution eliminates thread overhead and simplifies stack traces.
+
+    C3 Fix: Each grader is wrapped in try/except so a crashing grader degrades
+    gracefully (score=0.0) rather than propagating an unhandled exception.
     """
 
     def __init__(self, graders: Sequence[Tuple[BaseGrader, float]]):
@@ -125,30 +139,35 @@ class WeightedParallelGradingEngine:
         self._graders = list(graders)
 
     def evaluate(self, context: EvaluationContext) -> Dict[str, Any]:
-        def _run(grader: BaseGrader) -> GraderResult:
-            return grader.grade(context).normalized()
+        breakdown: Dict[str, Any] = {}
+        weighted_sum = 0.0
+        total_weight = 0.0
 
-        with ThreadPoolExecutor(max_workers=len(self._graders)) as executor:
-            futures = [(grader, weight, executor.submit(_run, grader)) for grader, weight in self._graders]
+        for grader, weight in self._graders:
+            w = max(0.0, float(weight))
 
-            breakdown: Dict[str, Any] = {}
-            weighted_sum = 0.0
-            total_weight = 0.0
+            # C3 Fix: wrap each grader in try/except so a single bad grader
+            # degrades gracefully rather than crashing the entire evaluation
+            try:
+                result = grader.grade(context).normalized()
+            except Exception as exc:
+                LOGGER.exception("Grader %s raised an exception", grader.name)
+                result = GraderResult(
+                    score=0.0,
+                    explanation=f"grader error: {exc}",
+                )
 
-            for grader, weight, future in futures:
-                result = future.result()
-                w = max(0.0, float(weight))
-                weighted_score = result.score * w
-                weighted_sum += weighted_score
-                total_weight += w
+            weighted_score = result.score * w
+            weighted_sum += weighted_score
+            total_weight += w
 
-                breakdown[grader.name] = {
-                    "weight": w,
-                    "score": result.score,
-                    "weighted_score": weighted_score,
-                    "explanation": result.explanation,
-                    "details": result.details,
-                }
+            breakdown[grader.name] = {
+                "weight": w,
+                "score": result.score,
+                "weighted_score": weighted_score,
+                "explanation": result.explanation,
+                "details": result.details,
+            }
 
         final_score = 0.0 if total_weight == 0 else clamp01(weighted_sum / total_weight)
         return {
