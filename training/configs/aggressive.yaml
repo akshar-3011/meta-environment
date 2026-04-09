@@ -1,0 +1,27 @@
+# Aggressive Agent Configuration
+# Philosophy: Maximize escalation capture — better to escalate than miss a critical issue.
+# Use case: Customer-facing environments where missed escalation causes churn.
+
+name: aggressive
+
+# Reward shaping
+penalty_scale: 0.5         # Reduced penalty for wrong escalations (0.5x)
+escalation_bonus: 0.15     # +0.15 bonus for every correct escalation
+escalation_threshold: 0.3  # Lower threshold — even marginal escalation scores count
+classify_weight: 0.9       # Slightly lower classify weight
+reply_weight: 1.0          # Standard reply weight
+escalate_weight: 1.5       # 1.5x weight on escalation rewards
+
+# PPO hyperparameters
+learning_rate: 0.0005      # Higher LR for faster convergence
+n_steps: 128               # Standard buffer
+batch_size: 64
+n_epochs: 8                # Fewer epochs per batch
+gamma: 0.95                # Lower gamma — focus on immediate reward (escalation matters now)
+ent_coef: 0.02             # Higher entropy → more exploration of escalation strategies
+clip_range: 0.25           # Wider clipping → more aggressive updates
+total_timesteps: 50000
+
+# Network architecture
+net_arch_pi: [128, 128]
+net_arch_vf: [128, 128]

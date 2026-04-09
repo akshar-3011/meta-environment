@@ -1,0 +1,27 @@
+# Conservative Agent Configuration
+# Philosophy: Minimize harm — wrong escalation is very costly.
+# Use case: High-stakes environments where unnecessary escalation wastes senior team time.
+
+name: conservative
+
+# Reward shaping
+penalty_scale: 2.0        # 2x penalty multiplier for wrong escalations
+escalation_bonus: 0.0     # No bonus for correct escalations (baseline reward is enough)
+escalation_threshold: 0.8  # Higher threshold — only confident escalations count as "correct"
+classify_weight: 1.2       # Slightly reward accurate classification
+reply_weight: 1.0          # Standard reply weight
+escalate_weight: 0.8       # Lower base weight for escalation rewards
+
+# PPO hyperparameters
+learning_rate: 0.0002      # Slightly lower LR for stability
+n_steps: 256               # Larger buffer for better gradient estimates
+batch_size: 64
+n_epochs: 10
+gamma: 0.99
+ent_coef: 0.005            # Lower entropy → more exploitation, less exploration
+clip_range: 0.15           # Tighter clipping → more cautious updates
+total_timesteps: 50000
+
+# Network architecture
+net_arch_pi: [128, 128]
+net_arch_vf: [128, 128]

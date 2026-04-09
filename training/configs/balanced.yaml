@@ -1,0 +1,27 @@
+# Balanced Agent Configuration
+# Philosophy: Equal weight to all steps — no reward shaping bias.
+# Use case: General-purpose agent, good baseline for comparison.
+
+name: balanced
+
+# Reward shaping (no modifications)
+penalty_scale: 1.0
+escalation_bonus: 0.0
+escalation_threshold: 0.5
+classify_weight: 1.0
+reply_weight: 1.0
+escalate_weight: 1.0
+
+# PPO hyperparameters (standard SB3 defaults)
+learning_rate: 0.0003
+n_steps: 128
+batch_size: 64
+n_epochs: 10
+gamma: 0.99
+ent_coef: 0.01
+clip_range: 0.2
+total_timesteps: 50000
+
+# Network architecture
+net_arch_pi: [128, 128]
+net_arch_vf: [128, 128]

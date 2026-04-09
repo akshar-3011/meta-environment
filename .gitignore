@@ -52,3 +52,6 @@ logs/
 
 # Grafana dashboard (override *.json ignore)
 !grafana/*.json
+
+# Training results
+results/
