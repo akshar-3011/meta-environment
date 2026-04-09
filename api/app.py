@@ -19,6 +19,10 @@ except ImportError:  # pragma: no cover
     from core.models import WorkplaceAction, WorkplaceObservation
     from environment import WorkplaceEnvironment
 
+try:
+    from ..api.middleware import apply_production_middleware
+except ImportError:  # pragma: no cover
+    from api.middleware import apply_production_middleware
 
 setup_logging()
 CFG = get_config()
@@ -36,6 +40,9 @@ app = create_app(*_args, **_kwargs)
 app.title = "Workplace Env — Customer Support Triage"
 app.description = "OpenEnv environment for 3-step support workflow"
 app.version = "1.0.0"
+
+# Apply production middleware (API key, CORS, rate limiting, /metrics)
+apply_production_middleware(app)
 
 from fastapi.responses import HTMLResponse
 

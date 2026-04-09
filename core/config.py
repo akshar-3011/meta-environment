@@ -67,6 +67,13 @@ class ApiConfig:
 
 
 @dataclass(frozen=True)
+class SecurityConfig:
+    api_key: str = ""  # Empty = disabled (dev only)
+    cors_origins: str = ""  # Comma-separated allowlist; empty = no CORS
+    rate_limit_per_minute: int = 100  # 0 = disabled
+
+
+@dataclass(frozen=True)
 class InferenceConfig:
     base_url: str = "http://localhost:8000"
     timeout_seconds: float = 10.0
@@ -97,6 +104,7 @@ class AppConfig:
     env: str
     logging: LoggingConfig
     api: ApiConfig
+    security: SecurityConfig
     inference: InferenceConfig
     cache: CacheConfig
     benchmark: BenchmarkConfig
@@ -120,6 +128,11 @@ def load_config() -> AppConfig:
             server_port=_get_int("API_SERVER_PORT", 8000),
             pipeline_port=_get_int("API_PIPELINE_PORT", 8010),
             max_concurrent_envs=_get_int("API_MAX_CONCURRENT_ENVS", 1),
+        ),
+        security=SecurityConfig(
+            api_key=os.getenv("API_KEY", ""),
+            cors_origins=os.getenv("CORS_ORIGINS", ""),
+            rate_limit_per_minute=_get_int("RATE_LIMIT_PER_MINUTE", 100),
         ),
         inference=InferenceConfig(
             base_url=os.getenv("INFERENCE_BASE_URL", "http://localhost:8000"),

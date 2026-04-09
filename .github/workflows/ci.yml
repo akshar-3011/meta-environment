@@ -2,6 +2,9 @@ name: CI
 
 on: [push, pull_request]
 
+env:
+  IMAGE_NAME: meta-environment
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -24,7 +27,7 @@ jobs:
         continue-on-error: true
 
       - name: Run tests with coverage
-        run: uv run pytest tests/ -v --tb=short
+        run: uv run pytest tests/ -v --tb=short --cov=. --cov-report=term-missing --cov-fail-under=80
 
       - name: Validate OpenEnv
         run: uv run openenv validate
@@ -35,8 +38,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build Docker image
-        run: docker build --no-cache -t meta-environment:test .
+      - name: Set image tag
+        id: tag
+        run: echo "sha_tag=${{ env.IMAGE_NAME }}:sha-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image (SHA-tagged)
+        run: docker build --no-cache -t ${{ steps.tag.outputs.sha_tag }} -t ${{ env.IMAGE_NAME }}:latest .
 
       - name: Verify import
-        run: docker run --rm meta-environment:test python -c "import server.app; print('Import OK')"
+        run: docker run --rm ${{ steps.tag.outputs.sha_tag }} python -c "import server.app; print('Import OK')"
+
+      - name: Verify healthcheck
+        run: |
+          docker run -d --name hc_test -p 8000:8000 ${{ steps.tag.outputs.sha_tag }}
+          sleep 5
+          curl -f http://localhost:8000/health || exit 1
+          docker stop hc_test && docker rm hc_test
