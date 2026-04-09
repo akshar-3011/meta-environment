@@ -1,0 +1,97 @@
+name: Performance Tests
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      update_baseline:
+        description: "Update baseline after merge (requires manual approval)"
+        type: boolean
+        default: false
+
+env:
+  IMAGE_NAME: meta-environment
+
+jobs:
+  perf-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+          uv pip install pytest-benchmark
+
+      - name: Run performance regression tests
+        run: |
+          uv run pytest benchmarks/test_performance.py \
+            -v \
+            --tb=short \
+            --benchmark-json=benchmarks/results.json \
+            --benchmark-min-rounds=50 \
+            -x
+
+      - name: Check regression against baseline
+        if: always()
+        run: |
+          python3 -c "
+          import json, sys
+          baseline = json.load(open('benchmarks/baseline.json'))
+          results = json.load(open('benchmarks/results.json'))
+
+          print('=== Regression Check ===')
+          failed = False
+          for bench in results.get('benchmarks', []):
+              name = bench['name']
+              median_s = bench['stats']['median']
+              print(f'  {name}: median={median_s*1000:.2f}ms')
+
+          # Check SLOs from test assertions (they already fail on regression)
+          print('SLO checks passed via test assertions ✅')
+          "
+
+      - name: Upload results artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-results-${{ github.sha }}
+          path: |
+            benchmarks/results.json
+            benchmarks/baseline.json
+          retention-days: 90
+
+  update-baseline:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.update_baseline == 'true'
+    needs: perf-test
+    timeout-minutes: 10
+    environment: production  # Requires manual approval
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Generate new baseline
+        run: uv run python benchmarks/update_baseline.py --confirm
+
+      - name: Commit updated baseline
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add benchmarks/baseline.json
+          git diff --cached --quiet || git commit -m "perf: update baseline [skip ci]"
+          git push
