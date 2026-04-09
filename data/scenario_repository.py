@@ -5,8 +5,19 @@ from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from typing import Any, Dict, List
 
+try:
+    from ..core.models import Scenario
+except ImportError:  # pragma: no cover
+    from core.models import Scenario
+
 
 def _load_legacy_scenarios() -> List[Dict[str, Any]]:
+    """Load and **validate** every scenario at import time.
+
+    Each raw dict is parsed through the ``Scenario`` Pydantic model so that
+    missing/invalid fields surface as ``ValidationError`` immediately rather
+    than silently producing wrong rewards at runtime.
+    """
     legacy_path = Path(__file__).resolve().parent.parent / "data.py"
     spec = spec_from_file_location("_workplace_env_legacy_data", legacy_path)
     if spec is None or spec.loader is None:
@@ -14,7 +25,17 @@ def _load_legacy_scenarios() -> List[Dict[str, Any]]:
 
     module = module_from_spec(spec)
     spec.loader.exec_module(module)
-    return list(module.SCENARIOS)
+
+    validated: List[Dict[str, Any]] = []
+    for idx, raw in enumerate(module.SCENARIOS):
+        try:
+            scenario = Scenario(**raw)
+            validated.append(scenario.model_dump())
+        except Exception as exc:
+            raise ValueError(
+                f"Scenario {idx} failed validation: {exc}\n  Data: {raw}"
+            ) from exc
+    return validated
 
 
 SCENARIOS = _load_legacy_scenarios()

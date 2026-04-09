@@ -1,5 +1,6 @@
 """Core Pydantic/domain models for the workplace environment."""
 
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -48,24 +49,26 @@ class WorkplaceObservation(Observation):
 class WorkplaceAction(Action):
     """Action submitted by an agent for a workflow step."""
 
-    action_type: str
+    action_type: Literal["classify", "reply", "escalate"]
     content: str
     confidence: Optional[float] = None
     explanation: Optional[str] = None
 
 
+@dataclass(frozen=True)
 class GradeResult:
-    """Structured grading result with normalized score and details."""
+    """Structured grading result with normalized score and details.
 
-    def __init__(
-        self,
-        score: float,
-        explanation: str = "",
-        components: Optional[Dict[str, float]] = None,
-    ):
-        self.score = max(0.0, min(1.0, score))
-        self.explanation = explanation
-        self.components = components or {}
+    Frozen to prevent accidental mutation after grading.
+    """
+
+    score: float
+    explanation: str = ""
+    components: Dict[str, float] = field(default_factory=dict)
+
+    def __post_init__(self):
+        # Clamp score to [0.0, 1.0] — uses object.__setattr__ because frozen
+        object.__setattr__(self, "score", max(0.0, min(1.0, self.score)))
 
     def __float__(self):
         return self.score

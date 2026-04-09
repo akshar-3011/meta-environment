@@ -147,3 +147,20 @@ _CONFIG = load_config()
 
 def get_config() -> AppConfig:
     return _CONFIG
+
+
+def reload_config() -> AppConfig:
+    """Re-read environment variables and rebuild the config singleton.
+
+    Useful when tests mutate ``os.environ`` and need the config to reflect
+    new values without restarting the process.
+    """
+    global _CONFIG
+    _CONFIG = load_config()
+    return _CONFIG
+
+
+def override_config(config: AppConfig) -> None:
+    """Replace the global config singleton (for tests only)."""
+    global _CONFIG
+    _CONFIG = config

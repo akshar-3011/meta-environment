@@ -1,8 +1,7 @@
-"""Modular grading framework: concrete graders + weighted parallel aggregation."""
+"""Modular grading framework: concrete graders + weighted sequential aggregation."""
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Dict, List, Sequence, Tuple
 
 from .interfaces import BaseGrader, EvaluationContext, GraderResult, clamp01
@@ -110,7 +109,10 @@ class RuleBasedGrader(BaseGrader):
 
 
 class WeightedParallelGradingEngine:
-    """Runs multiple graders in parallel and combines with weighted aggregation.
+    """Runs multiple graders sequentially and combines with weighted aggregation.
+
+    All graders are CPU-bound Python (GIL prevents true parallelism), so
+    sequential execution avoids thread creation/synchronization overhead.
 
     Output contract:
       {
@@ -123,20 +125,14 @@ class WeightedParallelGradingEngine:
         if not graders:
             raise ValueError("At least one grader must be provided")
         self._graders = list(graders)
-        self._executor = ThreadPoolExecutor(max_workers=max(1, len(self._graders)))
 
     def evaluate(self, context: EvaluationContext) -> Dict[str, Any]:
-        def _run(grader: BaseGrader) -> GraderResult:
-            return grader.grade(context).normalized()
-
-        futures = [(grader, weight, self._executor.submit(_run, grader)) for grader, weight in self._graders]
-
         breakdown: Dict[str, Any] = {}
         weighted_sum = 0.0
         total_weight = 0.0
 
-        for grader, weight, future in futures:
-            result = future.result()
+        for grader, weight in self._graders:
+            result = grader.grade(context).normalized()
             w = max(0.0, float(weight))
             weighted_score = result.score * w
             weighted_sum += weighted_score
@@ -155,3 +151,4 @@ class WeightedParallelGradingEngine:
             "score": final_score,
             "breakdown": breakdown,
         }
+

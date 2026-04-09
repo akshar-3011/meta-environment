@@ -207,15 +207,42 @@ def infer(request: InferRequest) -> Dict[str, Any]:
     except Exception as exc:
         raise InferenceError("Inference strategy failed", details={"strategy": request.strategy.value, "exception": str(exc)}) from exc
 
+    # Grade the inferred actions to produce an honest score
+    policy = RuleBasedRewardPolicy()
+    previous_actions: Dict[str, float] = {}
+    cumulative = 0.0
+    step_results: List[Dict[str, Any]] = []
+
+    # Use the first category option as the ground truth for grading
+    actual_category = observation.get("category_options", ["query"])[0]
+
+    for idx, (action_type, content) in enumerate(actions, start=1):
+        try:
+            reward, step_breakdown = policy.calculate_step_reward(
+                action_type=action_type,
+                content=content,
+                actual_category=actual_category,
+                step_count=min(idx, 3),
+                scenario_difficulty=request.scenario_difficulty,
+                min_reply_length=observation.get("scenario_metadata", {}).get("min_reply_length", 30),
+                previous_actions=previous_actions,
+            )
+        except Exception:
+            reward = 0.0
+            step_breakdown = {"error": "grading failed"}
+        previous_actions[action_type] = reward
+        cumulative += reward
+        step_results.append({"step": idx, "action_type": action_type, "content": content, "score": reward})
+
     breakdown = {
         "strategy": request.strategy.value,
         "email": request.email,
         "action_count": len(actions),
-        "actions": [{"action_type": a, "content": c} for a, c in actions],
+        "actions": [{**s} for s in step_results],
         "observation": observation,
     }
 
-    response = InferResponse(score=1.0, breakdown=breakdown)
+    response = InferResponse(score=cumulative, breakdown=breakdown)
     return {"success": True, **response.model_dump()}
 
 

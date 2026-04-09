@@ -79,7 +79,7 @@ class BaseInference(ABC):
                     url,
                     json=payload,
                     headers={"Content-Type": "application/json"},
-                    timeout=self.timeout,
+                    timeout=(min(5.0, self.timeout), self.timeout),  # (connect, read)
                 )
                 if response.ok:
                     return response.json()
