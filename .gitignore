@@ -43,3 +43,9 @@ openenv_workplace_env.egg-info/
 # Stale duplicate project copy
 meta_environment/
 Archive.zip
+
+# Trained models
+models/
+
+# TensorBoard logs
+logs/
