@@ -239,7 +239,6 @@ class TestSecurityHeaders:
             "Content-Security-Policy",
             "Strict-Transport-Security",
             "X-Content-Type-Options",
-            "X-Frame-Options",
             "Referrer-Policy",
         ]
         for header in required:
@@ -254,8 +253,10 @@ class TestSecurityHeaders:
         csp = self.headers["Content-Security-Policy"]
         assert "default-src 'self'" in csp
 
-    def test_xframe_deny(self):
-        assert self.headers["X-Frame-Options"] == "DENY"
+    def test_csp_frame_ancestors(self):
+        csp = self.headers["Content-Security-Policy"]
+        assert "frame-ancestors" in csp
+        assert "huggingface.co" in csp
 
     def test_nosniff(self):
         assert self.headers["X-Content-Type-Options"] == "nosniff"

@@ -23,7 +23,7 @@ def test_root_landing_page_responds():
     response = client.get("/")
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
-    assert "Workplace Env" in response.text
+    assert "Meta-Environment" in response.text
 
 
 def test_reset_endpoint_responds():

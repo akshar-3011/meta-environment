@@ -45,10 +45,9 @@ except ImportError:  # pragma: no cover
 MAX_REQUEST_BODY_SIZE = 1 * 1024 * 1024  # 1MB
 
 SECURITY_HEADERS = {
-    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-ancestors 'self' https://huggingface.co https://*.hf.space",
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
     "X-Content-Type-Options": "nosniff",
-    "X-Frame-Options": "DENY",
     "X-XSS-Protection": "0",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
