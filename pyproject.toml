@@ -61,3 +61,16 @@ packages = [
     "workplace_env.tests",
 ]
 package-dir = { "workplace_env" = ".", "workplace_env.server" = "server" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "W", "F"]
+ignore = ["E501"]

@@ -38,7 +38,7 @@ def test_infer_endpoint_returns_actions_for_valid_request():
     assert response.status_code == 200
     payload = response.json()
     assert payload["success"] is True
-    assert payload["score"] == 1.0
+    assert 0.0 <= payload["score"] <= 1.0  # N4: /infer now returns real graded score
     assert payload["breakdown"]["action_count"] == 3
 
 

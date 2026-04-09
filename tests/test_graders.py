@@ -65,6 +65,7 @@ def test_rule_policy_reply_applies_consistency_penalty_without_prior_classificat
         previous_actions={"classify": 1.0},
     )
 
+    # C6: penalty is now scaled (0.4 * (0.5 - 0.0) = 0.20 when classify=0.0)
     assert breakdown_penalty["consistency_penalty"] == 0.2
     assert breakdown_no_penalty["consistency_penalty"] == 0.0
     assert with_penalty < without_penalty
@@ -73,8 +74,9 @@ def test_rule_policy_reply_applies_consistency_penalty_without_prior_classificat
 def test_rule_policy_escalation_early_penalty_for_complaint():
     policy = RuleBasedRewardPolicy()
 
+    # C2: early = step < 3, normal = step >= 3
     early_score, _ = policy.grade_escalation("yes", "complaint", step_count=1)
-    normal_score, _ = policy.grade_escalation("yes", "complaint", step_count=2)
+    normal_score, _ = policy.grade_escalation("yes", "complaint", step_count=3)
 
     assert early_score < normal_score
 

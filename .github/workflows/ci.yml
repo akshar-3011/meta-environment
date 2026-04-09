@@ -1,0 +1,42 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Lint with ruff
+        run: uv run ruff check . --select E,W,F --ignore E501
+        continue-on-error: true
+
+      - name: Type check with mypy
+        run: uv run mypy . --ignore-missing-imports --no-strict-optional
+        continue-on-error: true
+
+      - name: Run tests with coverage
+        run: uv run pytest tests/ -v --tb=short
+
+      - name: Validate OpenEnv
+        run: uv run openenv validate
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build --no-cache -t meta-environment:test .
+
+      - name: Verify import
+        run: docker run --rm meta-environment:test python -c "import server.app; print('Import OK')"
