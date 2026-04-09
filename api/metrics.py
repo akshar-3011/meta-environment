@@ -72,6 +72,28 @@ SCENARIO_POOL_SIZE = Gauge(
     ["difficulty"],
 )
 
+# ─── Step-level instrumentation ──────────────────────────────────────────────
+
+STEP_LATENCY = Histogram(
+    "env_step_duration_seconds",
+    "Latency of individual environment steps (classify/reply/escalate)",
+    ["action_type", "difficulty"],
+    buckets=(0.01, 0.05, 0.1, 0.5, 1.0),
+)
+
+ESCALATION_DECISIONS = Counter(
+    "env_escalation_decisions_total",
+    "Total escalation decisions by outcome",
+    ["decision"],  # "escalated" or "not_escalated"
+)
+
+GRADER_LATENCY = Histogram(
+    "env_grader_duration_seconds",
+    "Latency of grader evaluation per step",
+    ["action_type"],
+    buckets=(0.001, 0.005, 0.01, 0.05, 0.1),
+)
+
 
 # ─── /metrics endpoint ──────────────────────────────────────────────────────
 

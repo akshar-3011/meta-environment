@@ -47,6 +47,48 @@ CFG = get_config()
 LOGGER = get_logger(__name__)
 DEBUG = CFG.environment.debug
 
+# Lazy metrics + tracer (loaded on first use to avoid duplicate registry errors)
+_HAS_METRICS = None  # tri-state: None=unchecked, True, False
+_METRICS = {}
+_TRACER = None
+
+
+def _ensure_metrics():
+    """Import prometheus metrics on first use — prevents duplicate registrations."""
+    global _HAS_METRICS, _METRICS
+    if _HAS_METRICS is not None:
+        return _HAS_METRICS
+    try:
+        from api.metrics import (
+            ACTIVE_EPISODES, STEP_LATENCY, STEP_COUNT, ESCALATION_DECISIONS,
+            REWARD_HISTOGRAM, EPISODE_COUNT, EPISODE_SCORE, GRADER_LATENCY,
+            ERROR_COUNT,
+        )
+        _METRICS.update(
+            ACTIVE_EPISODES=ACTIVE_EPISODES, STEP_LATENCY=STEP_LATENCY,
+            STEP_COUNT=STEP_COUNT, ESCALATION_DECISIONS=ESCALATION_DECISIONS,
+            REWARD_HISTOGRAM=REWARD_HISTOGRAM, EPISODE_COUNT=EPISODE_COUNT,
+            EPISODE_SCORE=EPISODE_SCORE, GRADER_LATENCY=GRADER_LATENCY,
+            ERROR_COUNT=ERROR_COUNT,
+        )
+        _HAS_METRICS = True
+    except (ImportError, ValueError):
+        _HAS_METRICS = False
+    return _HAS_METRICS
+
+
+def _ensure_tracer():
+    """Import tracer on first use."""
+    global _TRACER
+    if _TRACER is not None:
+        return _TRACER
+    try:
+        from api.tracing import get_tracer
+        _TRACER = get_tracer()
+    except (ImportError, Exception):
+        _TRACER = None
+    return _TRACER
+
 
 # _debug_log is now an instance method on WorkplaceEnvironment (see C4 fix).
 
@@ -149,12 +191,32 @@ class WorkplaceEnvironment(Environment):
         self._state.current = self._next_scenario()
         self._state.episode_count += 1
 
+        if _ensure_metrics():
+            _METRICS["ACTIVE_EPISODES"].inc()
+
         return self._make_obs(reward=None, done=False)
 
     def step(self, action: WorkplaceAction) -> WorkplaceObservation:
+        import time as _time
+
+        # Start trace span if available
+        _span = None
+        tracer = _ensure_tracer()
+        if tracer is not None:
+            try:
+                _span = tracer.start_span(f"env.step.{action.action_type}")
+                _span.set_attribute("env.action_type", action.action_type)
+                _span.set_attribute("env.step_count", self._state.step_count + 1)
+                _span.set_attribute("env.difficulty", self._state.current.get("difficulty", "unknown"))
+            except Exception:
+                _span = None
+
+        step_start = _time.monotonic()
         try:
             if action.action_type not in ["classify", "reply", "escalate"]:
                 self._debug_log(f"Invalid action type: {action.action_type}")
+                if _ensure_metrics():
+                    _METRICS["ERROR_COUNT"].labels(error_type="invalid_action").inc()
                 return self._make_obs(reward=0.0, done=True)
 
             self._state.step_count += 1
@@ -166,9 +228,29 @@ class WorkplaceEnvironment(Environment):
             self._state.history.append(action_str)
             self._debug_log(f"Step {step_num}: {action_str}")
 
+            # Grade with timing
+            grade_start = _time.monotonic()
             reward_value = self._grade_step(action, step_num)
+            grade_elapsed = _time.monotonic() - grade_start
+
             self._state.action_rewards[action.action_type] = reward_value
             self._state.cumulative_reward += reward_value
+
+            # Record metrics
+            if _ensure_metrics():
+                difficulty = self._state.current.get("difficulty", "unknown")
+                _METRICS["STEP_COUNT"].labels(action_type=action.action_type).inc()
+                _METRICS["GRADER_LATENCY"].labels(action_type=action.action_type).observe(grade_elapsed)
+                _METRICS["REWARD_HISTOGRAM"].labels(
+                    step=action.action_type, difficulty=difficulty,
+                ).observe(reward_value)
+
+                # Track escalation decisions
+                if action.action_type == "escalate":
+                    did_escalate = (content.strip().lower() in {"yes", "true", "urgent", "1", "escalate"})
+                    _METRICS["ESCALATION_DECISIONS"].labels(
+                        decision="escalated" if did_escalate else "not_escalated",
+                    ).inc()
 
             done = step_num >= 3
             if done:
@@ -181,12 +263,44 @@ class WorkplaceEnvironment(Environment):
                     "escalate": round(self._state.action_rewards.get("escalate", 0.0), 2),
                 }
                 LOGGER.info(json.dumps(log_data))
-                
+
+                if _ensure_metrics():
+                    _METRICS["EPISODE_COUNT"].inc()
+                    _METRICS["EPISODE_SCORE"].labels(
+                        difficulty=self._state.current.get("difficulty", "unknown"),
+                    ).observe(self._state.cumulative_reward)
+                    _METRICS["ACTIVE_EPISODES"].dec()
+
+            # Record step latency
+            step_elapsed = _time.monotonic() - step_start
+            if _ensure_metrics():
+                _METRICS["STEP_LATENCY"].labels(
+                    action_type=action.action_type,
+                    difficulty=self._state.current.get("difficulty", "unknown"),
+                ).observe(step_elapsed)
+
+            # Enrich trace span
+            if _span is not None:
+                try:
+                    _span.set_attribute("env.reward", reward_value)
+                    _span.set_attribute("env.cumulative_reward", self._state.cumulative_reward)
+                    _span.set_attribute("env.done", done)
+                    _span.end()
+                except Exception:
+                    pass
+
             return self._make_obs(reward=reward_value, done=done)
         except Exception as exc:  # pragma: no cover
             self._debug_log(f"Step error: {exc}")
             self._state.history.append(f"error: {exc}")
             LOGGER.exception("Environment step failed")
+            if _span is not None:
+                try:
+                    _span.set_attribute("error", True)
+                    _span.set_attribute("error.message", str(exc))
+                    _span.end()
+                except Exception:
+                    pass
             raise PipelineError(
                 "Environment step execution failed",
                 details={"exception": str(exc), "step_count": self._state.step_count},

@@ -1,8 +1,9 @@
-"""Production middleware: API key auth, CORS, rate limiting, Prometheus metrics instrumentation."""
+"""Production middleware: API key auth, CORS, rate limiting, Prometheus metrics, request-ID tracing."""
 
 from __future__ import annotations
 
 import time
+import uuid
 from collections import defaultdict
 from typing import Callable, Dict, List
 
@@ -51,6 +52,38 @@ class _RateLimiter:
 
 
 # ─── Middleware classes ───────────────────────────────────────────────────────
+
+class RequestIDMiddleware(BaseHTTPMiddleware):
+    """Generate X-Request-ID if missing, inject into response + request state.
+
+    Downstream handlers can access via ``request.state.request_id``.
+    The trace context (trace_id, span_id) is also attached when OTel is active.
+    """
+
+    async def dispatch(self, request: Request, call_next: Callable):
+        # Use provided request ID or generate one
+        request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+        request.state.request_id = request_id
+
+        # Attach trace context if available
+        try:
+            from api.tracing import get_current_trace_context
+            trace_ctx = get_current_trace_context()
+            request.state.trace_id = trace_ctx.get("trace_id", "")
+            request.state.span_id = trace_ctx.get("span_id", "")
+        except (ImportError, Exception):
+            request.state.trace_id = ""
+            request.state.span_id = ""
+
+        response: Response = await call_next(request)
+
+        # Inject into response headers for correlation
+        response.headers["X-Request-ID"] = request_id
+        if request.state.trace_id:
+            response.headers["X-Trace-ID"] = request.state.trace_id
+
+        return response
+
 
 class APIKeyMiddleware(BaseHTTPMiddleware):
     """Reject requests without a valid API key (skip health/docs/metrics)."""
@@ -123,12 +156,15 @@ def apply_production_middleware(app: FastAPI) -> FastAPI:
     # 1. Prometheus metrics (innermost — records everything)
     app.add_middleware(PrometheusMiddleware)
 
-    # 2. Rate limiting
+    # 2. Request-ID + trace context injection
+    app.add_middleware(RequestIDMiddleware)
+
+    # 3. Rate limiting
     if sec.rate_limit_per_minute > 0:
         limiter = _RateLimiter(max_requests=sec.rate_limit_per_minute)
         app.add_middleware(RateLimitMiddleware, limiter=limiter)
 
-    # 3. CORS
+    # 4. CORS
     if sec.cors_origins:
         origins = [o.strip() for o in sec.cors_origins.split(",") if o.strip()]
     else:
@@ -143,14 +179,14 @@ def apply_production_middleware(app: FastAPI) -> FastAPI:
             allow_headers=["*"],
         )
 
-    # 4. API key auth (outermost)
+    # 5. API key auth (outermost)
     if sec.api_key:
         app.add_middleware(APIKeyMiddleware, api_key=sec.api_key)
 
-    # 5. /metrics endpoint (Prometheus exposition format)
+    # 6. /metrics endpoint (Prometheus exposition format)
     register_metrics_endpoint(app)
 
-    # 6. OpenTelemetry distributed tracing (deferred to avoid circular import)
+    # 7. OpenTelemetry distributed tracing (deferred to avoid circular import)
     try:
         from api.tracing import setup_tracing  # noqa: E402
     except ImportError:

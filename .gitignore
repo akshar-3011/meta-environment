@@ -49,3 +49,6 @@ models/
 
 # TensorBoard logs
 logs/
+
+# Grafana dashboard (override *.json ignore)
+!grafana/*.json

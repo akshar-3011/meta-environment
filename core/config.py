@@ -100,6 +100,14 @@ class EnvironmentConfig:
 
 
 @dataclass(frozen=True)
+class TracingConfig:
+    service_name: str = "meta-environment"
+    otlp_endpoint: str = ""  # Empty = no export (traces discarded)
+    sample_rate: float = 1.0  # 1.0 = 100%, 0.1 = 10%
+    enabled: bool = True
+
+
+@dataclass(frozen=True)
 class AppConfig:
     env: str
     logging: LoggingConfig
@@ -109,6 +117,7 @@ class AppConfig:
     cache: CacheConfig
     benchmark: BenchmarkConfig
     environment: EnvironmentConfig
+    tracing: TracingConfig
 
 
 def load_config() -> AppConfig:
@@ -151,6 +160,15 @@ def load_config() -> AppConfig:
         ),
         environment=EnvironmentConfig(
             debug=_get_bool("ENV_DEBUG", False),
+        ),
+        tracing=TracingConfig(
+            service_name=os.getenv("OTEL_SERVICE_NAME", "meta-environment"),
+            otlp_endpoint=os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", ""),
+            sample_rate=_get_float(
+                "OTEL_TRACES_SAMPLE_RATE",
+                0.1 if os.getenv("APP_ENV", "development") == "production" else 1.0,
+            ),
+            enabled=_get_bool("OTEL_TRACING_ENABLED", True),
         ),
     )
 
