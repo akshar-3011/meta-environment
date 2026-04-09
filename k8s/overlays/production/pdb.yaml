@@ -1,0 +1,13 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: meta-env
+  namespace: meta-environment
+  labels:
+    app.kubernetes.io/name: meta-environment
+spec:
+  minAvailable: 7
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: meta-environment
+      app.kubernetes.io/component: api

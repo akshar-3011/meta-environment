@@ -1,0 +1,52 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: meta-env-ingress
+  namespace: meta-environment
+  labels:
+    app.kubernetes.io/name: meta-environment
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: meta-environment
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow traffic only from ingress-nginx namespace
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8000
+    # Allow Prometheus scraping from observability namespace
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+      ports:
+        - protocol: TCP
+          port: 8000
+  egress:
+    # Allow DNS resolution
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Allow HTTPS (OpenAI API, OTLP export)
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 443
+    # Allow OTLP gRPC collector
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+      ports:
+        - protocol: TCP
+          port: 4317

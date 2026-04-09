@@ -1,0 +1,55 @@
+# ─── Staging Overrides ───────────────────────────────────────────────────────
+
+replicaCount: 2
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 85
+  scaleUp:
+    stabilizationWindowSeconds: 30
+    maxPodsPerMinute: 3
+  scaleDown:
+    stabilizationWindowSeconds: 120
+    maxPodsPerMinute: 2
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+config:
+  APP_ENV: "staging"
+  APP_LOG_LEVEL: "INFO"
+  ALLOWED_ORIGINS: "https://staging.example.com"
+  OTEL_TRACES_SAMPLE_RATE: "1.0"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.observability:4317"
+  API_MAX_CONCURRENT_ENVS: "10"
+  PYTHONUNBUFFERED: "1"
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+networkPolicy:
+  enabled: false
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-staging
+  hosts:
+    - host: meta-env-staging.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: meta-env-staging-tls
+      hosts:
+        - meta-env-staging.example.com

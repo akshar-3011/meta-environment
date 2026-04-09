@@ -1,0 +1,51 @@
+# ─── Development Overrides ───────────────────────────────────────────────────
+
+replicaCount: 1
+
+autoscaling:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+config:
+  APP_ENV: "development"
+  APP_LOG_LEVEL: "DEBUG"
+  ALLOWED_ORIGINS: "*"
+  OTEL_TRACES_SAMPLE_RATE: "1.0"
+  OTEL_EXPORTER_OTLP_ENDPOINT: ""
+  API_MAX_CONCURRENT_ENVS: "5"
+  PYTHONUNBUFFERED: "1"
+
+podDisruptionBudget:
+  enabled: false
+
+networkPolicy:
+  enabled: false
+
+ingress:
+  enabled: false
+
+probes:
+  liveness:
+    path: /health
+    initialDelaySeconds: 5
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 5
+  readiness:
+    path: /health
+    initialDelaySeconds: 3
+    periodSeconds: 15
+    timeoutSeconds: 3
+    failureThreshold: 3
+  startup:
+    path: /health
+    initialDelaySeconds: 2
+    periodSeconds: 3
+    failureThreshold: 15

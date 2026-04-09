@@ -1,0 +1,16 @@
+apiVersion: v2
+name: meta-environment
+description: OpenEnv customer support triage RL environment
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - openenv
+  - reinforcement-learning
+  - customer-support
+  - ml-environment
+maintainers:
+  - name: Akshar Dhakad
+home: https://github.com/akshar-3011/meta-environment
+sources:
+  - https://github.com/akshar-3011/meta-environment

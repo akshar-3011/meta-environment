@@ -1,0 +1,246 @@
+name: Deploy to Kubernetes
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - dev
+          - staging
+          - production
+      image_tag:
+        description: 'Image tag override (default: git SHA)'
+        required: false
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: akshar-3011/meta-environment
+  HELM_CHART: ./helm/meta-environment
+  NAMESPACE: meta-environment
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # ── 1. Build & Push Docker Image ───────────────────────────────────────
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.tag.outputs.tag }}
+      image_full: ${{ steps.tag.outputs.full }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine image tag
+        id: tag
+        run: |
+          if [ -n "${{ inputs.image_tag }}" ]; then
+            TAG="${{ inputs.image_tag }}"
+          elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            TAG="sha-${GITHUB_SHA::8}"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "full=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+  # ── 2. Deploy with Helm ────────────────────────────────────────────────
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'staging' }}
+    concurrency:
+      group: deploy-${{ inputs.environment || 'staging' }}
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine environment
+        id: env
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            ENV="production"
+          else
+            ENV="${{ inputs.environment || 'staging' }}"
+          fi
+          echo "env=${ENV}" >> "$GITHUB_OUTPUT"
+          echo "values_file=values-${ENV}.yaml" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'v3.14.0'
+
+      - name: Configure kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBECONFIG }}
+
+      - name: Create namespace
+        run: kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy with Helm
+        id: helm_deploy
+        run: |
+          RELEASE="meta-env"
+          VALUES="${{ env.HELM_CHART }}/${{ steps.env.outputs.values_file }}"
+
+          echo "🚀 Deploying ${RELEASE} to ${{ steps.env.outputs.env }}"
+          echo "   Image: ${{ needs.build.outputs.image_full }}"
+          echo "   Values: ${VALUES}"
+
+          helm upgrade --install "${RELEASE}" ${{ env.HELM_CHART }} \
+            --namespace ${{ env.NAMESPACE }} \
+            --values "${VALUES}" \
+            --set image.tag=${{ needs.build.outputs.image_tag }} \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
+            --timeout 5m \
+            --wait \
+            --atomic \
+            --history-max 5
+
+          echo "✅ Helm deploy complete"
+
+      - name: Verify rollout
+        run: |
+          kubectl rollout status deployment/meta-env \
+            --namespace ${{ env.NAMESPACE }} \
+            --timeout=3m
+
+  # ── 3. Smoke Tests ────────────────────────────────────────────────────
+  smoke-test:
+    needs: [build, deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBECONFIG }}
+
+      - name: Wait for pods ready
+        run: |
+          kubectl wait --for=condition=ready pod \
+            -l app.kubernetes.io/name=meta-environment \
+            --namespace ${{ env.NAMESPACE }} \
+            --timeout=120s
+
+      - name: Port forward and smoke test
+        id: smoke
+        run: |
+          # Forward port in background
+          kubectl port-forward svc/meta-env 8000:8000 \
+            --namespace ${{ env.NAMESPACE }} &
+          PF_PID=$!
+          sleep 5
+
+          FAILURES=0
+
+          # Test 1: Health check
+          echo "🧪 Test 1: Health check..."
+          if curl -sf http://localhost:8000/health > /dev/null; then
+            echo "   ✅ /health OK"
+          else
+            echo "   ❌ /health FAILED"
+            FAILURES=$((FAILURES + 1))
+          fi
+
+          # Test 2: Metrics endpoint
+          echo "🧪 Test 2: Metrics endpoint..."
+          if curl -sf http://localhost:8000/metrics | grep -q "env_"; then
+            echo "   ✅ /metrics OK"
+          else
+            echo "   ❌ /metrics FAILED"
+            FAILURES=$((FAILURES + 1))
+          fi
+
+          # Test 3: Full episode
+          echo "🧪 Test 3: Full episode..."
+          RESET=$(curl -sf -X POST http://localhost:8000/reset \
+            -H "Content-Type: application/json" -d '{}')
+          if echo "$RESET" | grep -q "observation"; then
+            echo "   ✅ /reset OK"
+          else
+            echo "   ❌ /reset FAILED"
+            FAILURES=$((FAILURES + 1))
+          fi
+
+          kill $PF_PID 2>/dev/null || true
+
+          if [ $FAILURES -gt 0 ]; then
+            echo "❌ ${FAILURES} smoke tests failed"
+            echo "smoke_passed=false" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+          echo "✅ All smoke tests passed"
+          echo "smoke_passed=true" >> "$GITHUB_OUTPUT"
+
+  # ── 4. Auto-Rollback on Failure ────────────────────────────────────────
+  rollback:
+    needs: [deploy, smoke-test]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBECONFIG }}
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'v3.14.0'
+
+      - name: Rollback
+        run: |
+          echo "🔄 Rolling back meta-env..."
+          helm rollback meta-env --namespace ${{ env.NAMESPACE }} --wait --timeout 3m
+          echo "✅ Rollback complete"
+
+      - name: Verify rollback
+        run: |
+          kubectl rollout status deployment/meta-env \
+            --namespace ${{ env.NAMESPACE }} \
+            --timeout=3m
+          echo "✅ Rollback verified — pods healthy"

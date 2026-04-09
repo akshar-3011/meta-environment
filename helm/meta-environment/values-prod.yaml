@@ -1,0 +1,63 @@
+# ─── Production Overrides ────────────────────────────────────────────────────
+
+replicaCount: 10
+
+image:
+  pullPolicy: Always
+
+autoscaling:
+  enabled: true
+  minReplicas: 10
+  maxReplicas: 50
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+  scaleUp:
+    stabilizationWindowSeconds: 60
+    maxPodsPerMinute: 5
+  scaleDown:
+    stabilizationWindowSeconds: 300
+    maxPodsPerMinute: 2
+
+resources:
+  requests:
+    cpu: "1"
+    memory: 1Gi
+  limits:
+    cpu: "2"
+    memory: 2Gi
+
+config:
+  APP_ENV: "production"
+  APP_LOG_LEVEL: "WARNING"
+  ALLOWED_ORIGINS: "https://app.example.com,https://admin.example.com"
+  OTEL_TRACES_SAMPLE_RATE: "0.1"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.observability:4317"
+  API_MAX_CONCURRENT_ENVS: "50"
+  PYTHONUNBUFFERED: "1"
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 7
+
+networkPolicy:
+  enabled: true
+  ingressNamespaces:
+    - ingress-nginx
+    - observability
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+  hosts:
+    - host: meta-env.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: meta-env-tls
+      hosts:
+        - meta-env.example.com

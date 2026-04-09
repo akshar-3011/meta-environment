@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: meta-env-config
+  namespace: meta-environment
+  labels:
+    app.kubernetes.io/name: meta-environment
+    app.kubernetes.io/component: config
+data:
+  APP_ENV: "production"
+  APP_LOG_LEVEL: "INFO"
+  ALLOWED_ORIGINS: "https://app.example.com,https://admin.example.com"
+  OTEL_TRACES_SAMPLE_RATE: "0.1"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.observability:4317"
+  API_MAX_CONCURRENT_ENVS: "20"
+  PYTHONUNBUFFERED: "1"

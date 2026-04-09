@@ -1,0 +1,144 @@
+# ─── meta-environment Helm values ────────────────────────────────────────────
+# Override per environment with: helm install -f values-prod.yaml
+
+# ── Replica & Scaling ────────────────────────────────────────────────────────
+replicaCount: 3
+
+autoscaling:
+  enabled: false
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+  scaleUp:
+    stabilizationWindowSeconds: 60
+    maxPodsPerMinute: 5
+  scaleDown:
+    stabilizationWindowSeconds: 300
+    maxPodsPerMinute: 2
+
+# ── Image ────────────────────────────────────────────────────────────────────
+image:
+  repository: ghcr.io/akshar-3011/meta-environment
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+# ── Service ──────────────────────────────────────────────────────────────────
+service:
+  type: ClusterIP
+  port: 8000
+
+# ── Resources ────────────────────────────────────────────────────────────────
+resources:
+  requests:
+    cpu: 500m
+    memory: 512Mi
+  limits:
+    cpu: "2"
+    memory: 2Gi
+
+# ── Probes ───────────────────────────────────────────────────────────────────
+probes:
+  liveness:
+    path: /health
+    initialDelaySeconds: 10
+    periodSeconds: 15
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    path: /health
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 2
+  startup:
+    path: /health
+    initialDelaySeconds: 3
+    periodSeconds: 5
+    failureThreshold: 10
+
+# ── Environment ──────────────────────────────────────────────────────────────
+config:
+  APP_ENV: "production"
+  APP_LOG_LEVEL: "INFO"
+  ALLOWED_ORIGINS: "https://app.example.com"
+  OTEL_TRACES_SAMPLE_RATE: "0.1"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.observability:4317"
+  API_MAX_CONCURRENT_ENVS: "20"
+  PYTHONUNBUFFERED: "1"
+
+# Secrets — provide via --set or external secret manager
+secrets:
+  API_KEY: ""
+  OPENAI_API_KEY: ""
+  DATABASE_URL: "sqlite:///data/experiments.db"
+
+# Use existing secret instead of creating one
+existingSecret: ""
+
+# ── Pod Disruption Budget ────────────────────────────────────────────────────
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 2
+
+# ── Network Policy ───────────────────────────────────────────────────────────
+networkPolicy:
+  enabled: false
+  ingressNamespaces:
+    - ingress-nginx
+    - observability
+
+# ── Security ─────────────────────────────────────────────────────────────────
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+# ── Service Account ─────────────────────────────────────────────────────────
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+  automountServiceAccountToken: false
+
+# ── Ingress ──────────────────────────────────────────────────────────────────
+ingress:
+  enabled: false
+  className: nginx
+  annotations: {}
+  hosts:
+    - host: meta-env.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# ── Pod affinity ─────────────────────────────────────────────────────────────
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: meta-environment
+          topologyKey: kubernetes.io/hostname
+
+tolerations: []
+nodeSelector: {}
+
+# ── Prometheus ───────────────────────────────────────────────────────────────
+metrics:
+  enabled: true
+  path: /metrics
+  port: 8000
