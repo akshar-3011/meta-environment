@@ -1,4 +1,4 @@
-"""Production middleware: API key auth, CORS, rate limiting, Prometheus metrics."""
+"""Production middleware: API key auth, CORS, rate limiting, Prometheus metrics instrumentation."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Callable, Dict, List
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 try:
@@ -16,51 +16,14 @@ try:
 except ImportError:  # pragma: no cover
     from core.config import get_config
 
-
-# ─── Prometheus-style metrics (no external dependency) ───────────────────────
-
-class _Metrics:
-    """In-process counters for /metrics scraping."""
-
-    def __init__(self):
-        self.request_count: int = 0
-        self.error_count: int = 0
-        self.latency_sum: float = 0.0
-        self.latency_count: int = 0
-        self.status_counts: Dict[int, int] = defaultdict(int)
-        self.endpoint_counts: Dict[str, int] = defaultdict(int)
-
-    def record(self, path: str, status: int, latency: float):
-        self.request_count += 1
-        self.latency_sum += latency
-        self.latency_count += 1
-        self.status_counts[status] += 1
-        self.endpoint_counts[path] += 1
-        if status >= 400:
-            self.error_count += 1
-
-    def to_prometheus(self) -> str:
-        lines: List[str] = []
-        lines.append(f"# HELP http_requests_total Total HTTP requests")
-        lines.append(f"# TYPE http_requests_total counter")
-        lines.append(f"http_requests_total {self.request_count}")
-        lines.append(f"# HELP http_errors_total Total HTTP errors (4xx+5xx)")
-        lines.append(f"# TYPE http_errors_total counter")
-        lines.append(f"http_errors_total {self.error_count}")
-        lines.append(f"# HELP http_request_duration_seconds_sum Sum of request durations")
-        lines.append(f"# TYPE http_request_duration_seconds_sum counter")
-        lines.append(f"http_request_duration_seconds_sum {self.latency_sum:.6f}")
-        lines.append(f"# HELP http_request_duration_seconds_count Count of timed requests")
-        lines.append(f"# TYPE http_request_duration_seconds_count counter")
-        lines.append(f"http_request_duration_seconds_count {self.latency_count}")
-        for status, count in sorted(self.status_counts.items()):
-            lines.append(f'http_responses_total{{status="{status}"}} {count}')
-        for path, count in sorted(self.endpoint_counts.items()):
-            lines.append(f'http_endpoint_requests_total{{path="{path}"}} {count}')
-        return "\n".join(lines) + "\n"
-
-
-METRICS = _Metrics()
+try:
+    from ..api.metrics import (
+        REQUEST_COUNT, REQUEST_LATENCY, register_metrics_endpoint,
+    )
+except ImportError:  # pragma: no cover
+    from api.metrics import (
+        REQUEST_COUNT, REQUEST_LATENCY, register_metrics_endpoint,
+    )
 
 
 # ─── Rate limiter (sliding window per IP) ────────────────────────────────────
@@ -129,29 +92,36 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
-class MetricsMiddleware(BaseHTTPMiddleware):
-    """Record request count, latency, and status codes."""
+class PrometheusMiddleware(BaseHTTPMiddleware):
+    """Record request count, latency, and status via prometheus_client."""
 
     async def dispatch(self, request: Request, call_next: Callable):
         start = time.monotonic()
         response: Response = await call_next(request)
         latency = time.monotonic() - start
-        METRICS.record(request.url.path, response.status_code, latency)
+
+        endpoint = request.url.path
+        method = request.method
+        status = str(response.status_code)
+
+        REQUEST_COUNT.labels(endpoint=endpoint, method=method, status=status).inc()
+        REQUEST_LATENCY.labels(endpoint=endpoint).observe(latency)
+
         return response
 
 
 # ─── Wiring ──────────────────────────────────────────────────────────────────
 
 def apply_production_middleware(app: FastAPI) -> FastAPI:
-    """Apply all production middleware + /metrics endpoint to a FastAPI app.
+    """Apply all production middleware + /metrics + tracing to a FastAPI app.
 
     Reads from the global config to decide what to enable.
     """
     cfg = get_config()
     sec = cfg.security
 
-    # 1. Metrics (innermost — records everything)
-    app.add_middleware(MetricsMiddleware)
+    # 1. Prometheus metrics (innermost — records everything)
+    app.add_middleware(PrometheusMiddleware)
 
     # 2. Rate limiting
     if sec.rate_limit_per_minute > 0:
@@ -177,9 +147,16 @@ def apply_production_middleware(app: FastAPI) -> FastAPI:
     if sec.api_key:
         app.add_middleware(APIKeyMiddleware, api_key=sec.api_key)
 
-    # 5. /metrics endpoint
-    @app.get("/metrics", response_class=PlainTextResponse)
-    async def metrics():
-        return METRICS.to_prometheus()
+    # 5. /metrics endpoint (Prometheus exposition format)
+    register_metrics_endpoint(app)
+
+    # 6. OpenTelemetry distributed tracing (deferred to avoid circular import)
+    try:
+        from api.tracing import setup_tracing  # noqa: E402
+    except ImportError:
+        setup_tracing = None  # type: ignore[assignment]
+
+    if setup_tracing is not None:
+        setup_tracing(app)
 
     return app
