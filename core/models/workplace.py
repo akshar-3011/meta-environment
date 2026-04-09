@@ -1,6 +1,5 @@
 """Core Pydantic/domain models for the workplace environment."""
 
-from dataclasses import dataclass, field
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -47,33 +46,26 @@ class WorkplaceObservation(Observation):
 
 
 class WorkplaceAction(Action):
-    """Action submitted by an agent for a workflow step.
+    """Action submitted by an agent for a workflow step."""
 
-    N10 Fix: action_type is now a Literal so invalid action types produce
-    a clear Pydantic 422 validation error rather than a silent 0-reward step.
-    """
-
-    action_type: Literal["classify", "reply", "escalate"]
+    action_type: str
     content: str
     confidence: Optional[float] = None
     explanation: Optional[str] = None
 
 
-@dataclass(frozen=True)
 class GradeResult:
-    """Structured grading result with normalized score and details.
+    """Structured grading result with normalized score and details."""
 
-    N9 Fix: Now a frozen dataclass — score cannot be mutated after construction
-    and is validated to [0.0, 1.0] range in __post_init__.
-    """
-
-    score: float
-    explanation: str = ""
-    components: Dict[str, float] = field(default_factory=dict)
-
-    def __post_init__(self):
-        # frozen=True prevents normal assignment; use object.__setattr__
-        object.__setattr__(self, "score", max(0.0, min(1.0, self.score)))
+    def __init__(
+        self,
+        score: float,
+        explanation: str = "",
+        components: Optional[Dict[str, float]] = None,
+    ):
+        self.score = max(0.0, min(1.0, score))
+        self.explanation = explanation
+        self.components = components or {}
 
     def __float__(self):
         return self.score

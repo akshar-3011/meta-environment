@@ -37,9 +37,9 @@ def main(host: str = "0.0.0.0", port: int = 8000):
     return _main(host=host, port=port)
 
 
-@app.get("/health")
-def health():
-    return {"status": "ok"}
+# Health endpoint is provided by OpenEnv's create_app() via api/app.py.
+# The framework-provided /health returns {"status": "healthy"}.
+# Do not register a duplicate here — it would shadow the framework endpoint.
 
 
 if __name__ == "__main__":

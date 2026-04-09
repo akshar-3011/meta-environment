@@ -7,7 +7,9 @@ from typing import Any, Dict, List, Optional
 try:
     from openenv.core import Environment
 except ImportError:
-    from pydantic import BaseModel as Environment
+    class Environment:
+        """Minimal stub when openenv-core is not installed (local dev / tests)."""
+        pass
 
 try:
     from ..core.config import get_config
@@ -43,6 +45,10 @@ except ImportError:  # pragma: no cover
 setup_logging()
 CFG = get_config()
 LOGGER = get_logger(__name__)
+DEBUG = CFG.environment.debug
+
+
+# _debug_log is now an instance method on WorkplaceEnvironment (see C4 fix).
 
 
 @dataclass
@@ -63,11 +69,9 @@ class WorkplaceEnvironment(Environment):
     """Production-oriented OpenEnv environment with modular dependencies.
 
     Each instance owns its own EpisodeState so concurrent WebSocket sessions
-    cannot corrupt each other's state.
-
-    C2 Fix: Debug flag is instance-owned (self._debug) instead of a global
-    module-level variable.  This prevents one instance from silently changing
-    the debug behavior of all other instances.
+    cannot corrupt each other's state. The original class-level `_state`
+    attribute was a singleton shared across all instances — equivalent to the
+    global `_SHARED_STATE` dict in the original codebase.
     """
 
     def __init__(
@@ -76,7 +80,6 @@ class WorkplaceEnvironment(Environment):
         reward_policy: Optional[RewardPolicy] = None,
         scenario_repository: Optional[ScenarioRepository] = None,
     ):
-        # C2 Fix: store debug as instance variable, not global
         self._debug = debug
         self._policy = reward_policy or RuleBasedRewardPolicy()
         self._scenario_repo = scenario_repository or get_default_repository()
@@ -86,8 +89,7 @@ class WorkplaceEnvironment(Environment):
         if self._scenarios:
             self._state.current = self._scenarios[0]
 
-    def _debug_log(self, msg: str) -> None:
-        """Instance-level debug logging (C2 Fix)."""
+    def _debug_log(self, msg: str):
         if self._debug:
             LOGGER.debug(msg)
 
@@ -112,8 +114,6 @@ class WorkplaceEnvironment(Environment):
             complexity_score=scenario.get("complexity", 1),
             scenario_metadata={
                 "min_reply_length": scenario.get("min_reply_length", 20),
-                # C4 support: expose requires_escalation so graders can read it
-                "requires_escalation": scenario.get("requires_escalation", False),
             },
         )
 
@@ -127,7 +127,6 @@ class WorkplaceEnvironment(Environment):
             scenario_difficulty=scenario.get("difficulty", "easy"),
             min_reply_length=scenario.get("min_reply_length", 30),
             previous_actions=self._state.action_rewards,
-            requires_escalation=scenario.get("requires_escalation"),
         )
 
         self._state.step_details.append(breakdown)

@@ -275,17 +275,15 @@ class RuleBasedRewardPolicy(RewardPolicy):
             score = 0.3
             reason = f"Over-escalated {context.actual_category}"
 
-        if did_escalate and context.step_count < 2:
+        if did_escalate and context.step_count < 3:
             score *= 0.7
             reason += " (early escalation penalty)"
             details["timing_penalty"] = 0.3
 
-        # C7 Fix: timing bonus was checking step_count == 2 which is unreachable
-        # because escalate is always step 3. Changed to >= 3 for on-time escalation.
         if did_escalate and context.step_count >= 3:
-            score = min(1.0, score + 0.05)
-            reason += " (on-time escalation)"
-            details["timing_bonus"] = 0.05
+            score = min(1.0, score + 0.1)
+            reason += " (good timing)"
+            details["timing_bonus"] = 0.1
 
         return score, reason, details
 
@@ -388,7 +386,8 @@ class RuleBasedRewardPolicy(RewardPolicy):
 
         elif action_type == "reply":
             classification_reward = previous_actions.get("classify", 0.0)
-            consistency_penalty = 0.0 if classification_reward > 0.5 else 0.2
+            # Scale: penalty proportional to how far below 0.5 the classification was
+            consistency_penalty = max(0.0, 0.4 * (0.5 - classification_reward)) if classification_reward < 0.5 else 0.0
 
             evaluation = self._reply_engine.evaluate(context)
             score = float(evaluation["score"])

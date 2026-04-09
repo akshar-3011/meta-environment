@@ -79,7 +79,7 @@ class BaseInference(ABC):
                     url,
                     json=payload,
                     headers={"Content-Type": "application/json"},
-                    timeout=(5.0, self.timeout),  # N7: (connect, read) timeouts
+                    timeout=self.timeout,
                 )
                 if response.ok:
                     return response.json()
@@ -91,23 +91,21 @@ class BaseInference(ABC):
                     attempt,
                     attempts,
                 )
-                # C9 Fix: replace print() with structured logging
-                LOGGER.warning(
-                    "HTTP %s on %s attempt %s/%s body=%s",
-                    response.status_code, path, attempt, attempts,
-                    response.text[:200],
-                )
-                response.raise_for_status()
+                print(f"\n❌ HTTP {response.status_code} on {path} (attempt {attempt}/{attempts})")
+                try:
+                    print(json.dumps(response.json(), indent=2))
+                except Exception:
+                    print(response.text)
+                continue
             except requests.Timeout:
-                LOGGER.warning(
-                    "Timeout after %ss on %s attempt %s/%s",
-                    self.timeout, path, attempt, attempts,
+                LOGGER.warning("Timeout after %ss on %s attempt %s/%s", self.timeout, path, attempt, attempts)
+                print(
+                    f"\n⏱️ Timeout after {self.timeout}s on {path} "
+                    f"(attempt {attempt}/{attempts})"
                 )
             except Exception as exc:  # pragma: no cover
-                LOGGER.exception(
-                    "Request failed on %s attempt %s/%s: %s",
-                    path, attempt, attempts, exc,
-                )
+                LOGGER.exception("Request failed on %s attempt %s/%s", path, attempt, attempts)
+                print(f"\n❌ Request failed on {path} (attempt {attempt}/{attempts}): {exc}")
 
             if attempt < attempts:
                 time.sleep(self.retry.backoff_seconds * attempt)
