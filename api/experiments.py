@@ -307,7 +307,7 @@ class ExperimentStore:
 
             # Consistent hashing: same scenario always goes to same variant
             hash_input = f"{exp_id}:{scenario_id}"
-            hash_val = int(hashlib.md5(hash_input.encode()).hexdigest(), 16)
+            hash_val = int(hashlib.md5(hash_input.encode(), usedforsecurity=False).hexdigest(), 16)  # noqa: S324
             bucket = (hash_val % 1000) / 1000.0
 
             if bucket < exp["traffic_split"]:

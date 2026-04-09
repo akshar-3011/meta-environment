@@ -1,4 +1,17 @@
-"""Production middleware: API key auth, CORS, rate limiting, Prometheus metrics, request-ID tracing."""
+"""Production middleware: security headers, auth, rate limiting, Prometheus metrics, tracing.
+
+Security features:
+  - Content-Security-Policy: default-src 'self'
+  - Strict-Transport-Security: max-age=31536000; includeSubDomains
+  - X-Content-Type-Options: nosniff
+  - X-Frame-Options: DENY
+  - X-XSS-Protection: 0 (deprecated, CSP replaces it)
+  - Referrer-Policy: strict-origin-when-cross-origin
+  - Error sanitization (no stack traces to clients)
+  - Request body size limit (1MB default)
+  - Per-endpoint + global rate limiting
+  - Audit logging for auth and rate limit events
+"""
 
 from __future__ import annotations
 
@@ -27,6 +40,22 @@ except ImportError:  # pragma: no cover
     )
 
 
+# ─── Constants ────────────────────────────────────────────────────────────────
+
+MAX_REQUEST_BODY_SIZE = 1 * 1024 * 1024  # 1MB
+
+SECURITY_HEADERS = {
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "X-XSS-Protection": "0",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Cache-Control": "no-store, no-cache, must-revalidate",
+}
+
+
 # ─── Rate limiter (sliding window per IP) ────────────────────────────────────
 
 class _RateLimiter:
@@ -52,6 +81,93 @@ class _RateLimiter:
 
 
 # ─── Middleware classes ───────────────────────────────────────────────────────
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Inject security headers into every response."""
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        response: Response = await call_next(request)
+
+        for header, value in SECURITY_HEADERS.items():
+            response.headers[header] = value
+
+        return response
+
+
+class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
+    """Reject requests with bodies exceeding MAX_REQUEST_BODY_SIZE."""
+
+    def __init__(self, app, max_size: int = MAX_REQUEST_BODY_SIZE):
+        super().__init__(app)
+        self.max_size = max_size
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        content_length = request.headers.get("content-length")
+        if content_length and int(content_length) > self.max_size:
+            # Audit log
+            try:
+                from security.audit_logging import log_request_too_large
+                client_ip = request.client.host if request.client else "unknown"
+                log_request_too_large(client_ip, request.url.path, int(content_length), self.max_size)
+            except (ImportError, Exception):
+                pass
+
+            return JSONResponse(
+                status_code=413,
+                content={
+                    "error": "Request body too large",
+                    "max_size_bytes": self.max_size,
+                },
+            )
+        return await call_next(request)
+
+
+class ErrorSanitizationMiddleware(BaseHTTPMiddleware):
+    """Catch unhandled exceptions and return generic error (no stack traces)."""
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        try:
+            response: Response = await call_next(request)
+
+            # Sanitize 500-level error bodies in production
+            if response.status_code >= 500:
+                try:
+                    from security.audit_logging import log_error_sanitized
+                    client_ip = request.client.host if request.client else "unknown"
+                    log_error_sanitized(client_ip, request.url.path, response.status_code)
+                except (ImportError, Exception):
+                    pass
+
+                cfg = get_config()
+                if cfg.env == "production":
+                    return JSONResponse(
+                        status_code=response.status_code,
+                        content={
+                            "error": "Internal server error",
+                            "request_id": getattr(request.state, "request_id", ""),
+                        },
+                    )
+
+            return response
+
+        except Exception:
+            # Catch truly unhandled exceptions
+            try:
+                from security.audit_logging import log_error_sanitized
+                client_ip = request.client.host if request.client else "unknown"
+                log_error_sanitized(client_ip, request.url.path, 500, "unhandled_exception")
+            except (ImportError, Exception):
+                pass
+
+            request_id = getattr(request.state, "request_id", "") if hasattr(request, "state") else ""
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "error": "Internal server error",
+                    "request_id": request_id,
+                },
+            )
+
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
     """Generate X-Request-ID if missing, inject into response + request state.
@@ -95,16 +211,37 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
         self.api_key = api_key
 
     async def dispatch(self, request: Request, call_next: Callable):
+        client_ip = request.client.host if request.client else "unknown"
+        request_id = getattr(request.state, "request_id", "") if hasattr(request, "state") else ""
+
         if self.api_key and request.url.path not in self.EXEMPT_PATHS:
             provided = (
                 request.headers.get("X-API-Key")
                 or request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
             )
             if provided != self.api_key:
+                # Audit log: auth failure
+                try:
+                    from security.audit_logging import log_auth_failure
+                    log_auth_failure(
+                        client_ip, request_id, provided or "",
+                        request.url.path, "invalid_api_key",
+                    )
+                except (ImportError, Exception):
+                    pass
+
                 return JSONResponse(
                     status_code=401,
                     content={"error": "Invalid or missing API key"},
                 )
+
+            # Audit log: auth success
+            try:
+                from security.audit_logging import log_auth_success
+                log_auth_success(client_ip, request_id, provided, request.url.path)
+            except (ImportError, Exception):
+                pass
+
         return await call_next(request)
 
 
@@ -121,6 +258,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return JSONResponse(
                 status_code=429,
                 content={"error": "Rate limit exceeded. Try again later."},
+                headers={"Retry-After": "60"},
             )
         return await call_next(request)
 
@@ -149,22 +287,49 @@ def apply_production_middleware(app: FastAPI) -> FastAPI:
     """Apply all production middleware + /metrics + tracing to a FastAPI app.
 
     Reads from the global config to decide what to enable.
+
+    Middleware execution order (outermost → innermost):
+      1. API Key Auth (reject unauthenticated requests first)
+      2. CORS (handle preflight)
+      3. Strict Rate Limiting (per-endpoint)
+      4. Global Rate Limiting (per-IP fallback)
+      5. Request Size Limit (reject oversized bodies)
+      6. Error Sanitization (catch exceptions, strip stack traces)
+      7. Request ID + Trace Context
+      8. Security Headers (inject headers into every response)
+      9. Prometheus Metrics (innermost — records everything)
     """
     cfg = get_config()
     sec = cfg.security
 
-    # 1. Prometheus metrics (innermost — records everything)
+    # 9. Prometheus metrics (innermost — records everything)
     app.add_middleware(PrometheusMiddleware)
 
-    # 2. Request-ID + trace context injection
+    # 8. Security headers
+    app.add_middleware(SecurityHeadersMiddleware)
+
+    # 7. Request-ID + trace context injection
     app.add_middleware(RequestIDMiddleware)
 
-    # 3. Rate limiting
+    # 6. Error sanitization
+    app.add_middleware(ErrorSanitizationMiddleware)
+
+    # 5. Request body size limit (1MB)
+    app.add_middleware(RequestSizeLimitMiddleware, max_size=MAX_REQUEST_BODY_SIZE)
+
+    # 4. Global rate limiting (per-IP fallback)
     if sec.rate_limit_per_minute > 0:
         limiter = _RateLimiter(max_requests=sec.rate_limit_per_minute)
         app.add_middleware(RateLimitMiddleware, limiter=limiter)
 
-    # 4. CORS
+    # 3. Strict per-endpoint rate limiting
+    try:
+        from security.rate_limit_strict import StrictRateLimitMiddleware
+        app.add_middleware(StrictRateLimitMiddleware)
+    except ImportError:
+        pass
+
+    # 2. CORS
     if sec.cors_origins:
         origins = [o.strip() for o in sec.cors_origins.split(",") if o.strip()]
     else:
@@ -179,14 +344,14 @@ def apply_production_middleware(app: FastAPI) -> FastAPI:
             allow_headers=["*"],
         )
 
-    # 5. API key auth (outermost)
+    # 1. API key auth (outermost)
     if sec.api_key:
         app.add_middleware(APIKeyMiddleware, api_key=sec.api_key)
 
-    # 6. /metrics endpoint (Prometheus exposition format)
+    # /metrics endpoint (Prometheus exposition format)
     register_metrics_endpoint(app)
 
-    # 7. OpenTelemetry distributed tracing (deferred to avoid circular import)
+    # OpenTelemetry distributed tracing (deferred to avoid circular import)
     try:
         from api.tracing import setup_tracing  # noqa: E402
     except ImportError:
