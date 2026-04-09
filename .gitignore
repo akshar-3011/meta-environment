@@ -55,3 +55,6 @@ logs/
 
 # Training results
 results/
+
+# Experiment database
+experiments.db
