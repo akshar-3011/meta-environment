@@ -100,18 +100,25 @@ def run_evaluation(
     n_episodes: int,
     strategy_version: str,
     scenario_pool: Optional[List[Dict[str, Any]]] = None,
+    locked_scenario_ids: Optional[List[Dict[str, Any]]] = None,
 ) -> RewardMemory:
     """Run deterministic evaluation and return episode memory.
 
-    If *scenario_pool* is provided, the environment cycles through only
+    If *locked_scenario_ids* is provided (a pre-filtered list of scenario
+    dicts), it takes priority over *scenario_pool* — the evaluation runs
+    only on those scenarios.  If *scenario_pool* is provided (and
+    *locked_scenario_ids* is None), the environment cycles through only
     those scenarios instead of the full 100-scenario corpus.
     """
     policy = RuleBasedRewardPolicy()
     memory = RewardMemory()
 
+    # locked_scenario_ids (pre-filtered pool) takes priority over scenario_pool
+    effective_pool = locked_scenario_ids if locked_scenario_ids is not None else scenario_pool
+
     # Inject custom scenario pool if provided; otherwise use full corpus.
-    if scenario_pool is not None:
-        repo = StaticScenarioRepository(scenario_pool)
+    if effective_pool is not None:
+        repo = StaticScenarioRepository(effective_pool)
         env = WorkplaceEnvironment(reward_policy=policy, scenario_repository=repo)
     else:
         env = WorkplaceEnvironment(reward_policy=policy)
@@ -199,6 +206,42 @@ def run_evaluation(
         memory.add(record)
 
     return memory
+
+
+def _build_locked_pool(
+    baseline_memory: RewardMemory,
+    threshold: float = 0.60,
+) -> Optional[List[Dict[str, Any]]]:
+    """Build a locked scenario pool from the baseline's worst episodes.
+
+    Extracts failed EpisodeRecords (total_reward < threshold), matches their
+    email snippets back to the full corpus, and returns the matched scenario
+    dicts.  Returns None if no failures are found.
+    """
+    from core.improvement.curriculum import CurriculumSampler
+
+    failed_records = [
+        r for r in baseline_memory.records if r.total_reward < threshold
+    ]
+    if not failed_records:
+        return None
+
+    # Index corpus by email prefix for fast matching
+    corpus = CurriculumSampler().corpus
+    corpus_by_prefix: Dict[str, Dict[str, Any]] = {}
+    for scenario in corpus:
+        prefix = str(scenario.get("email", ""))[:120]
+        corpus_by_prefix[prefix] = scenario
+
+    locked: List[Dict[str, Any]] = []
+    seen_prefixes: set = set()
+    for record in failed_records:
+        prefix = record.email_snippet[:120]
+        if prefix in corpus_by_prefix and prefix not in seen_prefixes:
+            locked.append(corpus_by_prefix[prefix])
+            seen_prefixes.add(prefix)
+
+    return locked if locked else None
 
 
 def _mean(values: List[float]) -> float:
@@ -413,6 +456,13 @@ def run_improvement_loop(
     baseline_memory.save("baseline_memory.json")
     print_summary(baseline_memory, "BASELINE")
 
+    # Lock subsequent evaluations to the hardest baseline scenarios
+    # so the reward delta is maximized and consistent across runs.
+    locked_pool = _build_locked_pool(baseline_memory, threshold=0.60)
+    if locked_pool:
+        print(f"Demo locked to {len(locked_pool)} failure scenarios for consistent delta measurement.")
+        _flush()
+
     baseline_means = _memory_means(baseline_memory)
     baseline_mean_total = baseline_means["total"]
     accepted_strategy_text = _read_text_if_exists("final_strategy.json")
@@ -551,6 +601,7 @@ def run_improvement_loop(
                 n_episodes=n_episodes,
                 strategy_version=f"improved_v{generation}",
                 scenario_pool=curriculum_pool,
+                locked_scenario_ids=locked_pool,
             )
             candidate_means = _memory_means(candidate_memory)
             candidate_mean_total = candidate_means["total"]
