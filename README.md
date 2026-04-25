@@ -10,7 +10,8 @@ app_port: 7860
 
 > **🚀 Live Environment:** [akshar-3011-meta-environment.hf.space](https://akshar-3011-meta-environment.hf.space)
 > **📦 GitHub:** [akshar-3011/meta-environment](https://github.com/akshar-3011/meta-environment)
-> **📓 Colab Training Notebook:** [colab_training.ipynb](https://github.com/akshar-3011/meta-environment/blob/main/colab_training.ipynb)
+> **📓 Hugging Face Notebook:** [https://huggingface.co/akshar-3011/meta-environment/blob/main/colab_training.ipynb](https://huggingface.co/akshar-3011/meta-environment/blob/main/colab_training.ipynb)
+> **📓 Colab (Runnable):** [https://colab.research.google.com/github/akshar-3011/meta-environment/blob/main/colab_training.ipynb](https://colab.research.google.com/github/akshar-3011/meta-environment/blob/main/colab_training.ipynb)
 > **📝 Blog Post:** [hf_blog_post.md](https://github.com/akshar-3011/meta-environment/blob/main/hf_blog_post.md)
 > **🎥 Mini-Blog / Video:** _Coming soon_
 
