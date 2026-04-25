@@ -1,6 +1,6 @@
 # 📊 Meta-Environment: Improvement Run Results
 
-> Generated: 2026-04-25 07:44 UTC
+> Generated: 2026-04-25 07:56 UTC
 
 ## 1. System Overview
 
@@ -14,7 +14,7 @@
 |:---:|:---:|:---:|:---:|:---:|:---:|:---|
 | 0 | 0.7702 | 0.2880 | 0.2646 | 0.2176 | 7 | Baseline — no strategy applied. |
 | 1 | 0.5083 | 0.1280 | 0.1920 | 0.1883 | 17 | Fallback strategy using conservative keyword classification, structured templ... |
-| 2 | 0.3669 | 0.0700 | 0.1908 | 0.1061 | 21 | Fallback strategy using conservative keyword classification, structured templ... |
+| 2 | 0.4580 | 0.1180 | 0.2035 | 0.1365 | 18 | Fallback strategy using conservative keyword classification, structured templ... |
 
 **Best generation**: 0 (Total: 0.7702, +0.0% from baseline)
 
