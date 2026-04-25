@@ -30,6 +30,35 @@ from environment.workplace_environment import WorkplaceEnvironment
 from models import WorkplaceAction
 
 
+# Hardcoded minimal fallback strategy for crash recovery.
+DEFAULT_FALLBACK_STRATEGY: Dict[str, Any] = {
+    "classification_rules": {
+        "refund": ["refund", "return", "reimbursement", "charged", "money back", "credit"],
+        "complaint": ["unacceptable", "terrible", "angry", "broken", "frustrated", "awful"],
+        "query": ["information", "policy", "status", "how to", "question", "help"],
+        "default": "query",
+    },
+    "reply_templates": {
+        "refund": "Hello, we are sorry for the issue. We will help process your refund promptly. Regards, Support Team.",
+        "complaint": "Hello, we are sorry for your experience. We take this seriously and will resolve it quickly. Regards, Support Team.",
+        "query": "Hello, thank you for your question. We are happy to help and will provide the requested information. Regards, Support Team.",
+    },
+    "reply_requirements": {
+        "min_length": 40,
+        "must_include_greeting": True,
+        "must_include_closing": True,
+        "forbidden_phrases": ["not my problem", "figure it out", "stop emailing"],
+    },
+    "escalation_rules": {
+        "always_escalate": ["legal threat", "safety risk", "account restricted"],
+        "never_escalate": ["basic shipping question", "general policy question"],
+        "escalate_if_complaint": True,
+        "escalate_if_high_urgency": True,
+    },
+    "reasoning": "Default fallback strategy for crash recovery.",
+}
+
+
 def _obs_to_dict(obs: Any) -> Dict[str, Any]:
     if hasattr(obs, "model_dump"):
         return obs.model_dump()
@@ -173,8 +202,12 @@ def run_evaluation(
 
         for action_type, content in ordered_actions:
             action = WorkplaceAction(action_type=action_type, content=content)
-            step_obs = _obs_to_dict(env.step(action))
-            reward_value = float(step_obs.get("reward") or 0.0)
+            try:
+                step_obs = _obs_to_dict(env.step(action))
+                reward_value = float(step_obs.get("reward") or 0.0)
+            except Exception:
+                step_obs = {}
+                reward_value = 0.0
 
             if action_type == "classify":
                 classify_action = content
@@ -432,10 +465,10 @@ def _demo_safe_generate(
         cached = _demo_load_cached_strategy()
         if cached is not None:
             return cached
-        # If no cache exists, use a minimal fallback
+        # If no cache exists, use the module-level default
         if current_strategy is not None:
             return current_strategy
-        return {"reasoning": "Fallback — no API or cache available."}
+        return dict(DEFAULT_FALLBACK_STRATEGY)
 
 
 def run_improvement_loop(
@@ -524,7 +557,12 @@ def run_improvement_loop(
 
         try:
             analyzer = FailureAnalyzer()
-            failure_analysis = analyzer.analyze(current_memory)
+            try:
+                failure_analysis = analyzer.analyze(current_memory)
+            except Exception as fa_exc:
+                print(f"⚠️  Failure analysis error: using empty analysis ({fa_exc})")
+                _flush()
+                failure_analysis = {}
 
             client = _make_strategy_client()
             optimizer = StrategyOptimizer(client)
@@ -540,7 +578,18 @@ def run_improvement_loop(
             if demo_mode:
                 current_strategy = _demo_safe_generate(optimizer, **_gen_kwargs)
             else:
-                current_strategy = optimizer.generate_strategy(**_gen_kwargs)
+                try:
+                    current_strategy = optimizer.generate_strategy(**_gen_kwargs)
+                except Exception as opt_exc:
+                    print(f"⚠️  API fallback: loading cached strategy from final_strategy.json ({opt_exc})")
+                    _flush()
+                    cached = _demo_load_cached_strategy()
+                    if cached is not None:
+                        current_strategy = cached
+                    elif current_strategy is not None:
+                        pass  # keep current_strategy as-is
+                    else:
+                        current_strategy = dict(DEFAULT_FALLBACK_STRATEGY)
 
             reasoning = _safe_string(
                 current_strategy.get("reasoning", "No reasoning provided."),
