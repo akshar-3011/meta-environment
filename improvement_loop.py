@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import logging
+import argparse
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -339,12 +341,66 @@ def _save_evolution_history(history: List[Dict[str, Any]], path: str = "evolutio
     )
 
 
+def _flush() -> None:
+    """Flush stdout so terminal output appears immediately (unbuffered)."""
+    sys.stdout.flush()
+
+
+def _demo_load_cached_strategy(path: str = "final_strategy.json") -> Optional[Dict[str, Any]]:
+    """Load a cached strategy from disk for demo fallback."""
+    p = Path(path)
+    if not p.exists():
+        return None
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+        if isinstance(data, dict):
+            return data
+    except Exception:
+        pass
+    return None
+
+
+def _demo_safe_generate(
+    optimizer: StrategyOptimizer,
+    failure_analysis: Any,
+    current_strategy: Optional[Dict[str, Any]],
+    baseline_metrics_summary: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Wrap strategy generation with demo-mode fallback.
+
+    If the Anthropic API call fails (rate-limit, timeout, no key),
+    falls back to loading the cached strategy from disk.
+    """
+    try:
+        return optimizer.generate_strategy(
+            failure_analysis=failure_analysis,
+            current_strategy=current_strategy,
+            baseline_metrics_summary=baseline_metrics_summary,
+        )
+    except Exception as api_exc:
+        print(f"\n⚠️  API fallback: using cached strategy (reason: {api_exc})")
+        _flush()
+        cached = _demo_load_cached_strategy()
+        if cached is not None:
+            return cached
+        # If no cache exists, use a minimal fallback
+        if current_strategy is not None:
+            return current_strategy
+        return {"reasoning": "Fallback — no API or cache available."}
+
+
 def run_improvement_loop(
     n_episodes: int = 25,
     n_iterations: int = 2,
     max_generations: int = 4,
     convergence_threshold: float = 0.02,
+    demo_mode: bool = False,
 ) -> None:
+    if demo_mode:
+        max_generations = min(max_generations, 3)
+        print("\n🎬 DEMO MODE — max 3 generations, API fallback enabled")
+        _flush()
+
     logging.getLogger("environment.workplace_environment").setLevel(logging.WARNING)
 
     # 1) BASELINE RUN
@@ -416,14 +472,19 @@ def run_improvement_loop(
 
             client = _make_strategy_client()
             optimizer = StrategyOptimizer(client)
-            current_strategy = optimizer.generate_strategy(
-                failure_analysis=failure_analysis,
-                current_strategy=current_strategy,
-                baseline_metrics_summary={
+
+            _gen_kwargs = {
+                "failure_analysis": failure_analysis,
+                "current_strategy": current_strategy,
+                "baseline_metrics_summary": {
                     "baseline_mean_total_reward": baseline_mean_total,
                     "baseline_means": _memory_means(baseline_memory),
                 },
-            )
+            }
+            if demo_mode:
+                current_strategy = _demo_safe_generate(optimizer, **_gen_kwargs)
+            else:
+                current_strategy = optimizer.generate_strategy(**_gen_kwargs)
 
             reasoning = _safe_string(
                 current_strategy.get("reasoning", "No reasoning provided."),
@@ -453,14 +514,18 @@ def run_improvement_loop(
                     f"scenarios vs baseline {baseline_golden_score:.4f}. "
                     f"Prioritize not breaking general cases."
                 )
-                current_strategy = optimizer.generate_strategy(
-                    failure_analysis=failure_analysis_with_warning,
-                    current_strategy=current_strategy,
-                    baseline_metrics_summary={
+                _retry_kwargs = {
+                    "failure_analysis": failure_analysis_with_warning,
+                    "current_strategy": current_strategy,
+                    "baseline_metrics_summary": {
                         "baseline_mean_total_reward": baseline_mean_total,
                         "baseline_means": _memory_means(baseline_memory),
                     },
-                )
+                }
+                if demo_mode:
+                    current_strategy = _demo_safe_generate(optimizer, **_retry_kwargs)
+                else:
+                    current_strategy = optimizer.generate_strategy(**_retry_kwargs)
                 reasoning = _safe_string(
                     current_strategy.get("reasoning", "No reasoning provided."),
                     "No reasoning provided.",
@@ -545,12 +610,16 @@ def run_improvement_loop(
                 curr_mean = evolution_history[-1]["mean_total"]
                 if abs(curr_mean - prev_mean) < convergence_threshold:
                     print(f"\n✅ Converged at generation {generation}")
+                    _flush()
                     break
+
+            _flush()  # Ensure all generation output is visible immediately
 
         except Exception as exc:
             print(f"\n⚠️  Generation {generation} failed: {exc}")
             print("Saving accumulated evolution history before exit...")
             _save_evolution_history(evolution_history)
+            _flush()
             break
 
     # ── Save evolution history (always, regardless of exit reason) ─────────
@@ -600,4 +669,26 @@ def run_improvement_loop(
 
 
 if __name__ == "__main__":
-    run_improvement_loop(n_episodes=25, n_iterations=2, max_generations=4, convergence_threshold=0.02)
+    parser = argparse.ArgumentParser(
+        description="Run the meta-environment improvement loop.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "--demo",
+        action="store_true",
+        default=False,
+        help="Enable demo mode: API fallback, max 3 generations, flushed output.",
+    )
+    parser.add_argument("--episodes", type=int, default=25, help="Episodes per evaluation.")
+    parser.add_argument("--iterations", type=int, default=2, help="Max iterations (n_iterations).")
+    parser.add_argument("--generations", type=int, default=4, help="Max generations.")
+    parser.add_argument("--threshold", type=float, default=0.02, help="Convergence threshold.")
+
+    args = parser.parse_args()
+    run_improvement_loop(
+        n_episodes=args.episodes,
+        n_iterations=args.iterations,
+        max_generations=args.generations,
+        convergence_threshold=args.threshold,
+        demo_mode=args.demo,
+    )
