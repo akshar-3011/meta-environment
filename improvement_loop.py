@@ -452,6 +452,7 @@ def _demo_safe_generate(
     failure_analysis: Any,
     current_strategy: Optional[Dict[str, Any]],
     baseline_metrics_summary: Dict[str, Any],
+    baseline_score: float = 0.0,
 ) -> Dict[str, Any]:
     """Wrap strategy generation with demo-mode fallback.
 
@@ -463,6 +464,7 @@ def _demo_safe_generate(
             failure_analysis=failure_analysis,
             current_strategy=current_strategy,
             baseline_metrics_summary=baseline_metrics_summary,
+            baseline_score=baseline_score,
         )
     except Exception as api_exc:
         print(f"\n⚠️  API fallback: using cached strategy (reason: {api_exc})")
@@ -513,6 +515,8 @@ def run_improvement_loop(
 
     current_memory = baseline_memory
     current_strategy: Optional[Dict[str, Any]] = None
+    best_strategy: Optional[Dict[str, Any]] = None
+    best_score: float = 0.0
     improved_memory = baseline_memory
     final_memory = baseline_memory
     final_decision = "REJECTED"
@@ -531,7 +535,7 @@ def run_improvement_loop(
         / len(baseline_golden_memory.records)
         if baseline_golden_memory.records else 0.0
     )
-    print(f"\nBaseline golden score (10 scenarios): {baseline_golden_score:.4f}")
+    print(f"\n[REGRESSION] Baseline golden score: {baseline_golden_score:.3f}")
 
     # ── Evolution history tracking ────────────────────────────────────────
     evolution_history: List[Dict[str, Any]] = []
@@ -583,6 +587,7 @@ def run_improvement_loop(
                     "baseline_mean_total_reward": baseline_mean_total,
                     "baseline_means": _memory_means(baseline_memory),
                 },
+                "baseline_score": baseline_golden_score,
             }
             if demo_mode:
                 current_strategy = _demo_safe_generate(optimizer, **_gen_kwargs)
@@ -595,6 +600,8 @@ def run_improvement_loop(
                     cached = _demo_load_cached_strategy()
                     if cached is not None:
                         current_strategy = cached
+                    elif best_strategy is not None:
+                        current_strategy = best_strategy
                     elif current_strategy is not None:
                         pass  # keep current_strategy as-is
                     else:
@@ -637,6 +644,7 @@ def run_improvement_loop(
                         "baseline_mean_total_reward": baseline_mean_total,
                         "baseline_means": _memory_means(baseline_memory),
                     },
+                    "baseline_score": baseline_golden_score,
                 }
                 if demo_mode:
                     current_strategy = _demo_safe_generate(optimizer, **_retry_kwargs)
@@ -652,8 +660,8 @@ def run_improvement_loop(
                 )
                 print_strategy_reasoning(reasoning, generation)
 
-                # Validate retry (log score but use regardless)
-                _, retry_golden_score = regression_tester.validate(
+                # Validate retry
+                retry_passed, retry_golden_score = regression_tester.validate(
                     current_strategy, baseline_golden_score
                 )
                 print(
@@ -661,8 +669,20 @@ def run_improvement_loop(
                     f"(was {first_attempt_golden_score:.4f}, baseline {baseline_golden_score:.4f})"
                 )
                 golden_score = retry_golden_score
+
+                # If retry also failed, revert to best known strategy
+                if not retry_passed and best_strategy is not None:
+                    print(
+                        f"[REGRESSION] Strategy rejected — reverting to best known strategy "
+                        f"(score: {best_score:.3f})"
+                    )
+                    current_strategy = best_strategy
             else:
                 print(f"Golden regression test: PASSED ({golden_score:.4f} >= {baseline_golden_score * 0.90:.4f})")
+                # Update best strategy tracking
+                if golden_score > best_score:
+                    best_strategy = _safe_strategy(current_strategy)
+                    best_score = golden_score
 
             improved_agent = AdaptiveAgent(_safe_strategy(current_strategy))
             candidate_memory = run_evaluation(

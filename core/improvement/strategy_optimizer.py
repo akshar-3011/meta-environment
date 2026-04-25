@@ -49,7 +49,9 @@ class StrategyOptimizer:
         'Example of CORRECT format: {"refund": ["refund", "money back", "charged"]} '
         'Example of WRONG format: {"refund": [{"signal_phrases": ["refund"]}]} '
         "Do NOT nest objects inside classification arrays. "
-        "Every classification rule value must be a flat list of strings only."
+        "Every classification rule value must be a flat list of strings only. "
+        "You will be given a baseline performance score. Your output must produce strictly better agent decisions than the baseline. "
+        "Generating rules similar to the baseline is a failure."
     )
 
     def __init__(self, client: Any):
@@ -60,6 +62,7 @@ class StrategyOptimizer:
         failure_analysis: Dict[str, Any],
         current_strategy: Optional[Dict[str, Any]] = None,
         baseline_metrics_summary: Optional[Dict[str, Any]] = None,
+        baseline_score: float = 0.0,
     ) -> Dict[str, Any]:
         import os
         api_key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -69,6 +72,7 @@ class StrategyOptimizer:
             failure_analysis=failure_analysis,
             current_strategy=current_strategy,
             baseline_metrics_summary=baseline_metrics_summary,
+            baseline_score=baseline_score,
         )
 
         strategy = self._fallback_strategy()
@@ -118,6 +122,7 @@ class StrategyOptimizer:
         failure_analysis: Dict[str, Any],
         current_strategy: Optional[Dict[str, Any]] = None,
         baseline_metrics_summary: Optional[Dict[str, Any]] = None,
+        baseline_score: float = 0.0,
     ) -> str:
         failure_examples = self._extract_failure_examples(failure_analysis)
 
@@ -136,10 +141,21 @@ class StrategyOptimizer:
             json.dumps(failure_examples, ensure_ascii=False),
         ]
 
+        # Inject performance target before current strategy
+        parts.extend([
+            "",
+            "PERFORMANCE TARGET:",
+            f"The current baseline agent scores {baseline_score:.2f} on evaluation scenarios.",
+            f"Your generated strategy MUST produce agent behavior that scores ABOVE {baseline_score:.2f}.",
+            "Strategies that match or fall below this score are considered failures.",
+            "Every rule you generate must be designed to improve on this specific score.",
+        ])
+
         if current_strategy is not None:
             parts.extend(
                 [
-                    "Here is the previous strategy. Improve it.",
+                    "",
+                    "CURRENT STRATEGY (improve it):",
                     json.dumps(current_strategy, ensure_ascii=False),
                 ]
             )
