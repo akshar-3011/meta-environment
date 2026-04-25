@@ -224,4 +224,126 @@ def print_strategy_diff(
     print(f"  {_DIM}{'─' * 70}{_RESET}")
 
 
-__all__ = ["print_reward_curve", "print_strategy_diff"]
+# ─── print_business_summary ──────────────────────────────────────────────────
+
+def _delta_arrow(delta: float) -> str:
+    """Return a colored arrow string for a delta value."""
+    if delta > 0.001:
+        return f"{_GREEN}▲{_RESET}"
+    elif delta < -0.001:
+        return f"{_RED}▼{_RESET}"
+    return f"{_DIM}─{_RESET}"
+
+
+def _delta_color(delta: float) -> str:
+    """Return ANSI color code based on delta direction."""
+    if delta > 0.001:
+        return _GREEN
+    elif delta < -0.001:
+        return _RED
+    return _YELLOW
+
+
+def print_business_summary(
+    baseline_memory: Any,
+    current_memory: Any,
+    generation: int,
+) -> None:
+    """Print a business-impact summary that non-technical judges remember.
+
+    Translates raw reward deltas into language that resonates:
+    categorization accuracy, customer satisfaction proxy, escalation
+    cost savings.
+
+    Parameters
+    ----------
+    baseline_memory : RewardMemory
+        The baseline evaluation memory.
+    current_memory : RewardMemory
+        The current generation's evaluation memory.
+    generation : int
+        Current generation number.
+    """
+    # Compute means safely
+    def _mean(records: list, attr: str) -> float:
+        vals = [getattr(r, attr, 0.0) for r in records]
+        return (sum(vals) / len(vals)) if vals else 0.0
+
+    b_classify = _mean(baseline_memory.records, "classify_reward")
+    c_classify = _mean(current_memory.records, "classify_reward")
+    b_reply = _mean(baseline_memory.records, "reply_reward")
+    c_reply = _mean(current_memory.records, "reply_reward")
+    b_escalate = _mean(baseline_memory.records, "escalate_reward")
+    c_escalate = _mean(current_memory.records, "escalate_reward")
+
+    classify_pct_b = b_classify * 100
+    classify_pct_c = c_classify * 100
+    classify_delta = classify_pct_c - classify_pct_b
+
+    reply_delta = c_reply - b_reply
+
+    escalate_pct_b = b_escalate * 100
+    escalate_pct_c = c_escalate * 100
+    escalate_delta = c_escalate - b_escalate
+
+    # Cost model: each incorrect escalation costs $150 in real systems
+    cost_reduction = round(escalate_delta * 150 * 1000)
+
+    # ── Render ────────────────────────────────────────────────────────────
+    print(f"\n  {_BOLD}{_CYAN}╔{'═' * 72}╗{_RESET}")
+    print(f"  {_BOLD}{_CYAN}║{_RESET}  {_BOLD}📊 BUSINESS IMPACT — Generation {generation}{' ' * (39 - len(str(generation)))}{_CYAN}║{_RESET}")
+    print(f"  {_BOLD}{_CYAN}╠{'═' * 72}╣{_RESET}")
+
+    # 1) Classification accuracy
+    cls_arrow = _delta_arrow(classify_delta)
+    cls_color = _delta_color(classify_delta)
+    print(
+        f"  {_BOLD}{_CYAN}║{_RESET}  {_BOLD}📧 Email categorization accuracy:{_RESET}"
+        f"  {classify_pct_b:.1f}% → {cls_color}{classify_pct_c:.1f}%{_RESET}"
+        f"  ({cls_arrow} {cls_color}{classify_delta:+.1f}%{_RESET})"
+        f"{' ' * max(1, 16 - len(f'{classify_delta:+.1f}'))}{_CYAN}║{_RESET}"
+    )
+
+    # 2) Reply quality
+    rpl_arrow = _delta_arrow(reply_delta)
+    rpl_color = _delta_color(reply_delta)
+    print(
+        f"  {_BOLD}{_CYAN}║{_RESET}  {_BOLD}💬 Reply quality score:{_RESET}"
+        f"  {b_reply:.3f} → {rpl_color}{c_reply:.3f}{_RESET}"
+        f"  {rpl_arrow}  — customer satisfaction proxy"
+        f"{' ' * 7}{_CYAN}║{_RESET}"
+    )
+
+    # 3) Escalation accuracy
+    esc_arrow = _delta_arrow(escalate_delta)
+    esc_color = _delta_color(escalate_delta)
+    print(
+        f"  {_BOLD}{_CYAN}║{_RESET}  {_BOLD}🚨 Escalation accuracy:{_RESET}"
+        f"  {escalate_pct_b:.1f}% → {esc_color}{escalate_pct_c:.1f}%{_RESET}"
+        f"  {esc_arrow}  — incorrect escalations cost $150 each"
+        f"  {_CYAN}║{_RESET}"
+    )
+
+    # Divider
+    print(f"  {_BOLD}{_CYAN}╠{'═' * 72}╣{_RESET}")
+
+    # 4) Bottom line: cost reduction
+    if cost_reduction >= 0:
+        cost_color = _GREEN
+        cost_label = "savings"
+    else:
+        cost_color = _RED
+        cost_label = "added cost"
+
+    print(
+        f"  {_BOLD}{_CYAN}║{_RESET}  {_BOLD}💰 Estimated {cost_label} per 1,000 emails:"
+        f"  {cost_color}${abs(cost_reduction):,}{_RESET}"
+        f"{' ' * max(1, 30 - len(f'${abs(cost_reduction):,}'))}{_CYAN}║{_RESET}"
+    )
+
+    print(f"  {_BOLD}{_CYAN}╚{'═' * 72}╝{_RESET}")
+    print()
+
+
+__all__ = ["print_reward_curve", "print_strategy_diff", "print_business_summary"]
+

@@ -15,7 +15,7 @@ from core.improvement.curriculum import CurriculumSampler
 from core.improvement.failure_analyzer import FailureAnalyzer
 from core.improvement.red_teamer import RegressionTester
 from core.improvement.strategy_optimizer import StrategyOptimizer
-from core.visualization.terminal_dashboard import print_reward_curve, print_strategy_diff
+from core.visualization.terminal_dashboard import print_reward_curve, print_strategy_diff, print_business_summary
 from core.inference.adaptive_agent import AdaptiveAgent
 from core.inference.strategies import EmailAwareInference
 from core.memory.reward_memory import EpisodeRecord, RewardMemory
@@ -575,6 +575,7 @@ def run_improvement_loop(
 
             # ── Live reward curve (grows one row per generation) ──────────
             print_reward_curve(evolution_history)
+            print_business_summary(baseline_memory, candidate_memory, generation)
 
             if candidate_mean_total < baseline_mean_total:
                 print("Strategy rejected — performance degraded")
