@@ -13,6 +13,7 @@ from core.improvement.curriculum import CurriculumSampler
 from core.improvement.failure_analyzer import FailureAnalyzer
 from core.improvement.red_teamer import RegressionTester
 from core.improvement.strategy_optimizer import StrategyOptimizer
+from core.visualization.terminal_dashboard import print_reward_curve, print_strategy_diff
 from core.inference.adaptive_agent import AdaptiveAgent
 from core.inference.strategies import EmailAwareInference
 from core.memory.reward_memory import EpisodeRecord, RewardMemory
@@ -405,6 +406,7 @@ def run_improvement_loop(
     curriculum_pool: Optional[List[Dict[str, Any]]] = None  # None = full corpus for gen 1
 
     # 2/3/4) ANALYSIS -> STRATEGY -> IMPROVED (iterative with convergence)
+    previous_strategy: Optional[Dict[str, Any]] = None
     for iteration in range(effective_generations):
         generation = iteration + 1
 
@@ -429,6 +431,7 @@ def run_improvement_loop(
             )
             print(f"\nSTRATEGY UPDATE (Gen {generation}):")
             print(reasoning)
+            print_strategy_diff(previous_strategy, _safe_strategy(current_strategy))
 
             # ── Regression test against golden scenarios ──────────────────
             golden_passed, golden_score = regression_tester.validate(
@@ -505,6 +508,9 @@ def run_improvement_loop(
                 gen_entry["regression_retried"] = True
             evolution_history.append(gen_entry)
 
+            # ── Live reward curve (grows one row per generation) ──────────
+            print_reward_curve(evolution_history)
+
             if candidate_mean_total < baseline_mean_total:
                 print("Strategy rejected — performance degraded")
                 _write_text("final_strategy.json", accepted_strategy_text)
@@ -521,6 +527,8 @@ def run_improvement_loop(
                 final_memory = candidate_memory
                 final_decision = "ACCEPTED"
                 print(f"Generation {generation}: ACCEPTED")
+
+            previous_strategy = _safe_strategy(current_strategy) if current_strategy else None
 
             # ── Update curriculum weights for next generation ──────────────
             sampler.update_weights(candidate_memory)
