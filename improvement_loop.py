@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from core.graders import RuleBasedRewardPolicy
 from core.improvement.curriculum import CurriculumSampler
 from core.improvement.failure_analyzer import FailureAnalyzer
+from core.improvement.red_teamer import RegressionTester
 from core.improvement.strategy_optimizer import StrategyOptimizer
 from core.inference.adaptive_agent import AdaptiveAgent
 from core.inference.strategies import EmailAwareInference
@@ -365,6 +366,22 @@ def run_improvement_loop(
     final_memory = baseline_memory
     final_decision = "REJECTED"
 
+    # ── Regression tester (golden scenarios) ──────────────────────────────
+    regression_tester = RegressionTester()
+    # Compute baseline golden score using the EmailAwareInference agent
+    baseline_golden_memory = run_evaluation(
+        agent=baseline_agent,
+        n_episodes=len(regression_tester.golden_scenarios),
+        strategy_version="baseline_golden",
+        scenario_pool=regression_tester.golden_scenarios,
+    )
+    baseline_golden_score = (
+        sum(r.total_reward for r in baseline_golden_memory.records)
+        / len(baseline_golden_memory.records)
+        if baseline_golden_memory.records else 0.0
+    )
+    print(f"\nBaseline golden score (10 scenarios): {baseline_golden_score:.4f}")
+
     # ── Evolution history tracking ────────────────────────────────────────
     evolution_history: List[Dict[str, Any]] = []
 
@@ -377,6 +394,7 @@ def run_improvement_loop(
         "mean_escalate": round(baseline_means["escalate"], 4),
         "failure_count": _count_failures(baseline_memory),
         "strategy_reasoning": "Baseline — no strategy applied.",
+        "golden_score": round(baseline_golden_score, 4),
     })
 
     effective_generations = max(1, min(int(max_generations), int(n_iterations)))
@@ -412,6 +430,53 @@ def run_improvement_loop(
             print(f"\nSTRATEGY UPDATE (Gen {generation}):")
             print(reasoning)
 
+            # ── Regression test against golden scenarios ──────────────────
+            golden_passed, golden_score = regression_tester.validate(
+                current_strategy, baseline_golden_score
+            )
+            first_attempt_golden_score = golden_score
+            retry_golden_score = None
+
+            if not golden_passed:
+                print(
+                    f"⚠️  Gen {generation}: Catastrophic forgetting detected "
+                    f"(golden score dropped from {baseline_golden_score:.4f} "
+                    f"to {golden_score:.4f}) — retrying with broadened prompt"
+                )
+                # Retry once with regression warning injected
+                failure_analysis_with_warning = dict(failure_analysis)
+                failure_analysis_with_warning["regression_warning"] = (
+                    f"Your previous strategy scored {golden_score:.4f} on golden "
+                    f"scenarios vs baseline {baseline_golden_score:.4f}. "
+                    f"Prioritize not breaking general cases."
+                )
+                current_strategy = optimizer.generate_strategy(
+                    failure_analysis=failure_analysis_with_warning,
+                    current_strategy=current_strategy,
+                    baseline_metrics_summary={
+                        "baseline_mean_total_reward": baseline_mean_total,
+                        "baseline_means": _memory_means(baseline_memory),
+                    },
+                )
+                reasoning = _safe_string(
+                    current_strategy.get("reasoning", "No reasoning provided."),
+                    "No reasoning provided.",
+                )
+                print(f"RETRY STRATEGY (Gen {generation}):")
+                print(reasoning)
+
+                # Validate retry (log score but use regardless)
+                _, retry_golden_score = regression_tester.validate(
+                    current_strategy, baseline_golden_score
+                )
+                print(
+                    f"Retry golden score: {retry_golden_score:.4f} "
+                    f"(was {first_attempt_golden_score:.4f}, baseline {baseline_golden_score:.4f})"
+                )
+                golden_score = retry_golden_score
+            else:
+                print(f"Golden regression test: PASSED ({golden_score:.4f} >= {baseline_golden_score * 0.90:.4f})")
+
             improved_agent = AdaptiveAgent(_safe_strategy(current_strategy))
             candidate_memory = run_evaluation(
                 agent=improved_agent,
@@ -422,8 +487,8 @@ def run_improvement_loop(
             candidate_means = _memory_means(candidate_memory)
             candidate_mean_total = candidate_means["total"]
 
-            # Record this generation
-            evolution_history.append({
+            # Record this generation (include golden scores)
+            gen_entry: Dict[str, Any] = {
                 "generation": generation,
                 "mean_total": round(candidate_mean_total, 4),
                 "mean_classify": round(candidate_means["classify"], 4),
@@ -431,7 +496,14 @@ def run_improvement_loop(
                 "mean_escalate": round(candidate_means["escalate"], 4),
                 "failure_count": _count_failures(candidate_memory),
                 "strategy_reasoning": reasoning,
-            })
+                "golden_score": round(golden_score, 4),
+                "golden_passed": golden_passed,
+            }
+            if retry_golden_score is not None:
+                gen_entry["golden_score_attempt_1"] = round(first_attempt_golden_score, 4)
+                gen_entry["golden_score_attempt_2"] = round(retry_golden_score, 4)
+                gen_entry["regression_retried"] = True
+            evolution_history.append(gen_entry)
 
             if candidate_mean_total < baseline_mean_total:
                 print("Strategy rejected — performance degraded")
