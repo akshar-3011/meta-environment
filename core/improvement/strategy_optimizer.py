@@ -460,15 +460,15 @@ class StrategyOptimizer:
     def _fallback_strategy(self) -> Dict[str, Any]:
         return {
             "classification_rules": {
-                "refund": ["refund", "return", "reimbursement", "charged", "money back", "credit", "overcharged", "billing error"],
-                "complaint": ["unacceptable", "terrible", "angry", "broken", "frustrated", "awful", "disappointed", "outraged", "worst"],
-                "query": ["information", "policy", "status", "how to", "question", "help", "wondering", "can you", "please advise"],
+                "refund": ["refund", "reimbursement", "charged twice", "overcharged", "billing error", "money back", "charge", "credit", "cancel order", "cancellation"],
+                "complaint": ["not happy", "gone downhill", "terrible", "awful", "unacceptable", "disappointed", "frustrated", "angry", "outraged", "worst", "quality has", "way too slow", "took too long", "poor quality", "bad experience", "let down"],
+                "query": ["how do i", "how to", "what is", "can you", "do you", "where is", "when will", "return my item", "return policy", "track my", "status of", "information about", "tell me", "explain", "help me understand"],
                 "default": "query",
             },
             "reply_templates": {
-                "refund": "Hello, we are sorry for the issue. We will help process your refund promptly. Regards, Support Team.",
-                "complaint": "Hello, we are sorry for your experience. We take this seriously and will resolve it quickly. Regards, Support Team.",
-                "query": "Hello, thank you for your question. We are happy to help and will provide the requested information. Regards, Support Team.",
+                "refund": "We sincerely apologize for the inconvenience. Your refund request has been received and will be processed within 3-5 business days.",
+                "complaint": "We're really sorry to hear about your experience. We understand your frustration and are taking steps to resolve this issue immediately.",
+                "query": "Thank you for reaching out. We're happy to help and will provide the information you requested.",
             },
             "reply_requirements": {
                 "min_length": 40,
@@ -476,8 +476,8 @@ class StrategyOptimizer:
                 "must_include_closing": True,
                 "forbidden_phrases": [
                     "not my problem",
-                    "figure it out",
-                    "stop emailing",
+                    "cannot help",
+                    "no idea",
                 ],
             },
             "escalation_rules": {
@@ -485,11 +485,12 @@ class StrategyOptimizer:
                     "legal threat",
                     "safety risk",
                     "account restricted",
+                    "not happy",
+                    "gone downhill",
+                    "way too slow",
+                    "quality has really",
                 ],
-                "never_escalate": [
-                    "basic shipping question",
-                    "general policy question",
-                ],
+                "never_escalate": [],
                 "escalate_if_complaint": True,
                 "escalate_if_high_urgency": True,
             },
