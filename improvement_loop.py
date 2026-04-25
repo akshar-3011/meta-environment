@@ -15,7 +15,13 @@ from core.improvement.curriculum import CurriculumSampler
 from core.improvement.failure_analyzer import FailureAnalyzer
 from core.improvement.red_teamer import RegressionTester
 from core.improvement.strategy_optimizer import StrategyOptimizer
-from core.visualization.terminal_dashboard import print_reward_curve, print_strategy_diff, print_business_summary
+from core.visualization.terminal_dashboard import (
+    print_reward_curve,
+    print_strategy_diff,
+    print_business_summary,
+    print_delta_table,
+    print_strategy_reasoning,
+)
 from core.inference.adaptive_agent import AdaptiveAgent
 from core.inference.strategies import EmailAwareInference
 from core.memory.reward_memory import EpisodeRecord, RewardMemory
@@ -540,8 +546,7 @@ def run_improvement_loop(
                 current_strategy.get("reasoning", "No reasoning provided."),
                 "No reasoning provided.",
             )
-            print(f"\nSTRATEGY UPDATE (Gen {generation}):")
-            print(reasoning)
+            print_strategy_reasoning(reasoning, generation)
             print_strategy_diff(previous_strategy, _safe_strategy(current_strategy))
 
             # ── Regression test against golden scenarios ──────────────────
@@ -580,8 +585,7 @@ def run_improvement_loop(
                     current_strategy.get("reasoning", "No reasoning provided."),
                     "No reasoning provided.",
                 )
-                print(f"RETRY STRATEGY (Gen {generation}):")
-                print(reasoning)
+                print_strategy_reasoning(reasoning, generation)
 
                 # Validate retry (log score but use regardless)
                 _, retry_golden_score = regression_tester.validate(
@@ -624,8 +628,10 @@ def run_improvement_loop(
                 gen_entry["regression_retried"] = True
             evolution_history.append(gen_entry)
 
-            # ── Live reward curve (grows one row per generation) ──────────
+            # ── Live reward curve + delta table + reasoning (grows each gen) ──
             print_reward_curve(evolution_history)
+            print_delta_table(_memory_means(baseline_memory), candidate_means)
+            print_strategy_reasoning(reasoning, generation)
             print_business_summary(baseline_memory, candidate_memory, generation)
 
             if candidate_mean_total < baseline_mean_total:

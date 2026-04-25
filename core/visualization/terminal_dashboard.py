@@ -58,9 +58,10 @@ def _make_bar(value: float, width: int = BAR_WIDTH) -> str:
 
 
 def _format_val(value: float) -> str:
-    """Format a reward value with color."""
+    """Format a reward value as a percentage with color."""
+    pct = value * 100
     color = _color_for_value(value)
-    return f"{color}{value:.2f}{_RESET}"
+    return f"{color}{pct:.1f}%{_RESET}"
 
 
 # ─── print_reward_curve ──────────────────────────────────────────────────────
@@ -345,5 +346,123 @@ def print_business_summary(
     print()
 
 
-__all__ = ["print_reward_curve", "print_strategy_diff", "print_business_summary"]
+# ─── print_delta_table ─────────────────────────────────────────────────
 
+def print_delta_table(
+    baseline_summary: Dict[str, Any],
+    improved_summary: Dict[str, Any],
+) -> None:
+    """Print a judge-readable delta table comparing baseline vs improved.
+
+    Columns: Step | Before | After | Change | Status
+    Rows: Classify, Reply, Escalate, Total
+    All values shown as percentages. Status: ✅ improvement, ❌ regression, ➡️ flat.
+
+    Parameters
+    ----------
+    baseline_summary : dict
+        Dict with keys: classify, reply, escalate, total (0.0–1.0 floats).
+    improved_summary : dict
+        Same structure as baseline_summary.
+    """
+    rows = [
+        ("Classify",  "classify"),
+        ("Reply",     "reply"),
+        ("Escalate",  "escalate"),
+        ("Total",     "total"),
+    ]
+
+    sep = f"  {_DIM}{'─' * 68}{_RESET}"
+    header = (
+        f"  {_BOLD}{'Step':<12} {'Before':>8}  {'After':>8}  "
+        f"{'Change':>8}  {'Status':>6}{_RESET}"
+    )
+
+    print()
+    print(sep)
+    print(f"  {_BOLD}{_CYAN}PERFORMANCE DELTA{_RESET}")
+    print(sep)
+    print(header)
+    print(sep)
+
+    for label, key in rows:
+        before = float(baseline_summary.get(key, 0.0))
+        after = float(improved_summary.get(key, 0.0))
+        delta = after - before
+
+        before_str = f"{before * 100:.1f}%"
+        after_str = f"{after * 100:.1f}%"
+        change_str = f"{delta * 100:+.1f}%"
+
+        if delta > 0.001:
+            status = "✅"
+            after_col = f"{_GREEN}{after_str}{_RESET}"
+            delta_col = f"{_GREEN}{change_str}{_RESET}"
+        elif delta < -0.001:
+            status = "❌"
+            after_col = f"{_RED}{after_str}{_RESET}"
+            delta_col = f"{_RED}{change_str}{_RESET}"
+        else:
+            status = "➡️"
+            after_col = f"{_YELLOW}{after_str}{_RESET}"
+            delta_col = f"{_YELLOW}{change_str}{_RESET}"
+
+        # Bold the Total row
+        row_label = f"{_BOLD}{label}{_RESET}" if label == "Total" else label
+        print(
+            f"  {row_label:<12} {before_str:>8}  {after_col:>{8 + len(_GREEN) + len(_RESET)}}  "
+            f"{delta_col:>{8 + len(_GREEN) + len(_RESET)}}  {status}"
+        )
+
+    print(sep)
+    print()
+
+
+# ─── print_strategy_reasoning ──────────────────────────────────────────
+
+def print_strategy_reasoning(reasoning: str, generation: int) -> None:
+    """Print the LLM-generated strategy reasoning inside a dashed box.
+
+    Parameters
+    ----------
+    reasoning : str
+        The strategy reasoning string from the LLM.
+    generation : int
+        Current generation number for the header.
+    """
+    box_width = 70
+    dash_line = f"  {_CYAN}{'-' * box_width}{_RESET}"
+    header = f"WHAT THE SYSTEM LEARNED (Generation {generation})"
+
+    # Word-wrap reasoning to fit inside box
+    words = reasoning.split()
+    lines: List[str] = []
+    current = ""
+    max_inner = box_width - 4  # 2 chars padding each side
+    for word in words:
+        if len(current) + len(word) + 1 <= max_inner:
+            current = (current + " " + word).lstrip()
+        else:
+            if current:
+                lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+
+    print()
+    print(dash_line)
+    print(f"  {_BOLD}{_CYAN}{header}{_RESET}")
+    print(dash_line)
+    for line in lines:
+        print(f"  {line}")
+    print(dash_line)
+    print()
+
+
+__all__ = [
+    "print_reward_curve",
+    "print_strategy_diff",
+    "print_business_summary",
+    "print_delta_table",
+    "print_strategy_reasoning",
+]
