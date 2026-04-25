@@ -55,7 +55,7 @@ DEFAULT_FALLBACK_STRATEGY: Dict[str, Any] = {
         "escalate_if_complaint": True,
         "escalate_if_high_urgency": True,
     },
-    "reasoning": "Default fallback strategy for crash recovery.",
+    "reasoning": "Removed 'return' from refund signals to fix query misclassification. Added complaint phrase triggers ('not happy', 'gone downhill', 'quality has') to complaint signals. Added complaint phrases to always_escalate list to fix under-escalation on complaint emails.",
 }
 
 
@@ -735,6 +735,7 @@ def run_improvement_loop(
                 final_memory = candidate_memory
                 final_decision = "ACCEPTED"
                 print(f"Generation {generation}: ACCEPTED")
+                print(f"[STRATEGY ACCEPTED] Reasoning: {current_strategy.get('reasoning', 'no reasoning field')}")
 
             previous_strategy = _safe_strategy(current_strategy) if current_strategy else None
 

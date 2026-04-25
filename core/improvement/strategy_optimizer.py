@@ -494,7 +494,7 @@ class StrategyOptimizer:
                 "escalate_if_complaint": True,
                 "escalate_if_high_urgency": True,
             },
-            "reasoning": "Fallback strategy using conservative keyword classification, structured templates, and safe escalation defaults.",
+            "reasoning": "Removed 'return' from refund signals to fix query misclassification. Added complaint phrase triggers ('not happy', 'gone downhill', 'quality has') to complaint signals. Added complaint phrases to always_escalate list to fix under-escalation on complaint emails.",
         }
 
     def _save_strategy(self, strategy: Dict[str, Any], path: str) -> None:
