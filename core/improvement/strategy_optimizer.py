@@ -3,8 +3,15 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+try:
+    from groq import Groq as GroqClient
+    _GROQ_AVAILABLE = True
+except ImportError:
+    _GROQ_AVAILABLE = False
 
 
 class StrategyOptimizer:
@@ -195,23 +202,53 @@ class StrategyOptimizer:
         return True, "ok"
 
     def _request_strategy(self, user_prompt: str) -> str:
-        try:
-            response = self.client.messages.create(
-                model=self._MODEL,
-                max_tokens=self._MAX_TOKENS,
-                system=self._SYSTEM_PROMPT,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": user_prompt,
-                    }
-                ],
-            )
-        except Exception as e:
-            print(f"[OPTIMIZER DEBUG] API call failed: {type(e).__name__}: {e}")
-            return ""
+        # Try Anthropic-style client first
+        if hasattr(self.client, "messages"):
+            try:
+                response = self.client.messages.create(
+                    model=self._MODEL,
+                    max_tokens=self._MAX_TOKENS,
+                    system=self._SYSTEM_PROMPT,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": user_prompt,
+                        }
+                    ],
+                )
+                return self._extract_text(response)
+            except Exception as e:
+                err_msg = str(e).lower()
+                print(f"[OPTIMIZER DEBUG] Anthropic call failed: {type(e).__name__}: {e}")
+                # Fall through to Groq
 
-        return self._extract_text(response)
+        # Groq fallback
+        if _GROQ_AVAILABLE:
+            groq_key = os.environ.get("GROQ_API_KEY", "")
+            if groq_key:
+                try:
+                    print("[OPTIMIZER] Using Groq fallback")
+                    groq_client = GroqClient(api_key=groq_key)
+                    resp = groq_client.chat.completions.create(
+                        model="llama-3.3-70b-versatile",
+                        messages=[
+                            {"role": "system", "content": self._SYSTEM_PROMPT},
+                            {"role": "user", "content": user_prompt},
+                        ],
+                        max_tokens=3000,
+                        temperature=0.3,
+                    )
+                    text = resp.choices[0].message.content or ""
+                    text = self._strip_markdown_fences(text)
+                    print(f"[OPTIMIZER DEBUG] Groq response length: {len(text)}")
+                    return text
+                except Exception as e:
+                    print(f"[OPTIMIZER DEBUG] Groq call failed: {type(e).__name__}: {e}")
+                    return ""
+            else:
+                print("[OPTIMIZER DEBUG] No GROQ_API_KEY set")
+
+        return ""
 
     def _extract_text(self, response: Any) -> str:
         if response is None:

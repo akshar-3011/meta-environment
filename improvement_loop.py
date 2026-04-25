@@ -99,13 +99,18 @@ def _make_strategy_client() -> Any:
 
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
+        print("[CLIENT DEBUG] No ANTHROPIC_API_KEY in environment")
         return _NoopClient()
 
+    print(f"[CLIENT DEBUG] Attempting to create Anthropic client with key length: {len(api_key)}")
     try:
         from anthropic import Anthropic  # type: ignore[import-not-found]
 
-        return Anthropic(api_key=api_key)
-    except Exception:
+        client = Anthropic(api_key=api_key)
+        print(f"[CLIENT DEBUG] Anthropic client created successfully: {type(client)}")
+        return client
+    except Exception as e:
+        print(f"[CLIENT DEBUG] Anthropic() constructor failed: {type(e).__name__}: {e}")
         return _NoopClient()
 
 
@@ -564,6 +569,10 @@ def run_improvement_loop(
                 _flush()
                 failure_analysis = {}
 
+            print("\n=== FAILURE ANALYSIS ===")
+            import json
+            print(json.dumps(failure_analysis if isinstance(failure_analysis, dict) else {}, indent=2))
+
             client = _make_strategy_client()
             optimizer = StrategyOptimizer(client)
 
@@ -590,6 +599,9 @@ def run_improvement_loop(
                         pass  # keep current_strategy as-is
                     else:
                         current_strategy = dict(DEFAULT_FALLBACK_STRATEGY)
+
+            print("\n=== GENERATED STRATEGY ===")
+            print(json.dumps(current_strategy if isinstance(current_strategy, dict) else {}, indent=2))
 
             reasoning = _safe_string(
                 current_strategy.get("reasoning", "No reasoning provided."),
@@ -630,6 +642,10 @@ def run_improvement_loop(
                     current_strategy = _demo_safe_generate(optimizer, **_retry_kwargs)
                 else:
                     current_strategy = optimizer.generate_strategy(**_retry_kwargs)
+
+                print("\n=== GENERATED STRATEGY ===")
+                print(json.dumps(current_strategy if isinstance(current_strategy, dict) else {}, indent=2))
+
                 reasoning = _safe_string(
                     current_strategy.get("reasoning", "No reasoning provided."),
                     "No reasoning provided.",
@@ -797,6 +813,22 @@ if __name__ == "__main__":
     parser.add_argument("--threshold", type=float, default=0.02, help="Convergence threshold.")
 
     args = parser.parse_args()
+
+    import os
+    test_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    print(f"[STARTUP DEBUG] Key in environment: length={len(test_key)}, starts_with={test_key[:12] if test_key else 'EMPTY'}")
+    try:
+        from anthropic import Anthropic as _TestAnthropic
+        _test_client = _TestAnthropic(api_key=test_key)
+        _test_resp = _test_client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=10,
+            messages=[{"role": "user", "content": "say hi"}]
+        )
+        print(f"[STARTUP DEBUG] API test PASSED: {_test_resp.content[0].text}")
+    except Exception as e:
+        print(f"[STARTUP DEBUG] API test FAILED: {type(e).__name__}: {e}")
+
     run_improvement_loop(
         n_episodes=args.episodes,
         n_iterations=args.iterations,
