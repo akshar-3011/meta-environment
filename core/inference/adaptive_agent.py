@@ -47,6 +47,19 @@ class AdaptiveAgent:
             if urgency == "high":
                 scores["complaint"] += 1
 
+            # ── Interrogative tiebreak ────────────────────────────────
+            # Prevent "return" keyword from misclassifying questions as refund.
+            sorted_cats = sorted(categories, key=lambda c: scores[c], reverse=True)
+            if len(sorted_cats) >= 2:
+                top_score = scores[sorted_cats[0]]
+                second_score = scores[sorted_cats[1]]
+                if top_score - second_score <= 1:  # tied or near-tied
+                    if "?" in email and sorted_cats[0] == "refund":
+                        scores["refund"] -= 2
+                    first_word = email.strip().split()[0] if email.strip() else ""
+                    if first_word in ("how", "what", "when", "where", "can", "do", "is", "are"):
+                        scores["query"] += 2
+
             if all(value == 0 for value in scores.values()):
                 default_category = str(rules.get("default", self._DEFAULT_CATEGORY)).lower()
                 return default_category if default_category in categories else self._DEFAULT_CATEGORY

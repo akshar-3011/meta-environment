@@ -48,6 +48,10 @@ class StrategyOptimizer:
         current_strategy: Optional[Dict[str, Any]] = None,
         baseline_metrics_summary: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
+        import os
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        print(f"[OPTIMIZER DEBUG] API key present: {bool(api_key)}, length: {len(api_key)}")
+
         user_prompt = self._build_user_prompt(
             failure_analysis=failure_analysis,
             current_strategy=current_strategy,
@@ -57,13 +61,17 @@ class StrategyOptimizer:
         strategy = self._fallback_strategy()
 
         first_text = self._request_strategy(user_prompt)
+        print(f"[OPTIMIZER DEBUG] first_text length: {len(first_text)}, preview: {repr(first_text[:200])}")
+
         parsed = self._parse_json_maybe(first_text)
+        print(f"[OPTIMIZER DEBUG] parsed is None: {parsed is None}")
 
         normalized: Optional[Dict[str, Any]] = None
         invalid_reason = "invalid JSON"
         if parsed is not None:
             candidate = self._normalize_strategy(parsed)
             is_valid, reason = self._validate_strategy_quality(parsed, candidate)
+            print(f"[OPTIMIZER DEBUG] is_valid={is_valid}, reason={reason}")
             if is_valid:
                 normalized = candidate
             else:
@@ -83,6 +91,8 @@ class StrategyOptimizer:
                 is_valid, _reason = self._validate_strategy_quality(parsed, candidate)
                 if is_valid:
                     normalized = candidate
+
+        print(f"[OPTIMIZER DEBUG] normalized is None after retry: {normalized is None}")
 
         if normalized is not None:
             strategy = normalized
@@ -197,7 +207,8 @@ class StrategyOptimizer:
                     }
                 ],
             )
-        except Exception:
+        except Exception as e:
+            print(f"[OPTIMIZER DEBUG] API call failed: {type(e).__name__}: {e}")
             return ""
 
         return self._extract_text(response)
