@@ -43,7 +43,13 @@ class StrategyOptimizer:
         "You MUST output ONLY valid JSON. "
         "Do NOT output markdown. "
         "Do NOT output explanations outside JSON. "
-        "Do NOT output any extra text."
+        "Do NOT output any extra text. "
+        "CRITICAL FORMAT RULE: "
+        "classification_rules values MUST be flat JSON arrays of short keyword strings. "
+        'Example of CORRECT format: {"refund": ["refund", "money back", "charged"]} '
+        'Example of WRONG format: {"refund": [{"signal_phrases": ["refund"]}]} '
+        "Do NOT nest objects inside classification arrays. "
+        "Every classification rule value must be a flat list of strings only."
     )
 
     def __init__(self, client: Any):
@@ -115,12 +121,17 @@ class StrategyOptimizer:
     ) -> str:
         failure_examples = self._extract_failure_examples(failure_analysis)
 
+        # Truncate failure analysis to avoid exceeding token limits
+        fa_json = json.dumps(failure_analysis, ensure_ascii=False)
+        if len(fa_json) > 3000:
+            fa_json = fa_json[:3000] + '...}'  # keep it parseable-ish for LLM
+
         parts = [
             "Use the following failure analysis to produce an improved strategy in strict JSON schema.",
             "baseline_metrics_summary:",
             json.dumps(baseline_metrics_summary or {}, ensure_ascii=False),
             "failure_analysis:",
-            json.dumps(failure_analysis, ensure_ascii=False),
+            fa_json,
             "explicit_failure_examples:",
             json.dumps(failure_examples, ensure_ascii=False),
         ]
@@ -235,7 +246,7 @@ class StrategyOptimizer:
                             {"role": "system", "content": self._SYSTEM_PROMPT},
                             {"role": "user", "content": user_prompt},
                         ],
-                        max_tokens=3000,
+                        max_tokens=2000,
                         temperature=0.3,
                     )
                     text = resp.choices[0].message.content or ""
@@ -505,11 +516,39 @@ class StrategyOptimizer:
 
     @staticmethod
     def _to_str_list(value: Any) -> List[str]:
-        if isinstance(value, list):
-            return [str(item) for item in value]
         if value is None:
             return []
-        return [str(value)]
+
+        if isinstance(value, list):
+            result: List[str] = []
+            _KNOWN_KEYS = ("signal_phrases", "phrases", "keywords", "signals", "terms", "values")
+            for item in value:
+                if isinstance(item, dict):
+                    # Try known keys first
+                    found = False
+                    for key in _KNOWN_KEYS:
+                        inner = item.get(key)
+                        if isinstance(inner, list):
+                            result.extend(str(v) for v in inner)
+                            found = True
+                            break
+                    if not found:
+                        # Single-key dict whose value is a list
+                        if len(item) == 1:
+                            only_val = next(iter(item.values()))
+                            if isinstance(only_val, list):
+                                result.extend(str(v) for v in only_val)
+                        # else skip the dict entirely
+                elif isinstance(item, str):
+                    result.append(item)
+                else:
+                    result.append(str(item))
+            return [s for s in result if s.strip()]
+
+        if isinstance(value, str):
+            return [value] if value.strip() else []
+
+        return [str(value)] if str(value).strip() else []
 
 
 __all__ = ["StrategyOptimizer"]
