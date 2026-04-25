@@ -110,45 +110,134 @@ class StrategyOptimizer:
         current_strategy: Optional[Dict[str, Any]] = None,
         baseline_metrics_summary: Optional[Dict[str, Any]] = None,
     ) -> str:
-        failure_examples = self._extract_failure_examples(failure_analysis)
+        parts: List[str] = []
 
-        parts = [
-            "Use the following failure analysis to produce an improved strategy in strict JSON schema.",
-            "baseline_metrics_summary:",
-            json.dumps(baseline_metrics_summary or {}, ensure_ascii=False),
-            "failure_analysis:",
-            json.dumps(failure_analysis, ensure_ascii=False),
-            "explicit_failure_examples:",
-            json.dumps(failure_examples, ensure_ascii=False),
-        ]
+        # ── Section 1: FAILURE ANALYSIS ──────────────────────────────────
+        parts.append("=== FAILURE ANALYSIS ===")
+        parts.append(json.dumps(failure_analysis, indent=2, ensure_ascii=False))
 
+        # ── Section 2: CONCRETE FAILURE EXAMPLES ─────────────────────────
+        parts.append("\n=== CONCRETE FAILURE EXAMPLES ===")
+        example_lines = self._format_failure_examples(failure_analysis)
+        if example_lines:
+            parts.extend(example_lines)
+        else:
+            parts.append("(no failure examples available)")
+
+        # ── Section 3: PRIOR STRATEGY ────────────────────────────────────
         if current_strategy is not None:
-            parts.extend(
-                [
-                    "Here is the previous strategy. Improve it.",
-                    json.dumps(current_strategy, ensure_ascii=False),
-                ]
+            parts.append("\n=== PRIOR STRATEGY (DO NOT REPEAT) ===")
+            parts.append(json.dumps(current_strategy, indent=2, ensure_ascii=False))
+            parts.append(
+                "Your output must differ from this in at least 2 components."
             )
+
+        # ── Section 4: YOUR TASK ─────────────────────────────────────────
+        parts.append("\n=== YOUR TASK ===")
+        parts.append(
+            "Generate a new strategy JSON that directly addresses each failure "
+            "example above. For each example, your rules must handle it "
+            "correctly. Return only the JSON object."
+        )
 
         return "\n".join(parts)
 
-    def _extract_failure_examples(self, failure_analysis: Dict[str, Any]) -> List[str]:
+    def _format_failure_examples(
+        self, failure_analysis: Dict[str, Any]
+    ) -> List[str]:
+        """Format concrete failure examples as human-readable lines."""
         if not isinstance(failure_analysis, dict):
             return []
 
-        examples: List[str] = []
-        for key in ("classify_failures", "escalate_failures"):
-            block = failure_analysis.get(key)
-            if isinstance(block, dict):
-                raw = block.get("examples", [])
-                if isinstance(raw, list):
-                    for item in raw:
-                        text = str(item).strip()
-                        if text and text not in examples:
-                            examples.append(text)
-                            if len(examples) >= 3:
-                                return examples
-        return examples[:3]
+        lines: List[str] = []
+
+        # Classify failures
+        classify_block = failure_analysis.get("classify_failures", {})
+        if isinstance(classify_block, dict):
+            for ex in classify_block.get("examples", []):
+                if isinstance(ex, dict):
+                    snippet = str(ex.get("email_snippet", "?"))[:100]
+                    agent = ex.get("agent_action", "?")
+                    correct = ex.get("correct_action", "?")
+                    reward = ex.get("reward_received", 0.0)
+                    # Find lowest breakdown field
+                    why = self._lowest_breakdown_field(ex.get("breakdown", {}))
+                    lines.append(
+                        f"Step: classify | Email: \"{snippet}\" | "
+                        f"Agent predicted: {agent} | Correct: {correct} | "
+                        f"Reward: {reward} | Why it failed: {why}"
+                    )
+
+        # Reply failures
+        reply_block = failure_analysis.get("reply_failures", {})
+        if isinstance(reply_block, dict):
+            for ex in reply_block.get("examples", []):
+                if isinstance(ex, dict):
+                    snippet = str(ex.get("email_snippet", "?"))[:100]
+                    agent = str(ex.get("agent_action", "?"))[:80]
+                    correct = ex.get("correct_action", "?")
+                    reward = ex.get("reward_received", 0.0)
+                    weakest = ex.get("weakest_subfields", [])
+                    why_field = weakest[0] if weakest else "unknown"
+                    # Get the actual value of the weakest subfield
+                    why = self._lowest_breakdown_field(ex.get("breakdown", {}))
+                    lines.append(
+                        f"Step: reply | Email: \"{snippet}\" | "
+                        f"Agent replied: \"{agent}\" | "
+                        f"Correct: {correct} | Reward: {reward} | "
+                        f"Why it failed: weakest={why_field}, {why}"
+                    )
+
+        # Escalate failures
+        escalate_block = failure_analysis.get("escalate_failures", {})
+        if isinstance(escalate_block, dict):
+            for ex in escalate_block.get("examples", []):
+                if isinstance(ex, dict):
+                    snippet = str(ex.get("email_snippet", "?"))[:100]
+                    agent = ex.get("agent_action", "?")
+                    correct = ex.get("correct_action", "?")
+                    direction = ex.get("direction", "unknown")
+                    reward = ex.get("reward_received", 0.0)
+                    why = self._lowest_breakdown_field(ex.get("breakdown", {}))
+                    lines.append(
+                        f"Step: escalate | Email: \"{snippet}\" | "
+                        f"Agent decided: {agent} | Correct: {correct} | "
+                        f"Direction: {direction} | Reward: {reward} | "
+                        f"Why it failed: {why}"
+                    )
+
+        return lines
+
+    @staticmethod
+    def _lowest_breakdown_field(breakdown: Any) -> str:
+        """Find the lowest-scoring field in a breakdown dict for 'why it failed'."""
+        if not isinstance(breakdown, dict):
+            return "no breakdown available"
+
+        # Try evaluation.breakdown.rule_based.details first (most informative)
+        details = (
+            breakdown.get("evaluation", {})
+            .get("breakdown", {})
+            .get("rule_based", {})
+            .get("details", {})
+        )
+        if isinstance(details, dict) and details:
+            scored = {}
+            for k, v in details.items():
+                try:
+                    scored[k] = float(v)
+                except (TypeError, ValueError):
+                    continue
+            if scored:
+                worst_key = min(scored, key=scored.get)  # type: ignore[arg-type]
+                return f"{worst_key}={scored[worst_key]:.3f}"
+
+        # Fallback: top-level raw_score
+        raw = breakdown.get("raw_score")
+        if raw is not None:
+            return f"raw_score={float(raw):.3f}"
+
+        return "no scored fields"
 
     def _validate_strategy_quality(
         self,
