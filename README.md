@@ -5,8 +5,13 @@ colorFrom: blue
 colorTo: purple
 sdk: docker
 pinned: false
-app_port: 8000
+app_port: 7860
 ---
+
+> **🚀 Live Environment:** [akshar-3011-meta-environment.hf.space](https://akshar-3011-meta-environment.hf.space)
+> **📦 GitHub:** [akshar-3011/meta-environment](https://github.com/akshar-3011/meta-environment)
+> **📓 Colab Training Notebook:** [colab_training.ipynb](https://github.com/akshar-3011/meta-environment/blob/main/colab_training.ipynb)
+> **📝 Mini-Blog / Video:** _Coming soon_
 
 <div align="center">
 
