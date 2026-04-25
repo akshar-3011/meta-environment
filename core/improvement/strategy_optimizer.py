@@ -14,29 +14,41 @@ class StrategyOptimizer:
     _MAX_TOKENS = 1500
 
     _SYSTEM_PROMPT = (
-        "You are an expert in customer support workflow optimization. "
-        "You are improving an EXISTING high-performing customer support agent. "
-        "You MUST NOT degrade performance. "
-        "Your task is to ANALYZE failures and PRODUCE IMPROVEMENTS over an already strong baseline. "
-        "STRICT RULES: "
-        "1. Do NOT generate generic strategies. "
-        "2. Do NOT fallback to default/simple keyword matching. "
-        "3. Build ON TOP of existing logic, not replace it. "
-        "4. Improve weak areas: "
-        "- If classification fails refine signal phrases. "
-        "- If reply is weak increase length, keywords, and tone quality. "
-        "- If escalation fails adjust rules carefully. "
-        "5. Always maintain high recall for complaint detection and strong reply completeness. "
-        "6. Your output must be MORE SPECIFIC than the baseline. "
-        "If failure_analysis shows repeated misclassification add new signal phrases. "
-        "If failure_analysis shows low length_score increase min_length. "
-        "If failure_analysis shows low keyword_score enforce required keywords. "
-        "DO NOT output safe/generic fallback strategies. "
-        "Your goal is measurable improvement in reward score. "
-        "You MUST output ONLY valid JSON. "
-        "Do NOT output markdown. "
-        "Do NOT output explanations outside JSON. "
-        "Do NOT output any extra text."
+        # (1) Role definition
+        "You are a customer support routing expert generating decision rules "
+        "for an AI agent. You must produce rules that directly fix the specific "
+        "failures described.\n\n"
+
+        # (2) Hard output constraints
+        "HARD OUTPUT CONSTRAINTS:\n"
+        "- Your classification_rules must contain MINIMUM 6 signal phrases per "
+        "category (refund, complaint, query). Each phrase must be a concrete "
+        "word or short expression found in real customer emails.\n"
+        "- Your reply_templates must contain at least one phrase UNIQUE to that "
+        "category that is not present in the other categories' templates.\n"
+        "- Your escalation_rules must specify exact trigger conditions "
+        "(e.g., 'charged twice', 'legal action', 'account locked'), not "
+        "general principles like 'escalate if urgent'.\n\n"
+
+        # (3) Failure contract
+        "FAILURE CONTRACT:\n"
+        "For EVERY failure example provided in the input, your output rules "
+        "must contain a specific rule that would have handled that example "
+        "correctly. If an email about 'charged twice' was misclassified as "
+        "query, your complaint signals MUST include charge-related phrases. "
+        "If a reply scored low on keyword_component, your reply_templates MUST "
+        "include the missing domain keywords. If an email was under-escalated, "
+        "your always_escalate list MUST include a trigger that matches it.\n\n"
+
+        # (4) Differentiation requirement
+        "DIFFERENTIATION REQUIREMENT:\n"
+        "The prior strategy is included in your input. Your output MUST differ "
+        "from it in at least 2 of 3 decision components (classification_rules, "
+        "reply_templates, escalation_rules). Returning similar rules is a "
+        "failure.\n\n"
+
+        # (5) Format instruction
+        "Respond with ONLY valid JSON. No markdown. No explanation. No preamble."
     )
 
     def __init__(self, client: Any):
