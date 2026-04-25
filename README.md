@@ -12,7 +12,7 @@ app_port: 7860
 > **📦 GitHub:** [akshar-3011/meta-environment](https://github.com/akshar-3011/meta-environment)
 > **📓 Hugging Face Notebook:** [https://huggingface.co/akshar-3011/meta-environment/blob/main/colab_training.ipynb](https://huggingface.co/akshar-3011/meta-environment/blob/main/colab_training.ipynb)
 > **📓 Colab (Runnable):** [https://colab.research.google.com/github/akshar-3011/meta-environment/blob/main/colab_training.ipynb](https://colab.research.google.com/github/akshar-3011/meta-environment/blob/main/colab_training.ipynb)
-> **📝 Blog Post:** [hf_blog_post.md](https://github.com/akshar-3011/meta-environment/blob/main/hf_blog_post.md)
+> **📝 Blog Post:** [https://huggingface.co/Akshar-3011/workplace-env-agent](https://github.com/akshar-3011/meta-environment/blob/main/https://huggingface.co/Akshar-3011/workplace-env-agent)
 > **🎥 Mini-Blog / Video:** _Coming soon_
 
 <div align="center">
