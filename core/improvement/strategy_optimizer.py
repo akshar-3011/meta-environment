@@ -14,41 +14,29 @@ class StrategyOptimizer:
     _MAX_TOKENS = 1500
 
     _SYSTEM_PROMPT = (
-        # (1) Role definition
-        "You are a customer support routing expert generating decision rules "
-        "for an AI agent. You must produce rules that directly fix the specific "
-        "failures described.\n\n"
-
-        # (2) Hard output constraints
-        "HARD OUTPUT CONSTRAINTS:\n"
-        "- Your classification_rules must contain MINIMUM 6 signal phrases per "
-        "category (refund, complaint, query). Each phrase must be a concrete "
-        "word or short expression found in real customer emails.\n"
-        "- Your reply_templates must contain at least one phrase UNIQUE to that "
-        "category that is not present in the other categories' templates.\n"
-        "- Your escalation_rules must specify exact trigger conditions "
-        "(e.g., 'charged twice', 'legal action', 'account locked'), not "
-        "general principles like 'escalate if urgent'.\n\n"
-
-        # (3) Failure contract
-        "FAILURE CONTRACT:\n"
-        "For EVERY failure example provided in the input, your output rules "
-        "must contain a specific rule that would have handled that example "
-        "correctly. If an email about 'charged twice' was misclassified as "
-        "query, your complaint signals MUST include charge-related phrases. "
-        "If a reply scored low on keyword_component, your reply_templates MUST "
-        "include the missing domain keywords. If an email was under-escalated, "
-        "your always_escalate list MUST include a trigger that matches it.\n\n"
-
-        # (4) Differentiation requirement
-        "DIFFERENTIATION REQUIREMENT:\n"
-        "The prior strategy is included in your input. Your output MUST differ "
-        "from it in at least 2 of 3 decision components (classification_rules, "
-        "reply_templates, escalation_rules). Returning similar rules is a "
-        "failure.\n\n"
-
-        # (5) Format instruction
-        "Respond with ONLY valid JSON. No markdown. No explanation. No preamble."
+        "You are an expert in customer support workflow optimization. "
+        "You are improving an EXISTING high-performing customer support agent. "
+        "You MUST NOT degrade performance. "
+        "Your task is to ANALYZE failures and PRODUCE IMPROVEMENTS over an already strong baseline. "
+        "STRICT RULES: "
+        "1. Do NOT generate generic strategies. "
+        "2. Do NOT fallback to default/simple keyword matching. "
+        "3. Build ON TOP of existing logic, not replace it. "
+        "4. Improve weak areas: "
+        "- If classification fails refine signal phrases. "
+        "- If reply is weak increase length, keywords, and tone quality. "
+        "- If escalation fails adjust rules carefully. "
+        "5. Always maintain high recall for complaint detection and strong reply completeness. "
+        "6. Your output must be MORE SPECIFIC than the baseline. "
+        "If failure_analysis shows repeated misclassification add new signal phrases. "
+        "If failure_analysis shows low length_score increase min_length. "
+        "If failure_analysis shows low keyword_score enforce required keywords. "
+        "DO NOT output safe/generic fallback strategies. "
+        "Your goal is measurable improvement in reward score. "
+        "You MUST output ONLY valid JSON. "
+        "Do NOT output markdown. "
+        "Do NOT output explanations outside JSON. "
+        "Do NOT output any extra text."
     )
 
     def __init__(self, client: Any):
@@ -68,9 +56,8 @@ class StrategyOptimizer:
 
         strategy = self._fallback_strategy()
 
-        raw_text = self._request_strategy(user_prompt)
-        cleaned_text = self._clean_response_text(raw_text)
-        parsed = self._parse_json_maybe(cleaned_text)
+        first_text = self._request_strategy(user_prompt)
+        parsed = self._parse_json_maybe(first_text)
 
         normalized: Optional[Dict[str, Any]] = None
         invalid_reason = "invalid JSON"
@@ -89,9 +76,8 @@ class StrategyOptimizer:
                 + f"Your previous output was rejected: {invalid_reason}. "
                 + "Return ONLY valid JSON and fix the strategy quality constraints."
             )
-            raw_text = self._request_strategy(retry_prompt)
-            cleaned_text = self._clean_response_text(raw_text)
-            parsed = self._parse_json_maybe(cleaned_text)
+            retry_text = self._request_strategy(retry_prompt)
+            parsed = self._parse_json_maybe(retry_text)
             if parsed is not None:
                 candidate = self._normalize_strategy(parsed)
                 is_valid, _reason = self._validate_strategy_quality(parsed, candidate)
@@ -100,29 +86,6 @@ class StrategyOptimizer:
 
         if normalized is not None:
             strategy = normalized
-
-        # ── Diff-validation: retry once if new strategy is too similar ────
-        if current_strategy is not None and normalized is not None:
-            diff_ok, unchanged_fields = self._validate_strategy_diff(
-                normalized, current_strategy
-            )
-            if not diff_ok:
-                similarity_retry_prompt = (
-                    user_prompt
-                    + "\n\n"
-                    + "Your previous output was too similar to the prior strategy. "
-                    + f"The following fields were unchanged: {unchanged_fields}. "
-                    + "You must change these fields meaningfully. "
-                    + "Return only the revised JSON."
-                )
-                raw_text2 = self._request_strategy(similarity_retry_prompt)
-                cleaned_text2 = self._clean_response_text(raw_text2)
-                parsed2 = self._parse_json_maybe(cleaned_text2)
-                if parsed2 is not None:
-                    candidate2 = self._normalize_strategy(parsed2)
-                    is_valid2, _ = self._validate_strategy_quality(parsed2, candidate2)
-                    if is_valid2:
-                        strategy = candidate2
 
         self._save_strategy(strategy, "final_strategy.json")
         return strategy
@@ -133,219 +96,45 @@ class StrategyOptimizer:
         current_strategy: Optional[Dict[str, Any]] = None,
         baseline_metrics_summary: Optional[Dict[str, Any]] = None,
     ) -> str:
-        parts: List[str] = []
+        failure_examples = self._extract_failure_examples(failure_analysis)
 
-        # ── Section 1: FAILURE ANALYSIS ──────────────────────────────────
-        parts.append("=== FAILURE ANALYSIS ===")
-        parts.append(json.dumps(failure_analysis, indent=2, ensure_ascii=False))
+        parts = [
+            "Use the following failure analysis to produce an improved strategy in strict JSON schema.",
+            "baseline_metrics_summary:",
+            json.dumps(baseline_metrics_summary or {}, ensure_ascii=False),
+            "failure_analysis:",
+            json.dumps(failure_analysis, ensure_ascii=False),
+            "explicit_failure_examples:",
+            json.dumps(failure_examples, ensure_ascii=False),
+        ]
 
-        # ── Section 2: CONCRETE FAILURE EXAMPLES ─────────────────────────
-        parts.append("\n=== CONCRETE FAILURE EXAMPLES ===")
-        example_lines = self._format_failure_examples(failure_analysis)
-        if example_lines:
-            parts.extend(example_lines)
-        else:
-            parts.append("(no failure examples available)")
-
-        # ── Section 3: PRIOR STRATEGY ────────────────────────────────────
         if current_strategy is not None:
-            parts.append("\n=== PRIOR STRATEGY (DO NOT REPEAT) ===")
-            parts.append(json.dumps(current_strategy, indent=2, ensure_ascii=False))
-            parts.append(
-                "Your output must differ from this in at least 2 components."
+            parts.extend(
+                [
+                    "Here is the previous strategy. Improve it.",
+                    json.dumps(current_strategy, ensure_ascii=False),
+                ]
             )
-
-        # ── Section 4: YOUR TASK ─────────────────────────────────────────
-        parts.append("\n=== YOUR TASK ===")
-        parts.append(
-            "Generate a new strategy JSON that directly addresses each failure "
-            "example above. For each example, your rules must handle it "
-            "correctly. Return only the JSON object."
-        )
 
         return "\n".join(parts)
 
-    def _format_failure_examples(
-        self, failure_analysis: Dict[str, Any]
-    ) -> List[str]:
-        """Format concrete failure examples as human-readable lines."""
+    def _extract_failure_examples(self, failure_analysis: Dict[str, Any]) -> List[str]:
         if not isinstance(failure_analysis, dict):
             return []
 
-        lines: List[str] = []
-
-        # Classify failures
-        classify_block = failure_analysis.get("classify_failures", {})
-        if isinstance(classify_block, dict):
-            for ex in classify_block.get("examples", []):
-                if isinstance(ex, dict):
-                    snippet = str(ex.get("email_snippet", "?"))[:100]
-                    agent = ex.get("agent_action", "?")
-                    correct = ex.get("correct_action", "?")
-                    reward = ex.get("reward_received", 0.0)
-                    # Find lowest breakdown field
-                    why = self._lowest_breakdown_field(ex.get("breakdown", {}))
-                    lines.append(
-                        f"Step: classify | Email: \"{snippet}\" | "
-                        f"Agent predicted: {agent} | Correct: {correct} | "
-                        f"Reward: {reward} | Why it failed: {why}"
-                    )
-
-        # Reply failures
-        reply_block = failure_analysis.get("reply_failures", {})
-        if isinstance(reply_block, dict):
-            for ex in reply_block.get("examples", []):
-                if isinstance(ex, dict):
-                    snippet = str(ex.get("email_snippet", "?"))[:100]
-                    agent = str(ex.get("agent_action", "?"))[:80]
-                    correct = ex.get("correct_action", "?")
-                    reward = ex.get("reward_received", 0.0)
-                    weakest = ex.get("weakest_subfields", [])
-                    why_field = weakest[0] if weakest else "unknown"
-                    # Get the actual value of the weakest subfield
-                    why = self._lowest_breakdown_field(ex.get("breakdown", {}))
-                    lines.append(
-                        f"Step: reply | Email: \"{snippet}\" | "
-                        f"Agent replied: \"{agent}\" | "
-                        f"Correct: {correct} | Reward: {reward} | "
-                        f"Why it failed: weakest={why_field}, {why}"
-                    )
-
-        # Escalate failures
-        escalate_block = failure_analysis.get("escalate_failures", {})
-        if isinstance(escalate_block, dict):
-            for ex in escalate_block.get("examples", []):
-                if isinstance(ex, dict):
-                    snippet = str(ex.get("email_snippet", "?"))[:100]
-                    agent = ex.get("agent_action", "?")
-                    correct = ex.get("correct_action", "?")
-                    direction = ex.get("direction", "unknown")
-                    reward = ex.get("reward_received", 0.0)
-                    why = self._lowest_breakdown_field(ex.get("breakdown", {}))
-                    lines.append(
-                        f"Step: escalate | Email: \"{snippet}\" | "
-                        f"Agent decided: {agent} | Correct: {correct} | "
-                        f"Direction: {direction} | Reward: {reward} | "
-                        f"Why it failed: {why}"
-                    )
-
-        return lines
-
-    @staticmethod
-    def _lowest_breakdown_field(breakdown: Any) -> str:
-        """Find the lowest-scoring field in a breakdown dict for 'why it failed'."""
-        if not isinstance(breakdown, dict):
-            return "no breakdown available"
-
-        # Try evaluation.breakdown.rule_based.details first (most informative)
-        details = (
-            breakdown.get("evaluation", {})
-            .get("breakdown", {})
-            .get("rule_based", {})
-            .get("details", {})
-        )
-        if isinstance(details, dict) and details:
-            scored = {}
-            for k, v in details.items():
-                try:
-                    scored[k] = float(v)
-                except (TypeError, ValueError):
-                    continue
-            if scored:
-                worst_key = min(scored, key=scored.get)  # type: ignore[arg-type]
-                return f"{worst_key}={scored[worst_key]:.3f}"
-
-        # Fallback: top-level raw_score
-        raw = breakdown.get("raw_score")
-        if raw is not None:
-            return f"raw_score={float(raw):.3f}"
-
-        return "no scored fields"
-
-    def _validate_strategy_diff(
-        self,
-        new_strategy: Dict[str, Any],
-        baseline_strategy: Dict[str, Any],
-    ) -> tuple:
-        """Check that new_strategy meaningfully differs from baseline_strategy.
-
-        Returns (True, []) if at least 2 of 3 conditions are met:
-          1. Total signal-phrase count across all classification categories
-             differs by more than 3.
-          2. At least one reply template has <60% character-set overlap with
-             the corresponding baseline template.
-          3. At least one boolean or list field in escalation_rules differs.
-
-        Returns (False, [list of unchanged field names]) otherwise.
-        """
-        unchanged: List[str] = []
-        conditions_met = 0
-
-        # ── Condition 1: classification signal phrase count ────────────────
-        def _count_signals(strategy: Dict[str, Any]) -> int:
-            rules = strategy.get("classification_rules", {})
-            if not isinstance(rules, dict):
-                return 0
-            return sum(
-                len(v) if isinstance(v, list) else 0
-                for v in rules.values()
-            )
-
-        new_count = _count_signals(new_strategy)
-        base_count = _count_signals(baseline_strategy)
-        if abs(new_count - base_count) > 3:
-            conditions_met += 1
-        else:
-            unchanged.append("classification_rules.signal_count")
-
-        # ── Condition 2: reply template character-set overlap ─────────────
-        def _char_overlap(a: str, b: str) -> float:
-            set_a = set(a.lower())
-            set_b = set(b.lower())
-            if not set_a and not set_b:
-                return 1.0
-            if not set_a or not set_b:
-                return 0.0
-            return len(set_a & set_b) / len(set_a | set_b)
-
-        new_templates = new_strategy.get("reply_templates", {})
-        base_templates = baseline_strategy.get("reply_templates", {})
-        reply_differs = False
-        for cat in ("refund", "complaint", "query"):
-            new_t = str(new_templates.get(cat, ""))
-            base_t = str(base_templates.get(cat, ""))
-            if _char_overlap(new_t, base_t) < 0.60:
-                reply_differs = True
-                break
-        if reply_differs:
-            conditions_met += 1
-        else:
-            unchanged.append("reply_templates")
-
-        # ── Condition 3: escalation boolean or list fields ────────────────
-        new_esc = new_strategy.get("escalation_rules", {})
-        base_esc = baseline_strategy.get("escalation_rules", {})
-        esc_fields = [
-            "always_escalate",
-            "never_escalate",
-            "escalate_if_complaint",
-            "escalate_if_high_urgency",
-        ]
-        esc_differs = False
-        for field in esc_fields:
-            nv = new_esc.get(field)
-            bv = base_esc.get(field)
-            if nv != bv:
-                esc_differs = True
-                break
-        if esc_differs:
-            conditions_met += 1
-        else:
-            unchanged.append("escalation_rules")
-
-        if conditions_met >= 2:
-            return True, []
-        return False, unchanged
+        examples: List[str] = []
+        for key in ("classify_failures", "reply_failures", "escalate_failures"):
+            block = failure_analysis.get(key)
+            if isinstance(block, dict):
+                raw = block.get("examples", [])
+                if isinstance(raw, list):
+                    for item in raw:
+                        text = str(item).strip()
+                        if text and text not in examples:
+                            examples.append(text)
+                            if len(examples) >= 6:
+                                return examples
+        return examples[:6]
 
     def _validate_strategy_quality(
         self,
@@ -411,27 +200,6 @@ class StrategyOptimizer:
         except Exception:
             return ""
 
-        return self._extract_response_text(response)
-
-    def _extract_response_text(self, response: Any) -> str:
-        """Extract primary text from Claude-style response.content[0].text."""
-        if response is None:
-            return ""
-
-        content = getattr(response, "content", None)
-        if isinstance(content, list) and content:
-            first = content[0]
-
-            if isinstance(first, dict):
-                text = first.get("text")
-                if text is not None:
-                    return str(text)
-
-            first_text = getattr(first, "text", None)
-            if first_text is not None:
-                return str(first_text)
-
-        # Fallback to broader extraction for non-standard response shapes.
         return self._extract_text(response)
 
     def _extract_text(self, response: Any) -> str:
@@ -481,76 +249,12 @@ class StrategyOptimizer:
 
         return "\n".join(lines).strip()
 
-    def _clean_response_text(self, raw_text: str) -> str:
-        """Normalize common LLM response wrappers before JSON parsing."""
-        text = (raw_text or "").strip()
-        if not text:
-            return ""
-
-        # Typical fenced output: ```json ... ```
-        text = self._strip_markdown_fences(text)
-
-        # If extra fences remain inline, remove them conservatively.
-        text = text.replace("```json", "").replace("```JSON", "").replace("```", "").strip()
-        return text
-
-    def _extract_json_object(self, text: str) -> Optional[str]:
-        """Extract first top-level JSON object from surrounding prose."""
-        source = (text or "").strip()
-        if not source:
-            return None
-
-        start = source.find("{")
-        if start == -1:
-            return None
-
-        depth = 0
-        in_string = False
-        escaped = False
-
-        for idx in range(start, len(source)):
-            ch = source[idx]
-
-            if in_string:
-                if escaped:
-                    escaped = False
-                elif ch == "\\":
-                    escaped = True
-                elif ch == '"':
-                    in_string = False
-                continue
-
-            if ch == '"':
-                in_string = True
-                continue
-
-            if ch == "{":
-                depth += 1
-            elif ch == "}":
-                depth -= 1
-                if depth == 0:
-                    return source[start : idx + 1]
-
-        return None
-
     def _parse_json_maybe(self, raw_text: str) -> Optional[Dict[str, Any]]:
         if not raw_text:
             return None
 
         try:
             parsed = json.loads(raw_text)
-        except Exception:
-            parsed = None
-
-        if isinstance(parsed, dict):
-            return parsed
-
-        candidate = self._extract_json_object(raw_text)
-        if candidate is None:
-            return None
-
-        try:
-            parsed = json.loads(candidate)
         except Exception:
             return None
 
@@ -681,15 +385,9 @@ class StrategyOptimizer:
     def _fallback_strategy(self) -> Dict[str, Any]:
         return {
             "classification_rules": {
-                "refund": [
-                    "If email contains refund, return, reimbursement, or charged, classify as refund.",
-                ],
-                "complaint": [
-                    "If email contains unacceptable, terrible, angry, broken, or frustrated, classify as complaint.",
-                ],
-                "query": [
-                    "If email asks for information, policy, status, or how-to, classify as query.",
-                ],
+                "refund": ["refund", "return", "reimbursement", "charged", "money back", "credit", "overcharged", "billing error"],
+                "complaint": ["unacceptable", "terrible", "angry", "broken", "frustrated", "awful", "disappointed", "outraged", "worst"],
+                "query": ["information", "policy", "status", "how to", "question", "help", "wondering", "can you", "please advise"],
                 "default": "query",
             },
             "reply_templates": {
