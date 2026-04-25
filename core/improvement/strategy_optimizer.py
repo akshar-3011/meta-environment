@@ -101,6 +101,29 @@ class StrategyOptimizer:
         if normalized is not None:
             strategy = normalized
 
+        # ── Diff-validation: retry once if new strategy is too similar ────
+        if current_strategy is not None and normalized is not None:
+            diff_ok, unchanged_fields = self._validate_strategy_diff(
+                normalized, current_strategy
+            )
+            if not diff_ok:
+                similarity_retry_prompt = (
+                    user_prompt
+                    + "\n\n"
+                    + "Your previous output was too similar to the prior strategy. "
+                    + f"The following fields were unchanged: {unchanged_fields}. "
+                    + "You must change these fields meaningfully. "
+                    + "Return only the revised JSON."
+                )
+                raw_text2 = self._request_strategy(similarity_retry_prompt)
+                cleaned_text2 = self._clean_response_text(raw_text2)
+                parsed2 = self._parse_json_maybe(cleaned_text2)
+                if parsed2 is not None:
+                    candidate2 = self._normalize_strategy(parsed2)
+                    is_valid2, _ = self._validate_strategy_quality(parsed2, candidate2)
+                    if is_valid2:
+                        strategy = candidate2
+
         self._save_strategy(strategy, "final_strategy.json")
         return strategy
 
@@ -238,6 +261,91 @@ class StrategyOptimizer:
             return f"raw_score={float(raw):.3f}"
 
         return "no scored fields"
+
+    def _validate_strategy_diff(
+        self,
+        new_strategy: Dict[str, Any],
+        baseline_strategy: Dict[str, Any],
+    ) -> tuple:
+        """Check that new_strategy meaningfully differs from baseline_strategy.
+
+        Returns (True, []) if at least 2 of 3 conditions are met:
+          1. Total signal-phrase count across all classification categories
+             differs by more than 3.
+          2. At least one reply template has <60% character-set overlap with
+             the corresponding baseline template.
+          3. At least one boolean or list field in escalation_rules differs.
+
+        Returns (False, [list of unchanged field names]) otherwise.
+        """
+        unchanged: List[str] = []
+        conditions_met = 0
+
+        # ── Condition 1: classification signal phrase count ────────────────
+        def _count_signals(strategy: Dict[str, Any]) -> int:
+            rules = strategy.get("classification_rules", {})
+            if not isinstance(rules, dict):
+                return 0
+            return sum(
+                len(v) if isinstance(v, list) else 0
+                for v in rules.values()
+            )
+
+        new_count = _count_signals(new_strategy)
+        base_count = _count_signals(baseline_strategy)
+        if abs(new_count - base_count) > 3:
+            conditions_met += 1
+        else:
+            unchanged.append("classification_rules.signal_count")
+
+        # ── Condition 2: reply template character-set overlap ─────────────
+        def _char_overlap(a: str, b: str) -> float:
+            set_a = set(a.lower())
+            set_b = set(b.lower())
+            if not set_a and not set_b:
+                return 1.0
+            if not set_a or not set_b:
+                return 0.0
+            return len(set_a & set_b) / len(set_a | set_b)
+
+        new_templates = new_strategy.get("reply_templates", {})
+        base_templates = baseline_strategy.get("reply_templates", {})
+        reply_differs = False
+        for cat in ("refund", "complaint", "query"):
+            new_t = str(new_templates.get(cat, ""))
+            base_t = str(base_templates.get(cat, ""))
+            if _char_overlap(new_t, base_t) < 0.60:
+                reply_differs = True
+                break
+        if reply_differs:
+            conditions_met += 1
+        else:
+            unchanged.append("reply_templates")
+
+        # ── Condition 3: escalation boolean or list fields ────────────────
+        new_esc = new_strategy.get("escalation_rules", {})
+        base_esc = baseline_strategy.get("escalation_rules", {})
+        esc_fields = [
+            "always_escalate",
+            "never_escalate",
+            "escalate_if_complaint",
+            "escalate_if_high_urgency",
+        ]
+        esc_differs = False
+        for field in esc_fields:
+            nv = new_esc.get(field)
+            bv = base_esc.get(field)
+            if nv != bv:
+                esc_differs = True
+                break
+        if esc_differs:
+            conditions_met += 1
+        else:
+            unchanged.append("escalation_rules")
+
+        if conditions_met >= 2:
+            return True, []
+        return False, unchanged
 
     def _validate_strategy_quality(
         self,
