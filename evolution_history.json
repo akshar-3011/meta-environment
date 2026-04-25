@@ -1,0 +1,40 @@
+[
+  {
+    "generation": 0,
+    "mean_total": 0.7702,
+    "mean_classify": 0.288,
+    "mean_reply": 0.2646,
+    "mean_escalate": 0.2176,
+    "failure_count": 7,
+    "strategy_reasoning": "Baseline — no strategy applied.",
+    "golden_score": 0.8387
+  },
+  {
+    "generation": 1,
+    "mean_total": 0.32,
+    "mean_classify": 0.064,
+    "mean_reply": 0.1961,
+    "mean_escalate": 0.0599,
+    "failure_count": 21,
+    "strategy_reasoning": "Fallback strategy using conservative keyword classification, structured templates, and safe escalation defaults.",
+    "golden_score": 0.514,
+    "golden_passed": false,
+    "golden_score_attempt_1": 0.514,
+    "golden_score_attempt_2": 0.514,
+    "regression_retried": true
+  },
+  {
+    "generation": 2,
+    "mean_total": 0.32,
+    "mean_classify": 0.064,
+    "mean_reply": 0.1961,
+    "mean_escalate": 0.0599,
+    "failure_count": 21,
+    "strategy_reasoning": "Fallback strategy using conservative keyword classification, structured templates, and safe escalation defaults.",
+    "golden_score": 0.514,
+    "golden_passed": false,
+    "golden_score_attempt_1": 0.514,
+    "golden_score_attempt_2": 0.514,
+    "regression_retried": true
+  }
+]

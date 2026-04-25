@@ -1,0 +1,43 @@
+{
+  "classification_rules": {
+    "refund": [
+      "If email contains refund, return, reimbursement, or charged, classify as refund."
+    ],
+    "complaint": [
+      "If email contains unacceptable, terrible, angry, broken, or frustrated, classify as complaint."
+    ],
+    "query": [
+      "If email asks for information, policy, status, or how-to, classify as query."
+    ],
+    "default": "query"
+  },
+  "reply_templates": {
+    "refund": "Hello, we are sorry for the issue. We will help process your refund promptly. Regards, Support Team.",
+    "complaint": "Hello, we are sorry for your experience. We take this seriously and will resolve it quickly. Regards, Support Team.",
+    "query": "Hello, thank you for your question. We are happy to help and will provide the requested information. Regards, Support Team."
+  },
+  "reply_requirements": {
+    "min_length": 40,
+    "must_include_greeting": true,
+    "must_include_closing": true,
+    "forbidden_phrases": [
+      "not my problem",
+      "figure it out",
+      "stop emailing"
+    ]
+  },
+  "escalation_rules": {
+    "always_escalate": [
+      "legal threat",
+      "safety risk",
+      "account restricted"
+    ],
+    "never_escalate": [
+      "basic shipping question",
+      "general policy question"
+    ],
+    "escalate_if_complaint": true,
+    "escalate_if_high_urgency": true
+  },
+  "reasoning": "Fallback strategy using conservative keyword classification, structured templates, and safe escalation defaults."
+}

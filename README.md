@@ -97,6 +97,16 @@ python benchmarks/load_test.py --mode direct --episodes 500
 
 ---
 
+## 📈 Improvement Results
+
+The self-improvement loop evaluates a baseline agent, analyzes failures, and generates optimized strategies across multiple generations:
+
+![Reward progression: baseline vs improved generations](results/reward_curve.png)
+
+> See [RESULTS.md](RESULTS.md) for the full multi-generation evolution table, business impact analysis, and strategy reasoning.
+
+---
+
 ## 🤖 Train an RL Agent
 
 ### Minimal Example (10 lines)

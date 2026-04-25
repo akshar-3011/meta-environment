@@ -263,5 +263,69 @@ def generate_report(output_path: str = "RESULTS.md") -> str:
     return content
 
 
+
+def save_reward_curve_png(
+    history_path: str = "evolution_history.json",
+    output_path: str = "results/reward_curve.png",
+    dpi: int = 150,
+) -> None:
+    """Plot mean total reward per generation and save as PNG.
+
+    Parameters
+    ----------
+    history_path : str
+        Path to the evolution_history.json file.
+    output_path : str
+        Destination PNG file path.
+    dpi : int
+        Resolution of the saved image.
+    """
+    import matplotlib
+    matplotlib.use("Agg")  # non-interactive backend
+    import matplotlib.pyplot as plt
+
+    evolution = _load_json(history_path) or []
+    if not evolution:
+        print("⚠️  No evolution history — skipping reward curve PNG.")
+        return
+
+    generations = [e.get("generation", i) for i, e in enumerate(evolution)]
+    totals = [e.get("mean_total", 0.0) for e in evolution]
+    baseline = totals[0] if totals else 0.0
+
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+
+    # Main curve
+    ax.plot(
+        generations, totals,
+        marker="o", linewidth=2.5, markersize=8,
+        color="#4F46E5", label="Mean Total Reward",
+        zorder=3,
+    )
+
+    # Baseline dashed line
+    ax.axhline(
+        y=baseline, linestyle="--", linewidth=1.5,
+        color="#EF4444", alpha=0.7, label=f"Baseline ({baseline:.3f})",
+    )
+
+    # Styling
+    ax.set_xlabel("Generation", fontsize=12)
+    ax.set_ylabel("Mean Total Reward", fontsize=12)
+    ax.set_title("Reward Progression Across Improvement Generations", fontsize=14, fontweight="bold")
+    ax.set_xticks(generations)
+    ax.set_ylim(bottom=0, top=max(max(totals) * 1.15, baseline * 1.15, 0.1))
+    ax.legend(loc="lower right", fontsize=10)
+    ax.grid(True, alpha=0.3)
+
+    fig.tight_layout()
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=dpi, bbox_inches="tight")
+    plt.close(fig)
+
+    print(f"📈 Reward curve saved to {output_path}")
+
+
 if __name__ == "__main__":
     generate_report()
+    save_reward_curve_png()

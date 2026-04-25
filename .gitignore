@@ -30,6 +30,15 @@ results/
 *.png
 *.json
 
+# But DO commit these specific artifacts for judges
+!results/reward_curve.png
+!results/demo_run.txt
+!RESULTS.md
+!evolution_history.json
+!baseline_memory.json
+!improved_memory.json
+!final_strategy.json
+
 # Env files
 .env
 .env.*

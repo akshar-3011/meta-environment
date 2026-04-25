@@ -1,0 +1,208 @@
+
+🎬 DEMO MODE — max 3 generations, API fallback enabled
+
+================================================================
+BASELINE SUMMARY
+================================================================
+Episodes       : 25
+Mean Total     : 0.770
+Mean Classify  : 0.288
+Mean Reply     : 0.265
+Mean Escalate  : 0.218
+
+Difficulty Breakdown
+----------------------------------------------------------------
+easy     total=0.770  classify=0.288  reply=0.265  escalate=0.218
+medium   total=0.000  classify=0.000  reply=0.000  escalate=0.000
+hard     total=0.000  classify=0.000  reply=0.000  escalate=0.000
+Demo locked to 7 failure scenarios for consistent delta measurement.
+
+Baseline golden score (10 scenarios): 0.8387
+
+  [36m----------------------------------------------------------------------[0m
+  [1m[36mWHAT THE SYSTEM LEARNED (Generation 1)[0m
+  [36m----------------------------------------------------------------------[0m
+  Fallback strategy using conservative keyword classification,
+  structured templates, and safe escalation defaults.
+  [36m----------------------------------------------------------------------[0m
+
+
+  [1m[35mStrategy Diff (15 changes)[0m
+  [2m──────────────────────────────────────────────────────────────────────[0m
+  [32m[ADDED][0m   [1mclassification_rules.complaint[0m: 1 items
+  [32m[ADDED][0m   [1mclassification_rules.default[0m: query
+  [32m[ADDED][0m   [1mclassification_rules.query[0m: 1 items
+  [32m[ADDED][0m   [1mclassification_rules.refund[0m: 1 items
+  [32m[ADDED][0m   [1mescalation_rules.always_escalate[0m: 3 items
+  [32m[ADDED][0m   [1mescalation_rules.escalate_if_complaint[0m: True
+  [32m[ADDED][0m   [1mescalation_rules.escalate_if_high_urgency[0m: True
+  [32m[ADDED][0m   [1mescalation_rules.never_escalate[0m: 2 items
+  [32m[ADDED][0m   [1mreply_requirements.forbidden_phrases[0m: 3 items
+  [32m[ADDED][0m   [1mreply_requirements.min_length[0m: 40
+  [32m[ADDED][0m   [1mreply_requirements.must_include_closing[0m: True
+  [32m[ADDED][0m   [1mreply_requirements.must_include_greeting[0m: True
+  [32m[ADDED][0m   [1mreply_templates.complaint[0m: "Hello, we are sorry for your experience. We take t..."
+  [32m[ADDED][0m   [1mreply_templates.query[0m: "Hello, thank you for your question. We are happy t..."
+  [32m[ADDED][0m   [1mreply_templates.refund[0m: "Hello, we are sorry for the issue. We will help pr..."
+  [2m──────────────────────────────────────────────────────────────────────[0m
+⚠️  Gen 1: Catastrophic forgetting detected (golden score dropped from 0.8387 to 0.5140) — retrying with broadened prompt
+
+  [36m----------------------------------------------------------------------[0m
+  [1m[36mWHAT THE SYSTEM LEARNED (Generation 1)[0m
+  [36m----------------------------------------------------------------------[0m
+  Fallback strategy using conservative keyword classification,
+  structured templates, and safe escalation defaults.
+  [36m----------------------------------------------------------------------[0m
+
+Retry golden score: 0.5140 (was 0.5140, baseline 0.8387)
+
+[1m[36m──────────────────────────────────────────────────────────────────────────────────────────[0m
+[1m[36m  REWARD CURVE[0m
+[1m[36m──────────────────────────────────────────────────────────────────────────────────────────[0m
+  [2mGen         Total              Classify             Reply              Escalate     [0m
+  [2m─────────────────────────────────────────────────────────────────────────────────────[0m
+  Gen 0 [[32m████████[2m░░[0m] [32m77.0%[0m  [[31m███[2m░░░░░░░[0m] [31m28.8%[0m  [[31m███[2m░░░░░░░[0m] [31m26.5%[0m  [[31m██[2m░░░░░░░░[0m] [31m21.8%[0m
+  Gen 1 [[31m███[2m░░░░░░░[0m] [31m32.0%[0m  [[31m█[2m░░░░░░░░░[0m] [31m6.4%[0m  [[31m██[2m░░░░░░░░[0m] [31m19.6%[0m  [[31m█[2m░░░░░░░░░[0m] [31m6.0%[0m
+  [2m─────────────────────────────────────────────────────────────────────────────────────[0m
+  [1mBest generation: [36m0[0m[1m | Total improvement: [32m+0.0%[0m[1m from baseline[0m
+[1m[36m──────────────────────────────────────────────────────────────────────────────────────────[0m
+
+
+  [2m────────────────────────────────────────────────────────────────────[0m
+  [1m[36mPERFORMANCE DELTA[0m
+  [2m────────────────────────────────────────────────────────────────────[0m
+  [1mStep           Before     After    Change  Status[0m
+  [2m────────────────────────────────────────────────────────────────────[0m
+  Classify        28.8%      [31m6.4%[0m    [31m-22.4%[0m  ❌
+  Reply           26.5%     [31m19.6%[0m     [31m-6.9%[0m  ❌
+  Escalate        21.8%      [31m6.0%[0m    [31m-15.8%[0m  ❌
+  [1mTotal[0m    77.0%     [31m32.0%[0m    [31m-45.0%[0m  ❌
+  [2m────────────────────────────────────────────────────────────────────[0m
+
+
+  [36m----------------------------------------------------------------------[0m
+  [1m[36mWHAT THE SYSTEM LEARNED (Generation 1)[0m
+  [36m----------------------------------------------------------------------[0m
+  Fallback strategy using conservative keyword classification,
+  structured templates, and safe escalation defaults.
+  [36m----------------------------------------------------------------------[0m
+
+
+  [1m[36m╔════════════════════════════════════════════════════════════════════════╗[0m
+  [1m[36m║[0m  [1m📊 BUSINESS IMPACT — Generation 1                                      [36m║[0m
+  [1m[36m╠════════════════════════════════════════════════════════════════════════╣[0m
+  [1m[36m║[0m  [1m📧 Email categorization accuracy:[0m  28.8% → [31m6.4%[0m  ([31m▼[0m [31m-22.4%[0m)           [36m║[0m
+  [1m[36m║[0m  [1m💬 Reply quality score:[0m  0.265 → [31m0.196[0m  [31m▼[0m  — customer satisfaction proxy       [36m║[0m
+  [1m[36m║[0m  [1m🚨 Escalation accuracy:[0m  21.8% → [31m6.0%[0m  [31m▼[0m  — incorrect escalations cost $150 each  [36m║[0m
+  [1m[36m╠════════════════════════════════════════════════════════════════════════╣[0m
+  [1m[36m║[0m  [1m💰 Estimated added cost per 1,000 emails:  [31m$23,655[0m                       [36m║[0m
+  [1m[36m╚════════════════════════════════════════════════════════════════════════╝[0m
+
+Strategy rejected — performance degraded
+Generation 1: REJECTED
+Curriculum: 7 scenarios upweighted, max_weight=10.0, mean_weight=1.56
+
+  [36m----------------------------------------------------------------------[0m
+  [1m[36mWHAT THE SYSTEM LEARNED (Generation 2)[0m
+  [36m----------------------------------------------------------------------[0m
+  Fallback strategy using conservative keyword classification,
+  structured templates, and safe escalation defaults.
+  [36m----------------------------------------------------------------------[0m
+
+  [2m(no strategy changes)[0m
+⚠️  Gen 2: Catastrophic forgetting detected (golden score dropped from 0.8387 to 0.5140) — retrying with broadened prompt
+
+  [36m----------------------------------------------------------------------[0m
+  [1m[36mWHAT THE SYSTEM LEARNED (Generation 2)[0m
+  [36m----------------------------------------------------------------------[0m
+  Fallback strategy using conservative keyword classification,
+  structured templates, and safe escalation defaults.
+  [36m----------------------------------------------------------------------[0m
+
+Retry golden score: 0.5140 (was 0.5140, baseline 0.8387)
+
+[1m[36m──────────────────────────────────────────────────────────────────────────────────────────[0m
+[1m[36m  REWARD CURVE[0m
+[1m[36m──────────────────────────────────────────────────────────────────────────────────────────[0m
+  [2mGen         Total              Classify             Reply              Escalate     [0m
+  [2m─────────────────────────────────────────────────────────────────────────────────────[0m
+  Gen 0 [[32m████████[2m░░[0m] [32m77.0%[0m  [[31m███[2m░░░░░░░[0m] [31m28.8%[0m  [[31m███[2m░░░░░░░[0m] [31m26.5%[0m  [[31m██[2m░░░░░░░░[0m] [31m21.8%[0m
+  Gen 1 [[31m███[2m░░░░░░░[0m] [31m32.0%[0m  [[31m█[2m░░░░░░░░░[0m] [31m6.4%[0m  [[31m██[2m░░░░░░░░[0m] [31m19.6%[0m  [[31m█[2m░░░░░░░░░[0m] [31m6.0%[0m
+  Gen 2 [[31m███[2m░░░░░░░[0m] [31m32.0%[0m  [[31m█[2m░░░░░░░░░[0m] [31m6.4%[0m  [[31m██[2m░░░░░░░░[0m] [31m19.6%[0m  [[31m█[2m░░░░░░░░░[0m] [31m6.0%[0m
+  [2m─────────────────────────────────────────────────────────────────────────────────────[0m
+  [1mBest generation: [36m0[0m[1m | Total improvement: [32m+0.0%[0m[1m from baseline[0m
+[1m[36m──────────────────────────────────────────────────────────────────────────────────────────[0m
+
+
+  [2m────────────────────────────────────────────────────────────────────[0m
+  [1m[36mPERFORMANCE DELTA[0m
+  [2m────────────────────────────────────────────────────────────────────[0m
+  [1mStep           Before     After    Change  Status[0m
+  [2m────────────────────────────────────────────────────────────────────[0m
+  Classify        28.8%      [31m6.4%[0m    [31m-22.4%[0m  ❌
+  Reply           26.5%     [31m19.6%[0m     [31m-6.9%[0m  ❌
+  Escalate        21.8%      [31m6.0%[0m    [31m-15.8%[0m  ❌
+  [1mTotal[0m    77.0%     [31m32.0%[0m    [31m-45.0%[0m  ❌
+  [2m────────────────────────────────────────────────────────────────────[0m
+
+
+  [36m----------------------------------------------------------------------[0m
+  [1m[36mWHAT THE SYSTEM LEARNED (Generation 2)[0m
+  [36m----------------------------------------------------------------------[0m
+  Fallback strategy using conservative keyword classification,
+  structured templates, and safe escalation defaults.
+  [36m----------------------------------------------------------------------[0m
+
+
+  [1m[36m╔════════════════════════════════════════════════════════════════════════╗[0m
+  [1m[36m║[0m  [1m📊 BUSINESS IMPACT — Generation 2                                      [36m║[0m
+  [1m[36m╠════════════════════════════════════════════════════════════════════════╣[0m
+  [1m[36m║[0m  [1m📧 Email categorization accuracy:[0m  28.8% → [31m6.4%[0m  ([31m▼[0m [31m-22.4%[0m)           [36m║[0m
+  [1m[36m║[0m  [1m💬 Reply quality score:[0m  0.265 → [31m0.196[0m  [31m▼[0m  — customer satisfaction proxy       [36m║[0m
+  [1m[36m║[0m  [1m🚨 Escalation accuracy:[0m  21.8% → [31m6.0%[0m  [31m▼[0m  — incorrect escalations cost $150 each  [36m║[0m
+  [1m[36m╠════════════════════════════════════════════════════════════════════════╣[0m
+  [1m[36m║[0m  [1m💰 Estimated added cost per 1,000 emails:  [31m$23,655[0m                       [36m║[0m
+  [1m[36m╚════════════════════════════════════════════════════════════════════════╝[0m
+
+Strategy rejected — performance degraded
+Generation 2: REJECTED
+Curriculum: 7 scenarios upweighted, max_weight=10.0, mean_weight=1.56
+
+✅ Converged at generation 2
+
+================================================================================
+EVOLUTION SUMMARY
+================================================================================
+Gen 0 | Total: 0.77         | Classify: 0.29 | Reply: 0.26 | Escalate: 0.22 | Failures: 7
+Gen 1 | Total: 0.32  (-58%) | Classify: 0.06 | Reply: 0.20 | Escalate: 0.06 | Failures: 21
+Gen 2 | Total: 0.32  (-58%) | Classify: 0.06 | Reply: 0.20 | Escalate: 0.06 | Failures: 21
+================================================================================
+
+================================================================
+IMPROVED SUMMARY
+================================================================
+Episodes       : 25
+Mean Total     : 0.770
+Mean Classify  : 0.288
+Mean Reply     : 0.265
+Mean Escalate  : 0.218
+
+Difficulty Breakdown
+----------------------------------------------------------------
+easy     total=0.770  classify=0.288  reply=0.265  escalate=0.218
+medium   total=0.000  classify=0.000  reply=0.000  escalate=0.000
+hard     total=0.000  classify=0.000  reply=0.000  escalate=0.000
+
+================================================================
+COMPARISON
+================================================================
+STEP            BASELINE → IMPROVED      STATUS         DECISION
+----------------------------------------------------------------
+Total           0.77 → 0.77             ✅ IMPROVED    REJECTED
+Classify        0.29 → 0.29             ✅             REJECTED
+Reply           0.26 → 0.26             ✅             REJECTED
+Escalate        0.22 → 0.22             ✅             REJECTED
+----------------------------------------------------------------
+Overall Improvement: 0.00%
+
+📄 Report written to RESULTS.md (2765 bytes)
