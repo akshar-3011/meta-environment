@@ -1,0 +1,523 @@
+"""Final demo entrypoint for baseline -> improvement -> comparison pipeline."""
+
+from __future__ import annotations
+
+import json
+import os
+import logging
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+from core.graders import RuleBasedRewardPolicy
+from core.improvement.curriculum import CurriculumSampler
+from core.improvement.failure_analyzer import FailureAnalyzer
+from core.improvement.strategy_optimizer import StrategyOptimizer
+from core.inference.adaptive_agent import AdaptiveAgent
+from core.inference.strategies import EmailAwareInference
+from core.memory.reward_memory import EpisodeRecord, RewardMemory
+from data.scenario_repository import StaticScenarioRepository
+from environment.workplace_environment import WorkplaceEnvironment
+from models import WorkplaceAction
+
+
+def _obs_to_dict(obs: Any) -> Dict[str, Any]:
+    if hasattr(obs, "model_dump"):
+        return obs.model_dump()
+    if hasattr(obs, "dict"):
+        return obs.dict()
+    if isinstance(obs, dict):
+        return dict(obs)
+    try:
+        return dict(vars(obs))
+    except Exception:
+        return {}
+
+
+def _safe_breakdown(value: Any) -> Dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def _safe_strategy(strategy: Any) -> Dict[str, Any]:
+    return strategy if isinstance(strategy, dict) else {}
+
+
+def _safe_string(value: Any, default: str = "") -> str:
+    if value is None:
+        return default
+    return str(value)
+
+
+def _make_strategy_client() -> Any:
+    """Create Anthropic client if available; otherwise return a safe stub."""
+
+    class _NoopMessages:
+        def create(self, **kwargs):
+            raise RuntimeError("Anthropic client unavailable")
+
+    class _NoopClient:
+        def __init__(self):
+            self.messages = _NoopMessages()
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        return _NoopClient()
+
+    try:
+        from anthropic import Anthropic  # type: ignore[import-not-found]
+
+        return Anthropic(api_key=api_key)
+    except Exception:
+        return _NoopClient()
+
+
+def _extract_breakdowns_by_step(env: WorkplaceEnvironment) -> Dict[str, Dict[str, Any]]:
+    details: List[Any] = []
+    try:
+        details = list(getattr(env._state, "step_details", []))  # type: ignore[attr-defined]
+    except Exception:
+        details = []
+
+    mapped: Dict[str, Dict[str, Any]] = {
+        "classify": {},
+        "reply": {},
+        "escalate": {},
+    }
+    for item in details:
+        if not isinstance(item, dict):
+            continue
+        action_type = _safe_string(item.get("action_type", "")).strip().lower()
+        if action_type in mapped:
+            mapped[action_type] = item
+    return mapped
+
+
+def run_evaluation(
+    agent: Any,
+    n_episodes: int,
+    strategy_version: str,
+    scenario_pool: Optional[List[Dict[str, Any]]] = None,
+) -> RewardMemory:
+    """Run deterministic evaluation and return episode memory.
+
+    If *scenario_pool* is provided, the environment cycles through only
+    those scenarios instead of the full 100-scenario corpus.
+    """
+    policy = RuleBasedRewardPolicy()
+    memory = RewardMemory()
+
+    # Inject custom scenario pool if provided; otherwise use full corpus.
+    if scenario_pool is not None:
+        repo = StaticScenarioRepository(scenario_pool)
+        env = WorkplaceEnvironment(reward_policy=policy, scenario_repository=repo)
+    else:
+        env = WorkplaceEnvironment(reward_policy=policy)
+
+    for episode_idx in range(max(0, int(n_episodes))):
+        obs = _obs_to_dict(env.reset())
+
+        email = _safe_string(obs.get("email", ""))
+        difficulty = _safe_string(obs.get("scenario_difficulty", "unknown"), "unknown")
+        sentiment = _safe_string(obs.get("sentiment", "unknown"), "unknown")
+        urgency = _safe_string(obs.get("urgency", "unknown"), "unknown")
+
+        classify_action = "query"
+        reply_action = "Thank you for reaching out. We are here to assist you."
+        escalate_action = "no"
+
+        classify_reward = 0.0
+        reply_reward = 0.0
+        escalate_reward = 0.0
+
+        classify_breakdown: Dict[str, Any] = {}
+        reply_breakdown: Dict[str, Any] = {}
+        escalate_breakdown: Dict[str, Any] = {}
+
+        planned_actions: List[Tuple[str, str]] = []
+        try:
+            raw_actions = agent.build_actions(obs)
+            if isinstance(raw_actions, list):
+                for item in raw_actions:
+                    if (
+                        isinstance(item, tuple)
+                        and len(item) == 2
+                        and isinstance(item[0], str)
+                    ):
+                        planned_actions.append((item[0], _safe_string(item[1], "")))
+        except Exception:
+            planned_actions = []
+
+        # Deterministic action order and safe defaults.
+        by_type = {k: v for k, v in planned_actions if k in {"classify", "reply", "escalate"}}
+        ordered_actions: List[Tuple[str, str]] = [
+            ("classify", _safe_string(by_type.get("classify", classify_action), classify_action)),
+            ("reply", _safe_string(by_type.get("reply", reply_action), reply_action)),
+            ("escalate", _safe_string(by_type.get("escalate", escalate_action), escalate_action)),
+        ]
+
+        for action_type, content in ordered_actions:
+            action = WorkplaceAction(action_type=action_type, content=content)
+            step_obs = _obs_to_dict(env.step(action))
+            reward_value = float(step_obs.get("reward") or 0.0)
+
+            if action_type == "classify":
+                classify_action = content
+                classify_reward = reward_value
+            elif action_type == "reply":
+                reply_action = content
+                reply_reward = reward_value
+            elif action_type == "escalate":
+                normalized = "yes" if content.strip().lower() == "yes" else "no"
+                escalate_action = normalized
+                escalate_reward = reward_value
+
+        step_breakdowns = _extract_breakdowns_by_step(env)
+        classify_breakdown = _safe_breakdown(step_breakdowns.get("classify", {}))
+        reply_breakdown = _safe_breakdown(step_breakdowns.get("reply", {}))
+        escalate_breakdown = _safe_breakdown(step_breakdowns.get("escalate", {}))
+
+        record = EpisodeRecord(
+            episode_id=episode_idx + 1,
+            scenario_id=f"{strategy_version}-ep-{episode_idx + 1}",
+            difficulty=difficulty,
+            sentiment=sentiment,
+            urgency=urgency,
+            email_snippet=email[:120],
+            classify_action=classify_action,
+            classify_reward=classify_reward,
+            classify_breakdown=classify_breakdown,
+            reply_action=reply_action,
+            reply_reward=reply_reward,
+            reply_breakdown=reply_breakdown,
+            escalate_action=escalate_action,
+            escalate_reward=escalate_reward,
+            escalate_breakdown=escalate_breakdown,
+        )
+        memory.add(record)
+
+    return memory
+
+
+def _mean(values: List[float]) -> float:
+    return (sum(values) / len(values)) if values else 0.0
+
+
+def _memory_means(memory: RewardMemory) -> Dict[str, float]:
+    records = list(memory.records)
+    total = _mean([r.total_reward for r in records])
+    classify = _mean([r.classify_reward for r in records])
+    reply = _mean([r.reply_reward for r in records])
+    escalate = _mean([r.escalate_reward for r in records])
+    return {
+        "total": total,
+        "classify": classify,
+        "reply": reply,
+        "escalate": escalate,
+    }
+
+
+def compare(baseline: RewardMemory, improved: RewardMemory) -> Dict[str, float]:
+    """Compare improved memory against baseline and return deltas."""
+    b = _memory_means(baseline)
+    i = _memory_means(improved)
+
+    total_delta = i["total"] - b["total"]
+    classify_delta = i["classify"] - b["classify"]
+    reply_delta = i["reply"] - b["reply"]
+    escalate_delta = i["escalate"] - b["escalate"]
+
+    if b["total"] > 0:
+        improvement_percent = (total_delta / b["total"]) * 100.0
+    else:
+        improvement_percent = 0.0
+
+    return {
+        "total_delta": total_delta,
+        "classify_delta": classify_delta,
+        "reply_delta": reply_delta,
+        "escalate_delta": escalate_delta,
+        "improvement_percent": improvement_percent,
+    }
+
+
+def print_summary(memory: RewardMemory, label: str) -> None:
+    """Print human-readable reward summary."""
+    means = _memory_means(memory)
+    records = list(memory.records)
+
+    by_difficulty: Dict[str, List[EpisodeRecord]] = {"easy": [], "medium": [], "hard": []}
+    for record in records:
+        key = _safe_string(record.difficulty, "unknown").lower()
+        if key in by_difficulty:
+            by_difficulty[key].append(record)
+
+    print("\n" + "=" * 64)
+    print(f"{label} SUMMARY")
+    print("=" * 64)
+    print(f"Episodes       : {len(records)}")
+    print(f"Mean Total     : {means['total']:.3f}")
+    print(f"Mean Classify  : {means['classify']:.3f}")
+    print(f"Mean Reply     : {means['reply']:.3f}")
+    print(f"Mean Escalate  : {means['escalate']:.3f}")
+
+    print("\nDifficulty Breakdown")
+    print("-" * 64)
+    for level in ("easy", "medium", "hard"):
+        bucket = by_difficulty[level]
+        if bucket:
+            total = _mean([r.total_reward for r in bucket])
+            c = _mean([r.classify_reward for r in bucket])
+            rep = _mean([r.reply_reward for r in bucket])
+            esc = _mean([r.escalate_reward for r in bucket])
+            print(
+                f"{level:<8} total={total:.3f}  classify={c:.3f}  "
+                f"reply={rep:.3f}  escalate={esc:.3f}"
+            )
+        else:
+            print(f"{level:<8} total=0.000  classify=0.000  reply=0.000  escalate=0.000")
+
+
+def print_comparison(
+    result: Dict[str, float],
+    baseline: RewardMemory,
+    improved: RewardMemory,
+    decision: str,
+) -> None:
+    """Print baseline -> improved comparison table."""
+    b = _memory_means(baseline)
+    i = _memory_means(improved)
+
+    def _status(delta: float, total_row: bool = False) -> str:
+        if delta >= 0:
+            return "✅ IMPROVED" if total_row else "✅"
+        return "❌ REGRESSED"
+
+    print("\n" + "=" * 64)
+    print("COMPARISON")
+    print("=" * 64)
+    print("STEP            BASELINE → IMPROVED      STATUS         DECISION")
+    print("-" * 64)
+    print(f"Total           {b['total']:.2f} → {i['total']:.2f}             {_status(result['total_delta'], total_row=True):<13} {decision}")
+    print(f"Classify        {b['classify']:.2f} → {i['classify']:.2f}             {_status(result['classify_delta']):<13} {decision}")
+    print(f"Reply           {b['reply']:.2f} → {i['reply']:.2f}             {_status(result['reply_delta']):<13} {decision}")
+    print(f"Escalate        {b['escalate']:.2f} → {i['escalate']:.2f}             {_status(result['escalate_delta']):<13} {decision}")
+    print("-" * 64)
+    print(f"Overall Improvement: {result['improvement_percent']:.2f}%")
+
+
+def _save_strategy(strategy: Dict[str, Any], path: str = "final_strategy.json") -> None:
+    Path(path).write_text(json.dumps(_safe_strategy(strategy), indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def _read_text_if_exists(path: str) -> Optional[str]:
+    p = Path(path)
+    if not p.exists():
+        return None
+    try:
+        return p.read_text(encoding="utf-8")
+    except Exception:
+        return None
+
+
+def _write_text(path: str, content: Optional[str]) -> None:
+    if content is None:
+        return
+    Path(path).write_text(content, encoding="utf-8")
+
+
+def _count_failures(memory: RewardMemory, threshold: float = 0.5) -> int:
+    """Count episodes with total reward below threshold."""
+    return sum(1 for r in memory.records if r.total_reward < threshold)
+
+
+def _save_evolution_history(history: List[Dict[str, Any]], path: str = "evolution_history.json") -> None:
+    """Write evolution history to JSON, safe against partial data."""
+    Path(path).write_text(
+        json.dumps(history, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+
+def run_improvement_loop(
+    n_episodes: int = 25,
+    n_iterations: int = 2,
+    max_generations: int = 4,
+    convergence_threshold: float = 0.02,
+) -> None:
+    logging.getLogger("environment.workplace_environment").setLevel(logging.WARNING)
+
+    # 1) BASELINE RUN
+    baseline_agent = EmailAwareInference()
+    baseline_memory = run_evaluation(
+        agent=baseline_agent,
+        n_episodes=n_episodes,
+        strategy_version="baseline",
+    )
+    baseline_memory.save("baseline_memory.json")
+    print_summary(baseline_memory, "BASELINE")
+
+    baseline_means = _memory_means(baseline_memory)
+    baseline_mean_total = baseline_means["total"]
+    accepted_strategy_text = _read_text_if_exists("final_strategy.json")
+
+    current_memory = baseline_memory
+    current_strategy: Optional[Dict[str, Any]] = None
+    improved_memory = baseline_memory
+    final_memory = baseline_memory
+    final_decision = "REJECTED"
+
+    # ── Evolution history tracking ────────────────────────────────────────
+    evolution_history: List[Dict[str, Any]] = []
+
+    # Record generation 0 (baseline)
+    evolution_history.append({
+        "generation": 0,
+        "mean_total": round(baseline_means["total"], 4),
+        "mean_classify": round(baseline_means["classify"], 4),
+        "mean_reply": round(baseline_means["reply"], 4),
+        "mean_escalate": round(baseline_means["escalate"], 4),
+        "failure_count": _count_failures(baseline_memory),
+        "strategy_reasoning": "Baseline — no strategy applied.",
+    })
+
+    effective_generations = max(1, min(int(max_generations), int(n_iterations)))
+
+    # ── Curriculum sampler ─────────────────────────────────────────────────
+    sampler = CurriculumSampler()
+    sampler.update_weights(baseline_memory)
+    curriculum_pool: Optional[List[Dict[str, Any]]] = None  # None = full corpus for gen 1
+
+    # 2/3/4) ANALYSIS -> STRATEGY -> IMPROVED (iterative with convergence)
+    for iteration in range(effective_generations):
+        generation = iteration + 1
+
+        try:
+            analyzer = FailureAnalyzer()
+            failure_analysis = analyzer.analyze(current_memory)
+
+            client = _make_strategy_client()
+            optimizer = StrategyOptimizer(client)
+            current_strategy = optimizer.generate_strategy(
+                failure_analysis=failure_analysis,
+                current_strategy=current_strategy,
+                baseline_metrics_summary={
+                    "baseline_mean_total_reward": baseline_mean_total,
+                    "baseline_means": _memory_means(baseline_memory),
+                },
+            )
+
+            reasoning = _safe_string(
+                current_strategy.get("reasoning", "No reasoning provided."),
+                "No reasoning provided.",
+            )
+            print(f"\nSTRATEGY UPDATE (Gen {generation}):")
+            print(reasoning)
+
+            improved_agent = AdaptiveAgent(_safe_strategy(current_strategy))
+            candidate_memory = run_evaluation(
+                agent=improved_agent,
+                n_episodes=n_episodes,
+                strategy_version=f"improved_v{generation}",
+                scenario_pool=curriculum_pool,
+            )
+            candidate_means = _memory_means(candidate_memory)
+            candidate_mean_total = candidate_means["total"]
+
+            # Record this generation
+            evolution_history.append({
+                "generation": generation,
+                "mean_total": round(candidate_mean_total, 4),
+                "mean_classify": round(candidate_means["classify"], 4),
+                "mean_reply": round(candidate_means["reply"], 4),
+                "mean_escalate": round(candidate_means["escalate"], 4),
+                "failure_count": _count_failures(candidate_memory),
+                "strategy_reasoning": reasoning,
+            })
+
+            if candidate_mean_total < baseline_mean_total:
+                print("Strategy rejected — performance degraded")
+                _write_text("final_strategy.json", accepted_strategy_text)
+                current_memory = baseline_memory
+                final_memory = baseline_memory
+                final_decision = "REJECTED"
+                print(f"Generation {generation}: REJECTED")
+            else:
+                print("Strategy accepted — improvement achieved")
+                _save_strategy(_safe_strategy(current_strategy), "final_strategy.json")
+                accepted_strategy_text = _read_text_if_exists("final_strategy.json")
+                improved_memory = candidate_memory
+                current_memory = candidate_memory
+                final_memory = candidate_memory
+                final_decision = "ACCEPTED"
+                print(f"Generation {generation}: ACCEPTED")
+
+            # ── Update curriculum weights for next generation ──────────────
+            sampler.update_weights(candidate_memory)
+            curriculum_pool = sampler.sample(n_episodes)
+            ws = sampler.weight_summary()
+            print(
+                f"Curriculum: {ws['upweighted_count']} scenarios upweighted, "
+                f"max_weight={ws['max_weight']:.1f}, mean_weight={ws['mean_weight']:.2f}"
+            )
+
+            # ── Convergence check ─────────────────────────────────────────
+            if len(evolution_history) >= 2:
+                prev_mean = evolution_history[-2]["mean_total"]
+                curr_mean = evolution_history[-1]["mean_total"]
+                if abs(curr_mean - prev_mean) < convergence_threshold:
+                    print(f"\n✅ Converged at generation {generation}")
+                    break
+
+        except Exception as exc:
+            print(f"\n⚠️  Generation {generation} failed: {exc}")
+            print("Saving accumulated evolution history before exit...")
+            _save_evolution_history(evolution_history)
+            break
+
+    # ── Save evolution history (always, regardless of exit reason) ─────────
+    _save_evolution_history(evolution_history)
+
+    # ── Print per-generation summary table ────────────────────────────────
+    print("\n" + "=" * 80)
+    print("EVOLUTION SUMMARY")
+    print("=" * 80)
+    for entry in evolution_history:
+        gen = entry["generation"]
+        total = entry["mean_total"]
+        classify = entry["mean_classify"]
+        reply = entry["mean_reply"]
+        escalate = entry["mean_escalate"]
+        failures = entry["failure_count"]
+
+        if gen == 0:
+            pct_str = "      "
+        else:
+            baseline_val = evolution_history[0]["mean_total"]
+            if baseline_val > 0:
+                pct = ((total - baseline_val) / baseline_val) * 100.0
+                pct_str = f"({pct:+.0f}%)" if abs(pct) < 1000 else f"({pct:+.1f}%)"
+            else:
+                pct_str = "(N/A)"
+
+        print(
+            f"Gen {gen} | Total: {total:.2f} {pct_str:>7} | "
+            f"Classify: {classify:.2f} | Reply: {reply:.2f} | "
+            f"Escalate: {escalate:.2f} | Failures: {failures}"
+        )
+    print("=" * 80)
+
+    final_memory.save("improved_memory.json")
+    print_summary(final_memory, "IMPROVED")
+
+    # 5) COMPARISON
+    result = compare(baseline_memory, final_memory)
+    print_comparison(result, baseline_memory, final_memory, final_decision)
+
+    # 6) SAVE STRATEGY
+    if final_decision == "ACCEPTED" and current_strategy is not None:
+        _save_strategy(_safe_strategy(current_strategy), "final_strategy.json")
+    else:
+        _write_text("final_strategy.json", accepted_strategy_text)
+
+
+if __name__ == "__main__":
+    run_improvement_loop(n_episodes=25, n_iterations=2, max_generations=4, convergence_threshold=0.02)
