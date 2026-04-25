@@ -668,6 +668,11 @@ def run_improvement_loop(
     else:
         _write_text("final_strategy.json", accepted_strategy_text)
 
+    # 7) GENERATE REPORT
+    from generate_report import generate_report
+    generate_report()
+    _flush()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
