@@ -18,23 +18,26 @@ RELATED_LABELS = {
     "query": [],
 }
 
-# --- Section 1 Fix 1: Expanded keyword sets for higher ceiling ---
+# --- Section 1 Fix 1: Exclusive, non-overlapping keyword sets to prevent misclassification ---
 REQUIRED_KEYWORDS = {
     "refund": [
-        "refund", "return", "process", "business days", "amount",
-        "apologize", "sorry", "resolve", "processed", "account",
-        "3-5", "timeline", "initiated", "confirm", "transaction",
+        "refund", "money back", "reimbursement", "overcharged",
+        "charged twice", "billing error", "cancel order", "cancellation",
+        "want my money", "credit back", "charge reversed"
     ],
     "complaint": [
-        "sorry", "apologize", "understand", "resolve", "immediately",
-        "priority", "unacceptable", "team", "contact", "within 24",
-        "assure", "dedicated", "escalate", "commitment", "experience",
+        "unacceptable", "terrible", "awful", "frustrated", "angry",
+        "outraged", "worst", "disappointed", "not happy", "gone downhill",
+        "quality has", "way too slow", "looks nothing like", "not as described",
+        "broken on arrival", "defective", "damaged", "poor quality",
+        "bad experience", "let down", "never again", "regret buying"
     ],
     "query": [
-        "happy to help", "please", "contact", "let us know",
-        "information", "answer", "clarify", "provide", "details",
-        "assist", "guide", "explain", "available", "reach out", "support",
-    ],
+        "how do i", "how to", "what is", "can you tell", "do you offer",
+        "where is", "when will", "track my", "status of", "return policy",
+        "shipping policy", "information about", "help me understand",
+        "please explain", "wondering if", "is it possible"
+    ]
 }
 
 ESCALATION_REQUIRED = {
