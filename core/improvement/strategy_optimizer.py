@@ -99,17 +99,20 @@ class StrategyOptimizer:
         strategy = self._fallback_strategy()
 
         first_text = self._request_strategy(user_prompt)
-        print(f"[OPTIMIZER DEBUG] first_text length: {len(first_text)}, preview: {repr(first_text[:200])}")
+        if os.environ.get("OPTIMIZER_DEBUG"):
+            print(f"[OPTIMIZER DEBUG] first_text length: {len(first_text)}, preview: {repr(first_text[:200])}")
 
         parsed = self._parse_json_maybe(first_text)
-        print(f"[OPTIMIZER DEBUG] parsed is None: {parsed is None}")
+        if os.environ.get("OPTIMIZER_DEBUG"):
+            print(f"[OPTIMIZER DEBUG] parsed is None: {parsed is None}")
 
         normalized: Optional[Dict[str, Any]] = None
         invalid_reason = "invalid JSON"
         if parsed is not None:
             candidate = self._normalize_strategy(parsed)
             is_valid, reason = self._validate_strategy_quality(parsed, candidate)
-            print(f"[OPTIMIZER DEBUG] is_valid={is_valid}, reason={reason}")
+            if os.environ.get("OPTIMIZER_DEBUG"):
+                print(f"[OPTIMIZER DEBUG] is_valid={is_valid}, reason={reason}")
             if is_valid:
                 normalized = candidate
             else:
@@ -130,7 +133,8 @@ class StrategyOptimizer:
                 if is_valid:
                     normalized = candidate
 
-        print(f"[OPTIMIZER DEBUG] normalized is None after retry: {normalized is None}")
+        if os.environ.get("OPTIMIZER_DEBUG"):
+            print(f"[OPTIMIZER DEBUG] normalized is None after retry: {normalized is None}")
 
         if normalized is not None:
             strategy = normalized

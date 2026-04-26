@@ -559,32 +559,28 @@ Demo locked to 7 failure scenarios for consistent delta measurement.
   },
   "difficulty_breakdown": {
     "easy": {
-      "classify_reward": 0.3555555555555555,
+      "classify_reward": 0.35555555555555557,
       "reply_reward": 0.26923780284043436,
       "escalate_reward": 0.27694444444444444
     },
     "medium": {
-      "classify_reward": 0.36724999999999997,
+      "classify_reward": 0.36725,
       "reply_reward": 0.26333465864941863,
-      "escalate_reward": 0.25812500000000005
+      "escalate_reward": 0.258125
     },
     "hard": {
       "classify_reward": 0.16125,
       "reply_reward": 0.18412546960900436,
-      "escalate_reward": 0.1996875
+      "escalate_reward": 0.19968750000000002
     }
   }
 }
-[CLIENT DEBUG] No ANTHROPIC_API_KEY in environment
-[OPTIMIZER] Groq failed: RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `llama-3.3-70b-versatile` in organization `org_01kq2ha456fqkaqemxb0ytwvf9` service tier `on_demand` on tokens per day (TPD): Limit 100000, Used 95179, Requested 7463. Please try again in 38m2.688s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+[OPTIMIZER] No GROQ_API_KEY found in environment
 [OPTIMIZER] Anthropic failed: RuntimeError: Anthropic client unavailable
 [OPTIMIZER] Both APIs failed — returning empty string
-[OPTIMIZER DEBUG] first_text length: 0, preview: ''
-[OPTIMIZER DEBUG] parsed is None: True
-[OPTIMIZER] Groq failed: RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `llama-3.3-70b-versatile` in organization `org_01kq2ha456fqkaqemxb0ytwvf9` service tier `on_demand` on tokens per day (TPD): Limit 100000, Used 95179, Requested 7483. Please try again in 38m19.968s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+[OPTIMIZER] No GROQ_API_KEY found in environment
 [OPTIMIZER] Anthropic failed: RuntimeError: Anthropic client unavailable
 [OPTIMIZER] Both APIs failed — returning empty string
-[OPTIMIZER DEBUG] normalized is None after retry: True
 
 === GENERATED STRATEGY ===
 {
@@ -1339,21 +1335,17 @@ Curriculum: 7 scenarios upweighted, max_weight=10.0, mean_weight=1.28
     },
     "hard": {
       "classify_reward": 0.3270588235294118,
-      "reply_reward": 0.2757263157894737,
+      "reply_reward": 0.27572631578947365,
       "escalate_reward": 0.23264705882352943
     }
   }
 }
-[CLIENT DEBUG] No ANTHROPIC_API_KEY in environment
-[OPTIMIZER] Groq failed: RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `llama-3.3-70b-versatile` in organization `org_01kq2ha456fqkaqemxb0ytwvf9` service tier `on_demand` on tokens per day (TPD): Limit 100000, Used 95179, Requested 6646. Please try again in 26m16.8s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+[OPTIMIZER] No GROQ_API_KEY found in environment
 [OPTIMIZER] Anthropic failed: RuntimeError: Anthropic client unavailable
 [OPTIMIZER] Both APIs failed — returning empty string
-[OPTIMIZER DEBUG] first_text length: 0, preview: ''
-[OPTIMIZER DEBUG] parsed is None: True
-[OPTIMIZER] Groq failed: RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `llama-3.3-70b-versatile` in organization `org_01kq2ha456fqkaqemxb0ytwvf9` service tier `on_demand` on tokens per day (TPD): Limit 100000, Used 95179, Requested 6666. Please try again in 26m34.08s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}
+[OPTIMIZER] No GROQ_API_KEY found in environment
 [OPTIMIZER] Anthropic failed: RuntimeError: Anthropic client unavailable
 [OPTIMIZER] Both APIs failed — returning empty string
-[OPTIMIZER DEBUG] normalized is None after retry: True
 
 === GENERATED STRATEGY ===
 {
@@ -1559,9 +1551,3 @@ Escalate        0.25 → 0.24             ❌ REGRESSED   ACCEPTED
 Overall Improvement: 2.97%
 
 📄 Report written to RESULTS.md (3007 bytes)
-/Users/akshardhakad/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
-  warnings.warn(
-2026-04-26 10:11:50,652 | INFO | httpx | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
-2026-04-26 10:11:50,744 | INFO | httpx | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
-2026-04-26 10:11:50,857 | INFO | httpx | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
-2026-04-26 10:11:50,958 | INFO | httpx | HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
