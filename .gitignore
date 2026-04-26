@@ -68,3 +68,4 @@ results/
 # Experiment database
 experiments.db
 security/audit.log
+venv/
