@@ -392,5 +392,5 @@ BSD-style License
 | 🚀 Live Environment | https://akshar-3011-meta-environment.hf.space |
 | 📓 Colab Notebook | https://colab.research.google.com/github/akshar-3011/meta-environment/blob/main/colab_training.ipynb |
 | 📦 GitHub Repo | https://github.com/akshar-3011/meta-environment |
-| 📝 Blog Post | https://huggingface.co/Akshar-3011/workplace-env-agent |
+| 📝 Blog Post | https://huggingface.co/spaces/Akshar-3011/meta-environment/discussions/1 |
 | 🎥 Video Demo | https://youtu.be/SylYUxIRiUA |
