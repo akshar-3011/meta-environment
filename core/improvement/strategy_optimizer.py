@@ -241,52 +241,46 @@ class StrategyOptimizer:
         return True, "ok"
 
     def _request_strategy(self, user_prompt: str) -> str:
-        # Try Anthropic-style client first
-        if hasattr(self.client, "messages"):
+        import os
+        
+        # Try Groq first (most reliable)
+        groq_key = os.environ.get("GROQ_API_KEY", "")
+        if groq_key:
             try:
-                response = self.client.messages.create(
-                    model=self._MODEL,
-                    max_tokens=self._MAX_TOKENS,
-                    system=self._SYSTEM_PROMPT,
+                from groq import Groq as GroqClient
+                groq_client = GroqClient(api_key=groq_key)
+                response = groq_client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
                     messages=[
-                        {
-                            "role": "user",
-                            "content": user_prompt,
-                        }
+                        {"role": "system", "content": self._SYSTEM_PROMPT},
+                        {"role": "user", "content": user_prompt}
                     ],
+                    max_tokens=3000,
+                    temperature=0.3
                 )
-                return self._extract_text(response)
+                text = response.choices[0].message.content or ""
+                print(f"[OPTIMIZER] Groq succeeded, response length: {len(text)}")
+                return text
             except Exception as e:
-                err_msg = str(e).lower()
-                print(f"[OPTIMIZER DEBUG] Anthropic call failed: {type(e).__name__}: {e}")
-                # Fall through to Groq
-
-        # Groq fallback
-        if _GROQ_AVAILABLE:
-            groq_key = os.environ.get("GROQ_API_KEY", "")
-            if groq_key:
-                try:
-                    print("[OPTIMIZER] Using Groq fallback")
-                    groq_client = GroqClient(api_key=groq_key)
-                    resp = groq_client.chat.completions.create(
-                        model="llama-3.3-70b-versatile",
-                        messages=[
-                            {"role": "system", "content": self._SYSTEM_PROMPT},
-                            {"role": "user", "content": user_prompt},
-                        ],
-                        max_tokens=2000,
-                        temperature=0.3,
-                    )
-                    text = resp.choices[0].message.content or ""
-                    text = self._strip_markdown_fences(text)
-                    print(f"[OPTIMIZER DEBUG] Groq response length: {len(text)}")
-                    return text
-                except Exception as e:
-                    print(f"[OPTIMIZER DEBUG] Groq call failed: {type(e).__name__}: {e}")
-                    return ""
-            else:
-                print("[OPTIMIZER DEBUG] No GROQ_API_KEY set")
-
+                print(f"[OPTIMIZER] Groq failed: {type(e).__name__}: {e}")
+        else:
+            print("[OPTIMIZER] No GROQ_API_KEY found in environment")
+        
+        # Try Anthropic as fallback
+        try:
+            response = self.client.messages.create(
+                model=self._MODEL,
+                max_tokens=self._MAX_TOKENS,
+                system=self._SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": user_prompt}]
+            )
+            text = self._extract_text(response)
+            print(f"[OPTIMIZER] Anthropic succeeded, response length: {len(text)}")
+            return text
+        except Exception as e:
+            print(f"[OPTIMIZER] Anthropic failed: {type(e).__name__}: {e}")
+        
+        print("[OPTIMIZER] Both APIs failed — returning empty string")
         return ""
 
     def _extract_text(self, response: Any) -> str:
