@@ -330,19 +330,45 @@ class StrategyOptimizer:
 
         return "\n".join(lines).strip()
 
-    def _parse_json_maybe(self, raw_text: str) -> Optional[Dict[str, Any]]:
-        if not raw_text:
+    def _parse_json_maybe(self, text: str) -> Optional[Dict[str, Any]]:
+        if not text or not text.strip():
             return None
-
+        
+        # Strip markdown code fences — Groq often wraps JSON in ```json ... ```
+        cleaned = text.strip()
+        
+        # Remove ```json or ``` at start
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:]
+        elif cleaned.startswith("```"):
+            cleaned = cleaned[3:]
+        
+        # Remove ``` at end
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        
+        cleaned = cleaned.strip()
+        
+        # Try direct parse
         try:
-            parsed = json.loads(raw_text)
-        except Exception:
-            return None
-
-        if not isinstance(parsed, dict):
-            return None
-
-        return parsed
+            result = json.loads(cleaned)
+            if isinstance(result, dict):
+                return result
+        except json.JSONDecodeError:
+            pass
+        
+        # Try finding JSON object within the text
+        try:
+            start = cleaned.find("{")
+            end = cleaned.rfind("}") + 1
+            if start >= 0 and end > start:
+                result = json.loads(cleaned[start:end])
+                if isinstance(result, dict):
+                    return result
+        except json.JSONDecodeError:
+            pass
+        
+        return None
 
     def _normalize_strategy(self, data: Dict[str, Any]) -> Dict[str, Any]:
         fallback = self._fallback_strategy()
