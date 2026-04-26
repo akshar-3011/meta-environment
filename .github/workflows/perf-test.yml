@@ -52,7 +52,7 @@ jobs:
           if not results_path.exists():
               sys.exit('benchmarks/results.json was not generated')
 
-          baseline = json.load(open(baseline_path)) if baseline_path.exists() else {}
+          baseline = json.load(open(baseline_path)) if baseline_path.exists() and baseline_path.stat().st_size else {}
           results = json.load(open(results_path))
 
           print('=== Regression Check ===')
