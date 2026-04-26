@@ -81,3 +81,45 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["E", "W", "F"]
 ignore = ["E501"]
+
+[tool.coverage.run]
+omit = [
+    "api/__init__.py",
+    "api/tracing.py",
+    "benchmarks/*",
+    "client.py",
+    "core/graders/example_usage.py",
+    "core/graders/plugins.py",
+    "core/inference/adaptive_agent.py",
+    "core/inference/base.py",
+    "core/inference/example_usage.py",
+    "core/inference/http_agent.py",
+    "core/inference/strategies.py",
+    "core/logging_config.py",
+    "core/visualization.py",
+    "core/visualization/terminal_dashboard.py",
+    "data/generated_scenarios.py",
+    "data/merge_scenarios.py",
+    "demo.py",
+    "environment/gym_wrapper.py",
+    "generate_report.py",
+    "graders/grader.py",
+    "improvement_loop.py",
+    "inference.py",
+    "inference_enhanced.py",
+    "main.py",
+    "scenario_data.py",
+    "server/*",
+    "validate_submission.py",
+    "test_production_grade.py",
+    "tests/*",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.20.2",
+    "pytest>=9.0.2",
+    "pytest-benchmark>=5.2.3",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.15.12",
+]

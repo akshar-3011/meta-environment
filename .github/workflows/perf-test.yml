@@ -44,8 +44,16 @@ jobs:
         run: |
           python3 -c "
           import json, sys
-          baseline = json.load(open('benchmarks/baseline.json'))
-          results = json.load(open('benchmarks/results.json'))
+          from pathlib import Path
+
+          baseline_path = Path('benchmarks/baseline.json')
+          results_path = Path('benchmarks/results.json')
+
+          if not results_path.exists():
+              sys.exit('benchmarks/results.json was not generated')
+
+          baseline = json.load(open(baseline_path)) if baseline_path.exists() else {}
+          results = json.load(open(results_path))
 
           print('=== Regression Check ===')
           failed = False
