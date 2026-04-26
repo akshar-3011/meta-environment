@@ -1,6 +1,6 @@
 # 📊 Meta-Environment: Improvement Run Results
 
-> Generated: 2026-04-25 10:04 UTC
+> Generated: 2026-04-25 22:10 UTC
 
 ## 1. System Overview
 
@@ -12,24 +12,24 @@
 
 | Generation | Total | Classify | Reply | Escalate | Failures | Strategy Change |
 |:---:|:---:|:---:|:---:|:---:|:---:|:---|
-| 0 | 0.7702 | 0.2880 | 0.2646 | 0.2176 | 7 | Baseline — no strategy applied. |
-| 1 | 0.3200 | 0.0640 | 0.1961 | 0.0599 | 21 | Fallback strategy using conservative keyword classification, structured templ... |
-| 2 | 0.3200 | 0.0640 | 0.1961 | 0.0599 | 21 | Fallback strategy using conservative keyword classification, structured templ... |
+| 0 | 0.7838 | 0.2971 | 0.2405 | 0.2462 | 7 | Baseline — no strategy applied. |
+| 1 | 0.6771 | 0.2589 | 0.2200 | 0.1982 | 8 | Removed 'return' from refund signals to fix query misclassification. Added co... |
+| 2 | 0.6771 | 0.2589 | 0.2200 | 0.1982 | 8 | Removed 'return' from refund signals to fix query misclassification. Added co... |
 
-**Best generation**: 0 (Total: 0.7702, +0.0% from baseline)
+**Best generation**: 0 (Total: 0.7838, +0.0% from baseline)
 
 ## 3. What the System Learned
 
-1. **Gen 1**: Fallback strategy using conservative keyword classification, structured templates, and safe escalation defaults. *(🔄 regression retry triggered, golden score: 0.5140)*
-2. **Gen 2**: Fallback strategy using conservative keyword classification, structured templates, and safe escalation defaults. *(🔄 regression retry triggered, golden score: 0.5140)*
+1. **Gen 1**: Removed 'return' from refund signals to fix query misclassification. Added complaint phrase triggers ('not happy', 'gone downhill', 'quality has') to complaint signals. Added complaint phrases to always_escalate list to fix under-escalation on complaint emails. *(🔄 regression retry triggered, golden score: 0.7406)*
+2. **Gen 2**: Removed 'return' from refund signals to fix query misclassification. Added complaint phrase triggers ('not happy', 'gone downhill', 'quality has') to complaint signals. Added complaint phrases to always_escalate list to fix under-escalation on complaint emails. *(🔄 regression retry triggered, golden score: 0.7406)*
 
 ## 4. Business Impact
 
 | Metric | Baseline | Final | Delta |
 |:---|:---:|:---:|:---:|
-| 📈 Email categorization accuracy | 28.8% | 28.8% | +0.0% |
-| 📈 Reply quality score | 0.265 | 0.265 | +0.000 |
-| 📈 Escalation accuracy | 21.8% | 21.8% | +0.0% |
+| 📈 Email categorization accuracy | 29.7% | 29.7% | +0.0% |
+| 📈 Reply quality score | 0.240 | 0.240 | +0.000 |
+| 📈 Escalation accuracy | 24.6% | 24.6% | +0.0% |
 
 > 💰 **Estimated savings per 1,000 emails: $0**
 >

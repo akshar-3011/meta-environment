@@ -168,43 +168,49 @@ class RuleBasedRewardPolicy(RewardPolicy):
         components = []
         details: Dict[str, Any] = {}
 
-        # Length scoring: scale 0.0–0.40 based on ratio to min_reply_length
+        # Length scoring: scale 0.0–0.15 based on ratio to min_reply_length (reduced to prevent flat rewards)
         length_ratio = min(1.0, len(text) / max(1, context.min_reply_length))
-        length_score = length_ratio * 0.40
+        length_score = length_ratio * 0.15
         score += length_score
         components.append(f"length({len(text)}/{context.min_reply_length}={length_score:.2f})")
         details["length_component"] = length_score
 
-        # Conciseness: +0.10 if < 300, -0.05 if > 500
+        # Conciseness: +0.05 if < 300, -0.10 if > 500
         if len(text) < 300:
-            score += 0.10
-            components.append("concise(+0.10)")
-            details["conciseness_component"] = 0.10
+            score += 0.05
+            components.append("concise(+0.05)")
+            details["conciseness_component"] = 0.05
         elif len(text) > 500:
-            score -= 0.05
-            components.append("verbose(-0.05)")
-            details["conciseness_component"] = -0.05
+            score -= 0.10
+            components.append("verbose(-0.10)")
+            details["conciseness_component"] = -0.10
         else:
             details["conciseness_component"] = 0.0
 
-        # Keyword match: min(0.45, 0.05 * matched_count)
+        # Keyword match: steeper curve, stronger variation based on matched keywords
         keywords = REQUIRED_KEYWORDS.get(context.actual_category, [])
         matched = sum(1 for kw in keywords if kw in text)
-        if matched > 0:
-            keyword_score = min(0.45, 0.05 * matched)
+        if matched >= 3:
+            keyword_score = min(0.60, 0.15 * matched)
             score += keyword_score
             components.append(f"keywords({matched}/{len(keywords)}={keyword_score:.2f})")
             details["keyword_component"] = keyword_score
+        elif matched > 0:
+            keyword_score = 0.05 * matched
+            score += keyword_score
+            components.append(f"weak_keywords({matched}/{len(keywords)}={keyword_score:.2f})")
+            details["keyword_component"] = keyword_score
         else:
-            score -= 0.15
-            components.append("no_keywords(-0.15)")
-            details["keyword_component"] = -0.15
+            # Stronger penalty for no keywords
+            score -= 0.40
+            components.append("no_keywords(-0.40)")
+            details["keyword_component"] = -0.40
 
-        # Harsh tone penalty
+        # Harsh tone penalty: made more severe
         if any(phrase in text for phrase in HARSH_PHRASES):
-            score -= 0.15
-            components.append("harsh_tone(-0.15)")
-            details["tone_penalty"] = -0.15
+            score -= 0.50
+            components.append("harsh_tone(-0.50)")
+            details["tone_penalty"] = -0.50
 
         # Solution-oriented bonus
         solution_words = ["help", "assist", "resolve", "fix", "solution", "refund", "process"]

@@ -1,25 +1,29 @@
-/Users/akshardhakad/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
-  warnings.warn(
 [STARTUP DEBUG] Key in environment: length=0, starts_with=EMPTY
 [STARTUP DEBUG] API test FAILED: ModuleNotFoundError: No module named 'anthropic'
+
+🎬 DEMO MODE — max 3 generations, API fallback enabled
+Scenario pool: 30 easy, 35 medium, 35 hard
+Scenario difficulties first5=['easy', 'medium', 'hard', 'easy', 'medium'] last5=['hard', 'medium', 'hard', 'medium', 'hard']
 
 ================================================================
 BASELINE SUMMARY
 ================================================================
 Episodes       : 25
-Mean Total     : 0.770
-Mean Classify  : 0.288
-Mean Reply     : 0.265
-Mean Escalate  : 0.218
+Mean Total     : 0.784
+Mean Classify  : 0.297
+Mean Reply     : 0.240
+Mean Escalate  : 0.246
 
 Difficulty Breakdown
 ----------------------------------------------------------------
-easy     total=0.770  classify=0.288  reply=0.265  escalate=0.218
-medium   total=0.000  classify=0.000  reply=0.000  escalate=0.000
-hard     total=0.000  classify=0.000  reply=0.000  escalate=0.000
+easy     total=0.907  classify=0.356  reply=0.275  escalate=0.277
+medium   total=0.896  classify=0.367  reply=0.270  escalate=0.258
+hard     total=0.533  classify=0.161  reply=0.172  escalate=0.200
 Demo locked to 7 failure scenarios for consistent delta measurement.
+Scenario pool: 5 easy, 3 medium, 2 hard
+Scenario difficulties first5=['easy', 'medium', 'hard', 'easy', 'medium'] last5=['hard', 'easy', 'medium', 'easy', 'easy']
 
-[REGRESSION] Baseline golden score: 0.839
+[REGRESSION] Baseline golden score: 0.824
 
 === FAILURE ANALYSIS ===
 {
@@ -27,12 +31,55 @@ Demo locked to 7 failure scenarios for consistent delta measurement.
     "total_failures": 25,
     "grouped_by_prediction": {
       "refund": 11,
-      "query": 13,
-      "complaint": 1
+      "complaint": 5,
+      "query": 9
     },
     "examples": [
       {
-        "email_snippet": "How do I return my item?",
+        "email_snippet": "My account shows a charge I never authorized. I've been a loyal customer for 6 years and this is how you treat me? I wan",
+        "agent_action": "query",
+        "correct_action": "refund",
+        "reward_received": 0.0,
+        "breakdown": {
+          "step_count": 1,
+          "action_type": "classify",
+          "category": "refund",
+          "raw_score": 0.0,
+          "explanation": "Wrong classification: query (actual: refund)",
+          "evaluation": {
+            "score": 0.0,
+            "breakdown": {
+              "accuracy": {
+                "weight": 0.25,
+                "score": 0.0,
+                "weighted_score": 0.0,
+                "explanation": "Exact classification match",
+                "details": {}
+              },
+              "semantic_similarity": {
+                "weight": 0.15,
+                "score": 0.0,
+                "weighted_score": 0.0,
+                "explanation": "Label semantic proximity",
+                "details": {}
+              },
+              "rule_based": {
+                "weight": 0.6,
+                "score": 0.0,
+                "weighted_score": 0.0,
+                "explanation": "Wrong classification: query (actual: refund)",
+                "details": {
+                  "match": "none"
+                }
+              }
+            }
+          },
+          "weight": 0.4,
+          "final_reward": 0.0
+        }
+      },
+      {
+        "email_snippet": "Quick question \u2014 does your return policy apply to items purchased during the sale event last November? Asking for a frie",
         "agent_action": "refund",
         "correct_action": "query",
         "reward_received": 0.0,
@@ -75,16 +122,16 @@ Demo locked to 7 failure scenarios for consistent delta measurement.
         }
       },
       {
-        "email_snippet": "Your earbuds quality has really gone downhill. Not happy.",
-        "agent_action": "query",
-        "correct_action": "complaint",
+        "email_snippet": "Can I exchange an item rather than get a refund? Also can you tell me if the replacement is even in stock before I ship ",
+        "agent_action": "refund",
+        "correct_action": "query",
         "reward_received": 0.0,
         "breakdown": {
           "step_count": 1,
           "action_type": "classify",
-          "category": "complaint",
+          "category": "query",
           "raw_score": 0.0,
-          "explanation": "Wrong classification: query (actual: complaint)",
+          "explanation": "Wrong classification: refund (actual: query)",
           "evaluation": {
             "score": 0.0,
             "breakdown": {
@@ -106,50 +153,7 @@ Demo locked to 7 failure scenarios for consistent delta measurement.
                 "weight": 0.6,
                 "score": 0.0,
                 "weighted_score": 0.0,
-                "explanation": "Wrong classification: query (actual: complaint)",
-                "details": {
-                  "match": "none"
-                }
-              }
-            }
-          },
-          "weight": 0.4,
-          "final_reward": 0.0
-        }
-      },
-      {
-        "email_snippet": "Your monitor quality has really gone downhill. Not happy.",
-        "agent_action": "query",
-        "correct_action": "complaint",
-        "reward_received": 0.0,
-        "breakdown": {
-          "step_count": 1,
-          "action_type": "classify",
-          "category": "complaint",
-          "raw_score": 0.0,
-          "explanation": "Wrong classification: query (actual: complaint)",
-          "evaluation": {
-            "score": 0.0,
-            "breakdown": {
-              "accuracy": {
-                "weight": 0.25,
-                "score": 0.0,
-                "weighted_score": 0.0,
-                "explanation": "Exact classification match",
-                "details": {}
-              },
-              "semantic_similarity": {
-                "weight": 0.15,
-                "score": 0.0,
-                "weighted_score": 0.0,
-                "explanation": "Label semantic proximity",
-                "details": {}
-              },
-              "rule_based": {
-                "weight": 0.6,
-                "score": 0.0,
-                "weighted_score": 0.0,
-                "explanation": "Wrong classification: query (actual: complaint)",
+                "explanation": "Wrong classification: refund (actual: query)",
                 "details": {
                   "match": "none"
                 }
@@ -164,18 +168,98 @@ Demo locked to 7 failure scenarios for consistent delta measurement.
   },
   "reply_failures": {
     "failure_count": 25,
-    "too_short_count": 0,
+    "too_short_count": 25,
     "missing_keyword_count": 7,
-    "dominant_category": "query",
+    "dominant_category": "refund",
     "examples": [
+      {
+        "email_snippet": "My account shows a charge I never authorized. I've been a loyal customer for 6 years and this is how you treat me? I wan",
+        "agent_action": "Thank you for your question \u2014 we are happy to help! Please contact our support team and we will provide you with the inf",
+        "correct_action": "adequate reply meeting length/keyword/solution criteria",
+        "reward_received": 0.0,
+        "weakest_subfields": [
+          "keyword_component",
+          "conciseness_component",
+          "closing_bonus",
+          "greeting_bonus",
+          "solution_component",
+          "length_component",
+          "difficulty_multiplier"
+        ],
+        "breakdown": {
+          "step_count": 2,
+          "action_type": "reply",
+          "category": "refund",
+          "raw_score": 0.1892,
+          "explanation": "Reply scoring: length(219/80=0.15), concise(+0.05), no_keywords(-0.40), solution_oriented(+0.10), greeting(+0.08), closing(+0.07), difficulty_mult(\u00d71.12)",
+          "evaluation": {
+            "score": 0.1892,
+            "breakdown": {
+              "accuracy": {
+                "weight": 0.15,
+                "score": 1.0,
+                "weighted_score": 0.15,
+                "explanation": "Reply length adequacy",
+                "details": {
+                  "length": 219,
+                  "min_length": 80
+                }
+              },
+              "semantic_similarity": {
+                "weight": 0.15,
+                "score": 0.0,
+                "weighted_score": 0.0,
+                "explanation": "Reply keyword semantic overlap",
+                "details": {
+                  "expected_terms": [
+                    "refund",
+                    "return",
+                    "process",
+                    "business days",
+                    "amount",
+                    "apologize",
+                    "sorry",
+                    "resolve",
+                    "processed",
+                    "account",
+                    "3-5",
+                    "timeline",
+                    "initiated",
+                    "confirm",
+                    "transaction"
+                  ]
+                }
+              },
+              "rule_based": {
+                "weight": 0.7,
+                "score": 0.05600000000000001,
+                "weighted_score": 0.039200000000000006,
+                "explanation": "Reply scoring: length(219/80=0.15), concise(+0.05), no_keywords(-0.40), solution_oriented(+0.10), greeting(+0.08), closing(+0.07), difficulty_mult(\u00d71.12)",
+                "details": {
+                  "length_component": 0.15,
+                  "conciseness_component": 0.05,
+                  "keyword_component": -0.4,
+                  "solution_component": 0.1,
+                  "greeting_bonus": 0.08,
+                  "closing_bonus": 0.07,
+                  "difficulty_multiplier": 1.12
+                }
+              }
+            }
+          },
+          "consistency_penalty": 0.2,
+          "weight": 0.35,
+          "final_reward": 0.0
+        }
+      },
       {
         "email_snippet": "How do I return my item?",
         "agent_action": "Thank you for reaching out. We will process your refund right away. Please allow 3\u20135 business days for the amount to ret",
         "correct_action": "adequate reply meeting length/keyword/solution criteria",
-        "reward_received": 0.1791,
+        "reward_received": 0.1056,
         "weakest_subfields": [
-          "greeting_bonus",
           "conciseness_component",
+          "greeting_bonus",
           "keyword_component",
           "solution_component",
           "length_component"
@@ -184,10 +268,10 @@ Demo locked to 7 failure scenarios for consistent delta measurement.
           "step_count": 2,
           "action_type": "reply",
           "category": "query",
-          "raw_score": 0.711625,
-          "explanation": "Reply scoring: length(213/20=0.40), concise(+0.10), keywords(2/15=0.10), solution_oriented(+0.10), greeting(+0.08)",
+          "raw_score": 0.501625,
+          "explanation": "Reply scoring: length(213/20=0.15), concise(+0.05), weak_keywords(2/15=0.10), solution_oriented(+0.10), greeting(+0.08)",
           "evaluation": {
-            "score": 0.711625,
+            "score": 0.501625,
             "breakdown": {
               "accuracy": {
                 "weight": 0.15,
@@ -226,12 +310,12 @@ Demo locked to 7 failure scenarios for consistent delta measurement.
               },
               "rule_based": {
                 "weight": 0.7,
-                "score": 0.7799999999999999,
-                "weighted_score": 0.5459999999999999,
-                "explanation": "Reply scoring: length(213/20=0.40), concise(+0.10), keywords(2/15=0.10), solution_oriented(+0.10), greeting(+0.08)",
+                "score": 0.48000000000000004,
+                "weighted_score": 0.336,
+                "explanation": "Reply scoring: length(213/20=0.15), concise(+0.05), weak_keywords(2/15=0.10), solution_oriented(+0.10), greeting(+0.08)",
                 "details": {
-                  "length_component": 0.4,
-                  "conciseness_component": 0.1,
+                  "length_component": 0.15,
+                  "conciseness_component": 0.05,
                   "keyword_component": 0.1,
                   "solution_component": 0.1,
                   "greeting_bonus": 0.08
@@ -241,30 +325,30 @@ Demo locked to 7 failure scenarios for consistent delta measurement.
           },
           "consistency_penalty": 0.2,
           "weight": 0.35,
-          "final_reward": 0.17906875
+          "final_reward": 0.10556874999999999
         }
       },
       {
-        "email_snippet": "Your earbuds quality has really gone downhill. Not happy.",
-        "agent_action": "Thank you for your question \u2014 we are happy to help! Please contact our support team and we will provide you with the inf",
+        "email_snippet": "I was charged twice!",
+        "agent_action": "Thank you for reaching out. We will process your refund right away. Please allow 3\u20135 business days for the amount to ret",
         "correct_action": "adequate reply meeting length/keyword/solution criteria",
-        "reward_received": 0.1929,
+        "reward_received": 0.1135,
         "weakest_subfields": [
-          "closing_bonus",
-          "greeting_bonus",
           "conciseness_component",
           "keyword_component",
+          "greeting_bonus",
           "solution_component",
-          "length_component"
+          "length_component",
+          "difficulty_multiplier"
         ],
         "breakdown": {
           "step_count": 2,
           "action_type": "reply",
           "category": "complaint",
-          "raw_score": 0.7511224489795917,
-          "explanation": "Reply scoring: length(219/22=0.40), concise(+0.10), keywords(2/15=0.10), solution_oriented(+0.10), greeting(+0.08), closing(+0.07)",
+          "raw_score": 0.469175,
+          "explanation": "Reply scoring: length(213/45=0.15), concise(+0.05), weak_keywords(1/15=0.05), solution_oriented(+0.10), greeting(+0.08), difficulty_mult(\u00d71.05)",
           "evaluation": {
-            "score": 0.7511224489795917,
+            "score": 0.469175,
             "breakdown": {
               "accuracy": {
                 "weight": 0.15,
@@ -272,14 +356,14 @@ Demo locked to 7 failure scenarios for consistent delta measurement.
                 "weighted_score": 0.15,
                 "explanation": "Reply length adequacy",
                 "details": {
-                  "length": 219,
-                  "min_length": 22
+                  "length": 213,
+                  "min_length": 45
                 }
               },
               "semantic_similarity": {
                 "weight": 0.15,
-                "score": 0.04081632653061224,
-                "weighted_score": 0.006122448979591836,
+                "score": 0.020833333333333332,
+                "weighted_score": 0.0031249999999999997,
                 "explanation": "Reply keyword semantic overlap",
                 "details": {
                   "expected_terms": [
@@ -303,111 +387,33 @@ Demo locked to 7 failure scenarios for consistent delta measurement.
               },
               "rule_based": {
                 "weight": 0.7,
-                "score": 0.8499999999999999,
-                "weighted_score": 0.5949999999999999,
-                "explanation": "Reply scoring: length(219/22=0.40), concise(+0.10), keywords(2/15=0.10), solution_oriented(+0.10), greeting(+0.08), closing(+0.07)",
+                "score": 0.4515,
+                "weighted_score": 0.31605,
+                "explanation": "Reply scoring: length(213/45=0.15), concise(+0.05), weak_keywords(1/15=0.05), solution_oriented(+0.10), greeting(+0.08), difficulty_mult(\u00d71.05)",
                 "details": {
-                  "length_component": 0.4,
-                  "conciseness_component": 0.1,
-                  "keyword_component": 0.1,
+                  "length_component": 0.15,
+                  "conciseness_component": 0.05,
+                  "keyword_component": 0.05,
                   "solution_component": 0.1,
                   "greeting_bonus": 0.08,
-                  "closing_bonus": 0.07
+                  "difficulty_multiplier": 1.05
                 }
               }
             }
           },
-          "consistency_penalty": 0.2,
+          "consistency_penalty": 0.1448,
           "weight": 0.35,
-          "final_reward": 0.19289285714285706
-        }
-      },
-      {
-        "email_snippet": "Your monitor quality has really gone downhill. Not happy.",
-        "agent_action": "Thank you for your question \u2014 we are happy to help! Please contact our support team and we will provide you with the inf",
-        "correct_action": "adequate reply meeting length/keyword/solution criteria",
-        "reward_received": 0.1929,
-        "weakest_subfields": [
-          "closing_bonus",
-          "greeting_bonus",
-          "conciseness_component",
-          "keyword_component",
-          "solution_component",
-          "length_component"
-        ],
-        "breakdown": {
-          "step_count": 2,
-          "action_type": "reply",
-          "category": "complaint",
-          "raw_score": 0.7511224489795917,
-          "explanation": "Reply scoring: length(219/28=0.40), concise(+0.10), keywords(2/15=0.10), solution_oriented(+0.10), greeting(+0.08), closing(+0.07)",
-          "evaluation": {
-            "score": 0.7511224489795917,
-            "breakdown": {
-              "accuracy": {
-                "weight": 0.15,
-                "score": 1.0,
-                "weighted_score": 0.15,
-                "explanation": "Reply length adequacy",
-                "details": {
-                  "length": 219,
-                  "min_length": 28
-                }
-              },
-              "semantic_similarity": {
-                "weight": 0.15,
-                "score": 0.04081632653061224,
-                "weighted_score": 0.006122448979591836,
-                "explanation": "Reply keyword semantic overlap",
-                "details": {
-                  "expected_terms": [
-                    "sorry",
-                    "apologize",
-                    "understand",
-                    "resolve",
-                    "immediately",
-                    "priority",
-                    "unacceptable",
-                    "team",
-                    "contact",
-                    "within 24",
-                    "assure",
-                    "dedicated",
-                    "escalate",
-                    "commitment",
-                    "experience"
-                  ]
-                }
-              },
-              "rule_based": {
-                "weight": 0.7,
-                "score": 0.8499999999999999,
-                "weighted_score": 0.5949999999999999,
-                "explanation": "Reply scoring: length(219/28=0.40), concise(+0.10), keywords(2/15=0.10), solution_oriented(+0.10), greeting(+0.08), closing(+0.07)",
-                "details": {
-                  "length_component": 0.4,
-                  "conciseness_component": 0.1,
-                  "keyword_component": 0.1,
-                  "solution_component": 0.1,
-                  "greeting_bonus": 0.08,
-                  "closing_bonus": 0.07
-                }
-              }
-            }
-          },
-          "consistency_penalty": 0.2,
-          "weight": 0.35,
-          "final_reward": 0.19289285714285706
+          "final_reward": 0.11353124999999999
         }
       }
     ]
   },
   "escalate_failures": {
     "over_escalation_count": 0,
-    "under_escalation_count": 6,
+    "under_escalation_count": 3,
     "examples": [
       {
-        "email_snippet": "Your earbuds quality has really gone downhill. Not happy.",
+        "email_snippet": "The product works fine I guess but it's nothing like what was advertised. Not asking for a refund but wanted someone to ",
         "agent_action": "no",
         "correct_action": "escalate",
         "direction": "under_escalation",
@@ -452,7 +458,7 @@ Demo locked to 7 failure scenarios for consistent delta measurement.
         }
       },
       {
-        "email_snippet": "Your monitor quality has really gone downhill. Not happy.",
+        "email_snippet": "I was charged twice!",
         "agent_action": "no",
         "correct_action": "escalate",
         "direction": "under_escalation",
@@ -497,7 +503,7 @@ Demo locked to 7 failure scenarios for consistent delta measurement.
         }
       },
       {
-        "email_snippet": "Your shipping is way too slow. My wireless charger took 5 days to arrive.",
+        "email_snippet": "Wow, just wow. Package arrived with a note saying 'sorry for the delay' and nothing inside. The box was empty. EMPTY.",
         "agent_action": "no",
         "correct_action": "escalate",
         "direction": "under_escalation",
@@ -545,19 +551,19 @@ Demo locked to 7 failure scenarios for consistent delta measurement.
   },
   "difficulty_breakdown": {
     "easy": {
-      "classify_reward": 0.2880000000000001,
-      "reply_reward": 0.264635367393242,
-      "escalate_reward": 0.21760000000000002
+      "classify_reward": 0.3555555555555555,
+      "reply_reward": 0.27496938969244344,
+      "escalate_reward": 0.27694444444444444
     },
     "medium": {
-      "classify_reward": 0.0,
-      "reply_reward": 0.0,
-      "escalate_reward": 0.0
+      "classify_reward": 0.36724999999999997,
+      "reply_reward": 0.2704036775914634,
+      "escalate_reward": 0.25812500000000005
     },
     "hard": {
-      "classify_reward": 0.0,
-      "reply_reward": 0.0,
-      "escalate_reward": 0.0
+      "classify_reward": 0.16125,
+      "reply_reward": 0.17168023877218214,
+      "escalate_reward": 0.1996875
     }
   }
 }
@@ -682,17 +688,125 @@ Demo locked to 7 failure scenarios for consistent delta measurement.
   [32m[ADDED][0m   [1mreply_templates.query[0m: "Thank you for reaching out. We're happy to help an..."
   [32m[ADDED][0m   [1mreply_templates.refund[0m: "We sincerely apologize for the inconvenience. Your..."
   [2m──────────────────────────────────────────────────────────────────────[0m
-Golden regression test: PASSED (0.7621 >= 0.7548)
+Scenario pool: 5 easy, 3 medium, 2 hard
+Scenario difficulties first5=['easy', 'medium', 'hard', 'easy', 'medium'] last5=['hard', 'easy', 'medium', 'easy', 'easy']
+⚠️  Gen 1: Catastrophic forgetting detected (golden score dropped from 0.8236 to 0.7406) — retrying with broadened prompt
+[OPTIMIZER DEBUG] API key present: False, length: 0
+[OPTIMIZER DEBUG] Anthropic call failed: RuntimeError: Anthropic client unavailable
+[OPTIMIZER DEBUG] first_text length: 0, preview: ''
+[OPTIMIZER DEBUG] parsed is None: True
+[OPTIMIZER DEBUG] Anthropic call failed: RuntimeError: Anthropic client unavailable
+[OPTIMIZER DEBUG] normalized is None after retry: True
+
+=== GENERATED STRATEGY ===
+{
+  "classification_rules": {
+    "refund": [
+      "refund",
+      "reimbursement",
+      "charged twice",
+      "overcharged",
+      "billing error",
+      "money back",
+      "charge",
+      "credit",
+      "cancel order",
+      "cancellation"
+    ],
+    "complaint": [
+      "not happy",
+      "gone downhill",
+      "terrible",
+      "awful",
+      "unacceptable",
+      "disappointed",
+      "frustrated",
+      "angry",
+      "outraged",
+      "worst",
+      "quality has",
+      "way too slow",
+      "took too long",
+      "poor quality",
+      "bad experience",
+      "let down"
+    ],
+    "query": [
+      "how do i",
+      "how to",
+      "what is",
+      "can you",
+      "do you",
+      "where is",
+      "when will",
+      "return my item",
+      "return policy",
+      "track my",
+      "status of",
+      "information about",
+      "tell me",
+      "explain",
+      "help me understand"
+    ],
+    "default": "query"
+  },
+  "reply_templates": {
+    "refund": "We sincerely apologize for the inconvenience. Your refund request has been received and will be processed within 3-5 business days.",
+    "complaint": "We're really sorry to hear about your experience. We understand your frustration and are taking steps to resolve this issue immediately.",
+    "query": "Thank you for reaching out. We're happy to help and will provide the information you requested."
+  },
+  "reply_requirements": {
+    "min_length": 40,
+    "must_include_greeting": true,
+    "must_include_closing": true,
+    "forbidden_phrases": [
+      "not my problem",
+      "cannot help",
+      "no idea"
+    ]
+  },
+  "escalation_rules": {
+    "always_escalate": [
+      "legal threat",
+      "safety risk",
+      "account restricted",
+      "not happy",
+      "gone downhill",
+      "way too slow",
+      "quality has really"
+    ],
+    "never_escalate": [],
+    "escalate_if_complaint": true,
+    "escalate_if_high_urgency": true
+  },
+  "reasoning": "Removed 'return' from refund signals to fix query misclassification. Added complaint phrase triggers ('not happy', 'gone downhill', 'quality has') to complaint signals. Added complaint phrases to always_escalate list to fix under-escalation on complaint emails."
+}
+
+  [36m----------------------------------------------------------------------[0m
+  [1m[36mWHAT THE SYSTEM LEARNED (Generation 1)[0m
+  [36m----------------------------------------------------------------------[0m
+  Removed 'return' from refund signals to fix query
+  misclassification. Added complaint phrase triggers ('not happy',
+  'gone downhill', 'quality has') to complaint signals. Added
+  complaint phrases to always_escalate list to fix under-escalation
+  on complaint emails.
+  [36m----------------------------------------------------------------------[0m
+
+Scenario pool: 5 easy, 3 medium, 2 hard
+Scenario difficulties first5=['easy', 'medium', 'hard', 'easy', 'medium'] last5=['hard', 'easy', 'medium', 'easy', 'easy']
+Retry golden score: 0.7406 (was 0.7406, baseline 0.8236)
+Scenario pool: 1 easy, 1 medium, 5 hard
+Scenario difficulties first5=['easy', 'medium', 'hard', 'hard', 'hard'] last5=['hard', 'hard', 'hard', 'hard', 'hard']
 
 [1m[36m──────────────────────────────────────────────────────────────────────────────────────────[0m
 [1m[36m  REWARD CURVE[0m
 [1m[36m──────────────────────────────────────────────────────────────────────────────────────────[0m
   [2mGen         Total              Classify             Reply              Escalate     [0m
   [2m─────────────────────────────────────────────────────────────────────────────────────[0m
-  Gen 0 [[32m████████[2m░░[0m] [32m77.0%[0m  [[31m███[2m░░░░░░░[0m] [31m28.8%[0m  [[31m███[2m░░░░░░░[0m] [31m26.5%[0m  [[31m██[2m░░░░░░░░[0m] [31m21.8%[0m
-  Gen 1 [[32m████████[2m░░[0m] [32m82.4%[0m  [[31m███[2m░░░░░░░[0m] [31m30.6%[0m  [[31m███[2m░░░░░░░[0m] [31m26.3%[0m  [[31m███[2m░░░░░░░[0m] [31m25.5%[0m
+  Gen 0 [[32m████████[2m░░[0m] [32m78.4%[0m  [[31m███[2m░░░░░░░[0m] [31m29.7%[0m  [[31m██[2m░░░░░░░░[0m] [31m24.1%[0m  [[31m██[2m░░░░░░░░[0m] [31m24.6%[0m
+  Gen 1 [[33m███████[2m░░░[0m] [33m67.7%[0m  [[31m███[2m░░░░░░░[0m] [31m25.9%[0m  [[31m██[2m░░░░░░░░[0m] [31m22.0%[0m  [[31m██[2m░░░░░░░░[0m] [31m19.8%[0m
   [2m─────────────────────────────────────────────────────────────────────────────────────[0m
-  [1mBest generation: [36m1[0m[1m | Total improvement: [32m+7.0%[0m[1m from baseline[0m
+  [1mBest generation: [36m0[0m[1m | Total improvement: [32m+0.0%[0m[1m from baseline[0m
 [1m[36m──────────────────────────────────────────────────────────────────────────────────────────[0m
 
 
@@ -701,10 +815,10 @@ Golden regression test: PASSED (0.7621 >= 0.7548)
   [2m────────────────────────────────────────────────────────────────────[0m
   [1mStep           Before     After    Change  Status[0m
   [2m────────────────────────────────────────────────────────────────────[0m
-  Classify        28.8%     [32m30.6%[0m     [32m+1.8%[0m  ✅
-  Reply           26.5%     [31m26.3%[0m     [31m-0.2%[0m  ❌
-  Escalate        21.8%     [32m25.5%[0m     [32m+3.8%[0m  ✅
-  [1mTotal[0m    77.0%     [32m82.4%[0m     [32m+5.4%[0m  ✅
+  Classify        29.7%     [31m25.9%[0m     [31m-3.8%[0m  ❌
+  Reply           24.0%     [31m22.0%[0m     [31m-2.0%[0m  ❌
+  Escalate        24.6%     [31m19.8%[0m     [31m-4.8%[0m  ❌
+  [1mTotal[0m    78.4%     [31m67.7%[0m    [31m-10.7%[0m  ❌
   [2m────────────────────────────────────────────────────────────────────[0m
 
 
@@ -722,39 +836,38 @@ Golden regression test: PASSED (0.7621 >= 0.7548)
   [1m[36m╔════════════════════════════════════════════════════════════════════════╗[0m
   [1m[36m║[0m  [1m📊 BUSINESS IMPACT — Generation 1                                      [36m║[0m
   [1m[36m╠════════════════════════════════════════════════════════════════════════╣[0m
-  [1m[36m║[0m  [1m📧 Email categorization accuracy:[0m  28.8% → [32m30.6%[0m  ([32m▲[0m [32m+1.8%[0m)            [36m║[0m
-  [1m[36m║[0m  [1m💬 Reply quality score:[0m  0.265 → [31m0.263[0m  [31m▼[0m  — customer satisfaction proxy       [36m║[0m
-  [1m[36m║[0m  [1m🚨 Escalation accuracy:[0m  21.8% → [32m25.5%[0m  [32m▲[0m  — incorrect escalations cost $150 each  [36m║[0m
+  [1m[36m║[0m  [1m📧 Email categorization accuracy:[0m  29.7% → [31m25.9%[0m  ([31m▼[0m [31m-3.8%[0m)            [36m║[0m
+  [1m[36m║[0m  [1m💬 Reply quality score:[0m  0.240 → [31m0.220[0m  [31m▼[0m  — customer satisfaction proxy       [36m║[0m
+  [1m[36m║[0m  [1m🚨 Escalation accuracy:[0m  24.6% → [31m19.8%[0m  [31m▼[0m  — incorrect escalations cost $150 each  [36m║[0m
   [1m[36m╠════════════════════════════════════════════════════════════════════════╣[0m
-  [1m[36m║[0m  [1m💰 Estimated savings per 1,000 emails:  [32m$5,655[0m                        [36m║[0m
+  [1m[36m║[0m  [1m💰 Estimated added cost per 1,000 emails:  [31m$7,200[0m                        [36m║[0m
   [1m[36m╚════════════════════════════════════════════════════════════════════════╝[0m
 
-Strategy accepted — improvement achieved
-Generation 1: ACCEPTED
-[STRATEGY ACCEPTED] Reasoning: Removed 'return' from refund signals to fix query misclassification. Added complaint phrase triggers ('not happy', 'gone downhill', 'quality has') to complaint signals. Added complaint phrases to always_escalate list to fix under-escalation on complaint emails.
-Curriculum: 7 scenarios upweighted, max_weight=10.0, mean_weight=1.28
+Strategy rejected — performance degraded
+Generation 1: REJECTED
+Curriculum: 7 scenarios upweighted, max_weight=10.0, mean_weight=1.35
 
 === FAILURE ANALYSIS ===
 {
   "classify_failures": {
     "total_failures": 25,
     "grouped_by_prediction": {
-      "query": 7,
-      "complaint": 14,
-      "refund": 4
+      "refund": 11,
+      "complaint": 5,
+      "query": 9
     },
     "examples": [
       {
-        "email_snippet": "The keyboard I received looks nothing like the photos on your website.",
+        "email_snippet": "My account shows a charge I never authorized. I've been a loyal customer for 6 years and this is how you treat me? I wan",
         "agent_action": "query",
-        "correct_action": "complaint",
+        "correct_action": "refund",
         "reward_received": 0.0,
         "breakdown": {
           "step_count": 1,
           "action_type": "classify",
-          "category": "complaint",
+          "category": "refund",
           "raw_score": 0.0,
-          "explanation": "Wrong classification: query (actual: complaint)",
+          "explanation": "Wrong classification: query (actual: refund)",
           "evaluation": {
             "score": 0.0,
             "breakdown": {
@@ -776,7 +889,7 @@ Curriculum: 7 scenarios upweighted, max_weight=10.0, mean_weight=1.28
                 "weight": 0.6,
                 "score": 0.0,
                 "weighted_score": 0.0,
-                "explanation": "Wrong classification: query (actual: complaint)",
+                "explanation": "Wrong classification: query (actual: refund)",
                 "details": {
                   "match": "none"
                 }
@@ -788,16 +901,16 @@ Curriculum: 7 scenarios upweighted, max_weight=10.0, mean_weight=1.28
         }
       },
       {
-        "email_snippet": "The keyboard I received looks nothing like the photos on your website.",
-        "agent_action": "query",
-        "correct_action": "complaint",
+        "email_snippet": "Quick question \u2014 does your return policy apply to items purchased during the sale event last November? Asking for a frie",
+        "agent_action": "refund",
+        "correct_action": "query",
         "reward_received": 0.0,
         "breakdown": {
           "step_count": 1,
           "action_type": "classify",
-          "category": "complaint",
+          "category": "query",
           "raw_score": 0.0,
-          "explanation": "Wrong classification: query (actual: complaint)",
+          "explanation": "Wrong classification: refund (actual: query)",
           "evaluation": {
             "score": 0.0,
             "breakdown": {
@@ -819,7 +932,7 @@ Curriculum: 7 scenarios upweighted, max_weight=10.0, mean_weight=1.28
                 "weight": 0.6,
                 "score": 0.0,
                 "weighted_score": 0.0,
-                "explanation": "Wrong classification: query (actual: complaint)",
+                "explanation": "Wrong classification: refund (actual: query)",
                 "details": {
                   "match": "none"
                 }
@@ -831,16 +944,16 @@ Curriculum: 7 scenarios upweighted, max_weight=10.0, mean_weight=1.28
         }
       },
       {
-        "email_snippet": "The keyboard I received looks nothing like the photos on your website.",
-        "agent_action": "query",
-        "correct_action": "complaint",
+        "email_snippet": "Can I exchange an item rather than get a refund? Also can you tell me if the replacement is even in stock before I ship ",
+        "agent_action": "refund",
+        "correct_action": "query",
         "reward_received": 0.0,
         "breakdown": {
           "step_count": 1,
           "action_type": "classify",
-          "category": "complaint",
+          "category": "query",
           "raw_score": 0.0,
-          "explanation": "Wrong classification: query (actual: complaint)",
+          "explanation": "Wrong classification: refund (actual: query)",
           "evaluation": {
             "score": 0.0,
             "breakdown": {
@@ -862,7 +975,7 @@ Curriculum: 7 scenarios upweighted, max_weight=10.0, mean_weight=1.28
                 "weight": 0.6,
                 "score": 0.0,
                 "weighted_score": 0.0,
-                "explanation": "Wrong classification: query (actual: complaint)",
+                "explanation": "Wrong classification: refund (actual: query)",
                 "details": {
                   "match": "none"
                 }
@@ -877,31 +990,32 @@ Curriculum: 7 scenarios upweighted, max_weight=10.0, mean_weight=1.28
   },
   "reply_failures": {
     "failure_count": 25,
-    "too_short_count": 0,
+    "too_short_count": 25,
     "missing_keyword_count": 7,
-    "dominant_category": "complaint",
+    "dominant_category": "refund",
     "examples": [
       {
-        "email_snippet": "The keyboard I received looks nothing like the photos on your website.",
-        "agent_action": "Thank you for reaching out. We're happy to help and will provide the information you requested. Regards, Support Team.",
+        "email_snippet": "My account shows a charge I never authorized. I've been a loyal customer for 6 years and this is how you treat me? I wan",
+        "agent_action": "Thank you for your question \u2014 we are happy to help! Please contact our support team and we will provide you with the inf",
         "correct_action": "adequate reply meeting length/keyword/solution criteria",
-        "reward_received": 0.18,
+        "reward_received": 0.0,
         "weakest_subfields": [
           "keyword_component",
+          "conciseness_component",
           "closing_bonus",
           "greeting_bonus",
-          "conciseness_component",
           "solution_component",
-          "length_component"
+          "length_component",
+          "difficulty_multiplier"
         ],
         "breakdown": {
           "step_count": 2,
           "action_type": "reply",
-          "category": "complaint",
-          "raw_score": 0.7144117647058823,
-          "explanation": "Reply scoring: length(118/21=0.40), concise(+0.10), keywords(1/15=0.05), solution_oriented(+0.10), greeting(+0.08), closing(+0.07)",
+          "category": "refund",
+          "raw_score": 0.1892,
+          "explanation": "Reply scoring: length(219/80=0.15), concise(+0.05), no_keywords(-0.40), solution_oriented(+0.10), greeting(+0.08), closing(+0.07), difficulty_mult(\u00d71.12)",
           "evaluation": {
-            "score": 0.7144117647058823,
+            "score": 0.1892,
             "breakdown": {
               "accuracy": {
                 "weight": 0.15,
@@ -909,77 +1023,77 @@ Curriculum: 7 scenarios upweighted, max_weight=10.0, mean_weight=1.28
                 "weighted_score": 0.15,
                 "explanation": "Reply length adequacy",
                 "details": {
-                  "length": 118,
-                  "min_length": 21
+                  "length": 219,
+                  "min_length": 80
                 }
               },
               "semantic_similarity": {
                 "weight": 0.15,
-                "score": 0.029411764705882353,
-                "weighted_score": 0.004411764705882353,
+                "score": 0.0,
+                "weighted_score": 0.0,
                 "explanation": "Reply keyword semantic overlap",
                 "details": {
                   "expected_terms": [
-                    "sorry",
+                    "refund",
+                    "return",
+                    "process",
+                    "business days",
+                    "amount",
                     "apologize",
-                    "understand",
+                    "sorry",
                     "resolve",
-                    "immediately",
-                    "priority",
-                    "unacceptable",
-                    "team",
-                    "contact",
-                    "within 24",
-                    "assure",
-                    "dedicated",
-                    "escalate",
-                    "commitment",
-                    "experience"
+                    "processed",
+                    "account",
+                    "3-5",
+                    "timeline",
+                    "initiated",
+                    "confirm",
+                    "transaction"
                   ]
                 }
               },
               "rule_based": {
                 "weight": 0.7,
-                "score": 0.8,
-                "weighted_score": 0.5599999999999999,
-                "explanation": "Reply scoring: length(118/21=0.40), concise(+0.10), keywords(1/15=0.05), solution_oriented(+0.10), greeting(+0.08), closing(+0.07)",
+                "score": 0.05600000000000001,
+                "weighted_score": 0.039200000000000006,
+                "explanation": "Reply scoring: length(219/80=0.15), concise(+0.05), no_keywords(-0.40), solution_oriented(+0.10), greeting(+0.08), closing(+0.07), difficulty_mult(\u00d71.12)",
                 "details": {
-                  "length_component": 0.4,
-                  "conciseness_component": 0.1,
-                  "keyword_component": 0.05,
+                  "length_component": 0.15,
+                  "conciseness_component": 0.05,
+                  "keyword_component": -0.4,
                   "solution_component": 0.1,
                   "greeting_bonus": 0.08,
-                  "closing_bonus": 0.07
+                  "closing_bonus": 0.07,
+                  "difficulty_multiplier": 1.12
                 }
               }
             }
           },
           "consistency_penalty": 0.2,
           "weight": 0.35,
-          "final_reward": 0.1800441176470588
+          "final_reward": 0.0
         }
       },
       {
-        "email_snippet": "The keyboard I received looks nothing like the photos on your website.",
-        "agent_action": "Thank you for reaching out. We're happy to help and will provide the information you requested. Regards, Support Team.",
+        "email_snippet": "How do I return my item?",
+        "agent_action": "Thank you for reaching out. We will process your refund right away. Please allow 3\u20135 business days for the amount to ret",
         "correct_action": "adequate reply meeting length/keyword/solution criteria",
-        "reward_received": 0.18,
+        "reward_received": 0.1056,
         "weakest_subfields": [
-          "keyword_component",
-          "closing_bonus",
-          "greeting_bonus",
           "conciseness_component",
+          "greeting_bonus",
+          "keyword_component",
           "solution_component",
           "length_component"
         ],
         "breakdown": {
           "step_count": 2,
           "action_type": "reply",
-          "category": "complaint",
-          "raw_score": 0.7144117647058823,
-          "explanation": "Reply scoring: length(118/21=0.40), concise(+0.10), keywords(1/15=0.05), solution_oriented(+0.10), greeting(+0.08), closing(+0.07)",
+          "category": "query",
+          "raw_score": 0.501625,
+          "explanation": "Reply scoring: length(213/20=0.15), concise(+0.05), weak_keywords(2/15=0.10), solution_oriented(+0.10), greeting(+0.08)",
           "evaluation": {
-            "score": 0.7144117647058823,
+            "score": 0.501625,
             "breakdown": {
               "accuracy": {
                 "weight": 0.15,
@@ -987,77 +1101,76 @@ Curriculum: 7 scenarios upweighted, max_weight=10.0, mean_weight=1.28
                 "weighted_score": 0.15,
                 "explanation": "Reply length adequacy",
                 "details": {
-                  "length": 118,
-                  "min_length": 21
+                  "length": 213,
+                  "min_length": 20
                 }
               },
               "semantic_similarity": {
                 "weight": 0.15,
-                "score": 0.029411764705882353,
-                "weighted_score": 0.004411764705882353,
+                "score": 0.10416666666666667,
+                "weighted_score": 0.015625,
                 "explanation": "Reply keyword semantic overlap",
                 "details": {
                   "expected_terms": [
-                    "sorry",
-                    "apologize",
-                    "understand",
-                    "resolve",
-                    "immediately",
-                    "priority",
-                    "unacceptable",
-                    "team",
+                    "happy to help",
+                    "please",
                     "contact",
-                    "within 24",
-                    "assure",
-                    "dedicated",
-                    "escalate",
-                    "commitment",
-                    "experience"
+                    "let us know",
+                    "information",
+                    "answer",
+                    "clarify",
+                    "provide",
+                    "details",
+                    "assist",
+                    "guide",
+                    "explain",
+                    "available",
+                    "reach out",
+                    "support"
                   ]
                 }
               },
               "rule_based": {
                 "weight": 0.7,
-                "score": 0.8,
-                "weighted_score": 0.5599999999999999,
-                "explanation": "Reply scoring: length(118/21=0.40), concise(+0.10), keywords(1/15=0.05), solution_oriented(+0.10), greeting(+0.08), closing(+0.07)",
+                "score": 0.48000000000000004,
+                "weighted_score": 0.336,
+                "explanation": "Reply scoring: length(213/20=0.15), concise(+0.05), weak_keywords(2/15=0.10), solution_oriented(+0.10), greeting(+0.08)",
                 "details": {
-                  "length_component": 0.4,
-                  "conciseness_component": 0.1,
-                  "keyword_component": 0.05,
+                  "length_component": 0.15,
+                  "conciseness_component": 0.05,
+                  "keyword_component": 0.1,
                   "solution_component": 0.1,
-                  "greeting_bonus": 0.08,
-                  "closing_bonus": 0.07
+                  "greeting_bonus": 0.08
                 }
               }
             }
           },
           "consistency_penalty": 0.2,
           "weight": 0.35,
-          "final_reward": 0.1800441176470588
+          "final_reward": 0.10556874999999999
         }
       },
       {
-        "email_snippet": "The keyboard I received looks nothing like the photos on your website.",
-        "agent_action": "Thank you for reaching out. We're happy to help and will provide the information you requested. Regards, Support Team.",
+        "email_snippet": "I was charged twice!",
+        "agent_action": "Thank you for reaching out. We will process your refund right away. Please allow 3\u20135 business days for the amount to ret",
         "correct_action": "adequate reply meeting length/keyword/solution criteria",
-        "reward_received": 0.18,
+        "reward_received": 0.1135,
         "weakest_subfields": [
-          "keyword_component",
-          "closing_bonus",
-          "greeting_bonus",
           "conciseness_component",
+          "keyword_component",
+          "greeting_bonus",
           "solution_component",
-          "length_component"
+          "length_component",
+          "difficulty_multiplier"
         ],
         "breakdown": {
           "step_count": 2,
           "action_type": "reply",
           "category": "complaint",
-          "raw_score": 0.7144117647058823,
-          "explanation": "Reply scoring: length(118/21=0.40), concise(+0.10), keywords(1/15=0.05), solution_oriented(+0.10), greeting(+0.08), closing(+0.07)",
+          "raw_score": 0.469175,
+          "explanation": "Reply scoring: length(213/45=0.15), concise(+0.05), weak_keywords(1/15=0.05), solution_oriented(+0.10), greeting(+0.08), difficulty_mult(\u00d71.05)",
           "evaluation": {
-            "score": 0.7144117647058823,
+            "score": 0.469175,
             "breakdown": {
               "accuracy": {
                 "weight": 0.15,
@@ -1065,14 +1178,14 @@ Curriculum: 7 scenarios upweighted, max_weight=10.0, mean_weight=1.28
                 "weighted_score": 0.15,
                 "explanation": "Reply length adequacy",
                 "details": {
-                  "length": 118,
-                  "min_length": 21
+                  "length": 213,
+                  "min_length": 45
                 }
               },
               "semantic_similarity": {
                 "weight": 0.15,
-                "score": 0.029411764705882353,
-                "weighted_score": 0.004411764705882353,
+                "score": 0.020833333333333332,
+                "weighted_score": 0.0031249999999999997,
                 "explanation": "Reply keyword semantic overlap",
                 "details": {
                   "expected_terms": [
@@ -1096,23 +1209,23 @@ Curriculum: 7 scenarios upweighted, max_weight=10.0, mean_weight=1.28
               },
               "rule_based": {
                 "weight": 0.7,
-                "score": 0.8,
-                "weighted_score": 0.5599999999999999,
-                "explanation": "Reply scoring: length(118/21=0.40), concise(+0.10), keywords(1/15=0.05), solution_oriented(+0.10), greeting(+0.08), closing(+0.07)",
+                "score": 0.4515,
+                "weighted_score": 0.31605,
+                "explanation": "Reply scoring: length(213/45=0.15), concise(+0.05), weak_keywords(1/15=0.05), solution_oriented(+0.10), greeting(+0.08), difficulty_mult(\u00d71.05)",
                 "details": {
-                  "length_component": 0.4,
-                  "conciseness_component": 0.1,
+                  "length_component": 0.15,
+                  "conciseness_component": 0.05,
                   "keyword_component": 0.05,
                   "solution_component": 0.1,
                   "greeting_bonus": 0.08,
-                  "closing_bonus": 0.07
+                  "difficulty_multiplier": 1.05
                 }
               }
             }
           },
-          "consistency_penalty": 0.2,
+          "consistency_penalty": 0.1448,
           "weight": 0.35,
-          "final_reward": 0.1800441176470588
+          "final_reward": 0.11353124999999999
         }
       }
     ]
@@ -1122,7 +1235,7 @@ Curriculum: 7 scenarios upweighted, max_weight=10.0, mean_weight=1.28
     "under_escalation_count": 3,
     "examples": [
       {
-        "email_snippet": "The keyboard I received looks nothing like the photos on your website.",
+        "email_snippet": "The product works fine I guess but it's nothing like what was advertised. Not asking for a refund but wanted someone to ",
         "agent_action": "no",
         "correct_action": "escalate",
         "direction": "under_escalation",
@@ -1167,7 +1280,7 @@ Curriculum: 7 scenarios upweighted, max_weight=10.0, mean_weight=1.28
         }
       },
       {
-        "email_snippet": "The keyboard I received looks nothing like the photos on your website.",
+        "email_snippet": "I was charged twice!",
         "agent_action": "no",
         "correct_action": "escalate",
         "direction": "under_escalation",
@@ -1212,7 +1325,7 @@ Curriculum: 7 scenarios upweighted, max_weight=10.0, mean_weight=1.28
         }
       },
       {
-        "email_snippet": "The keyboard I received looks nothing like the photos on your website.",
+        "email_snippet": "Wow, just wow. Package arrived with a note saying 'sorry for the delay' and nothing inside. The box was empty. EMPTY.",
         "agent_action": "no",
         "correct_action": "escalate",
         "direction": "under_escalation",
@@ -1260,19 +1373,19 @@ Curriculum: 7 scenarios upweighted, max_weight=10.0, mean_weight=1.28
   },
   "difficulty_breakdown": {
     "easy": {
-      "classify_reward": 0.30624000000000007,
-      "reply_reward": 0.2627088941176471,
-      "escalate_reward": 0.2552999999999999
+      "classify_reward": 0.3555555555555555,
+      "reply_reward": 0.27496938969244344,
+      "escalate_reward": 0.27694444444444444
     },
     "medium": {
-      "classify_reward": 0.0,
-      "reply_reward": 0.0,
-      "escalate_reward": 0.0
+      "classify_reward": 0.36724999999999997,
+      "reply_reward": 0.2704036775914634,
+      "escalate_reward": 0.25812500000000005
     },
     "hard": {
-      "classify_reward": 0.0,
-      "reply_reward": 0.0,
-      "escalate_reward": 0.0
+      "classify_reward": 0.16125,
+      "reply_reward": 0.17168023877218214,
+      "escalate_reward": 0.1996875
     }
   }
 }
@@ -1379,18 +1492,126 @@ Curriculum: 7 scenarios upweighted, max_weight=10.0, mean_weight=1.28
   [36m----------------------------------------------------------------------[0m
 
   [2m(no strategy changes)[0m
-Golden regression test: PASSED (0.7621 >= 0.7548)
+Scenario pool: 5 easy, 3 medium, 2 hard
+Scenario difficulties first5=['easy', 'medium', 'hard', 'easy', 'medium'] last5=['hard', 'easy', 'medium', 'easy', 'easy']
+⚠️  Gen 2: Catastrophic forgetting detected (golden score dropped from 0.8236 to 0.7406) — retrying with broadened prompt
+[OPTIMIZER DEBUG] API key present: False, length: 0
+[OPTIMIZER DEBUG] Anthropic call failed: RuntimeError: Anthropic client unavailable
+[OPTIMIZER DEBUG] first_text length: 0, preview: ''
+[OPTIMIZER DEBUG] parsed is None: True
+[OPTIMIZER DEBUG] Anthropic call failed: RuntimeError: Anthropic client unavailable
+[OPTIMIZER DEBUG] normalized is None after retry: True
+
+=== GENERATED STRATEGY ===
+{
+  "classification_rules": {
+    "refund": [
+      "refund",
+      "reimbursement",
+      "charged twice",
+      "overcharged",
+      "billing error",
+      "money back",
+      "charge",
+      "credit",
+      "cancel order",
+      "cancellation"
+    ],
+    "complaint": [
+      "not happy",
+      "gone downhill",
+      "terrible",
+      "awful",
+      "unacceptable",
+      "disappointed",
+      "frustrated",
+      "angry",
+      "outraged",
+      "worst",
+      "quality has",
+      "way too slow",
+      "took too long",
+      "poor quality",
+      "bad experience",
+      "let down"
+    ],
+    "query": [
+      "how do i",
+      "how to",
+      "what is",
+      "can you",
+      "do you",
+      "where is",
+      "when will",
+      "return my item",
+      "return policy",
+      "track my",
+      "status of",
+      "information about",
+      "tell me",
+      "explain",
+      "help me understand"
+    ],
+    "default": "query"
+  },
+  "reply_templates": {
+    "refund": "We sincerely apologize for the inconvenience. Your refund request has been received and will be processed within 3-5 business days.",
+    "complaint": "We're really sorry to hear about your experience. We understand your frustration and are taking steps to resolve this issue immediately.",
+    "query": "Thank you for reaching out. We're happy to help and will provide the information you requested."
+  },
+  "reply_requirements": {
+    "min_length": 40,
+    "must_include_greeting": true,
+    "must_include_closing": true,
+    "forbidden_phrases": [
+      "not my problem",
+      "cannot help",
+      "no idea"
+    ]
+  },
+  "escalation_rules": {
+    "always_escalate": [
+      "legal threat",
+      "safety risk",
+      "account restricted",
+      "not happy",
+      "gone downhill",
+      "way too slow",
+      "quality has really"
+    ],
+    "never_escalate": [],
+    "escalate_if_complaint": true,
+    "escalate_if_high_urgency": true
+  },
+  "reasoning": "Removed 'return' from refund signals to fix query misclassification. Added complaint phrase triggers ('not happy', 'gone downhill', 'quality has') to complaint signals. Added complaint phrases to always_escalate list to fix under-escalation on complaint emails."
+}
+
+  [36m----------------------------------------------------------------------[0m
+  [1m[36mWHAT THE SYSTEM LEARNED (Generation 2)[0m
+  [36m----------------------------------------------------------------------[0m
+  Removed 'return' from refund signals to fix query
+  misclassification. Added complaint phrase triggers ('not happy',
+  'gone downhill', 'quality has') to complaint signals. Added
+  complaint phrases to always_escalate list to fix under-escalation
+  on complaint emails.
+  [36m----------------------------------------------------------------------[0m
+
+Scenario pool: 5 easy, 3 medium, 2 hard
+Scenario difficulties first5=['easy', 'medium', 'hard', 'easy', 'medium'] last5=['hard', 'easy', 'medium', 'easy', 'easy']
+Retry golden score: 0.7406 (was 0.7406, baseline 0.8236)
+Scenario pool: 1 easy, 1 medium, 5 hard
+Scenario difficulties first5=['easy', 'medium', 'hard', 'hard', 'hard'] last5=['hard', 'hard', 'hard', 'hard', 'hard']
 
 [1m[36m──────────────────────────────────────────────────────────────────────────────────────────[0m
 [1m[36m  REWARD CURVE[0m
 [1m[36m──────────────────────────────────────────────────────────────────────────────────────────[0m
   [2mGen         Total              Classify             Reply              Escalate     [0m
   [2m─────────────────────────────────────────────────────────────────────────────────────[0m
-  Gen 0 [[32m████████[2m░░[0m] [32m77.0%[0m  [[31m███[2m░░░░░░░[0m] [31m28.8%[0m  [[31m███[2m░░░░░░░[0m] [31m26.5%[0m  [[31m██[2m░░░░░░░░[0m] [31m21.8%[0m
-  Gen 1 [[32m████████[2m░░[0m] [32m82.4%[0m  [[31m███[2m░░░░░░░[0m] [31m30.6%[0m  [[31m███[2m░░░░░░░[0m] [31m26.3%[0m  [[31m███[2m░░░░░░░[0m] [31m25.5%[0m
-  Gen 2 [[32m████████[2m░░[0m] [32m82.4%[0m  [[31m███[2m░░░░░░░[0m] [31m30.6%[0m  [[31m███[2m░░░░░░░[0m] [31m26.3%[0m  [[31m███[2m░░░░░░░[0m] [31m25.5%[0m
+  Gen 0 [[32m████████[2m░░[0m] [32m78.4%[0m  [[31m███[2m░░░░░░░[0m] [31m29.7%[0m  [[31m██[2m░░░░░░░░[0m] [31m24.1%[0m  [[31m██[2m░░░░░░░░[0m] [31m24.6%[0m
+  Gen 1 [[33m███████[2m░░░[0m] [33m67.7%[0m  [[31m███[2m░░░░░░░[0m] [31m25.9%[0m  [[31m██[2m░░░░░░░░[0m] [31m22.0%[0m  [[31m██[2m░░░░░░░░[0m] [31m19.8%[0m
+  Gen 2 [[33m███████[2m░░░[0m] [33m67.7%[0m  [[31m███[2m░░░░░░░[0m] [31m25.9%[0m  [[31m██[2m░░░░░░░░[0m] [31m22.0%[0m  [[31m██[2m░░░░░░░░[0m] [31m19.8%[0m
   [2m─────────────────────────────────────────────────────────────────────────────────────[0m
-  [1mBest generation: [36m1[0m[1m | Total improvement: [32m+7.0%[0m[1m from baseline[0m
+  [1mBest generation: [36m0[0m[1m | Total improvement: [32m+0.0%[0m[1m from baseline[0m
 [1m[36m──────────────────────────────────────────────────────────────────────────────────────────[0m
 
 
@@ -1399,10 +1620,10 @@ Golden regression test: PASSED (0.7621 >= 0.7548)
   [2m────────────────────────────────────────────────────────────────────[0m
   [1mStep           Before     After    Change  Status[0m
   [2m────────────────────────────────────────────────────────────────────[0m
-  Classify        28.8%     [32m30.6%[0m     [32m+1.8%[0m  ✅
-  Reply           26.5%     [31m26.3%[0m     [31m-0.2%[0m  ❌
-  Escalate        21.8%     [32m25.5%[0m     [32m+3.8%[0m  ✅
-  [1mTotal[0m    77.0%     [32m82.4%[0m     [32m+5.4%[0m  ✅
+  Classify        29.7%     [31m25.9%[0m     [31m-3.8%[0m  ❌
+  Reply           24.0%     [31m22.0%[0m     [31m-2.0%[0m  ❌
+  Escalate        24.6%     [31m19.8%[0m     [31m-4.8%[0m  ❌
+  [1mTotal[0m    78.4%     [31m67.7%[0m    [31m-10.7%[0m  ❌
   [2m────────────────────────────────────────────────────────────────────[0m
 
 
@@ -1420,53 +1641,54 @@ Golden regression test: PASSED (0.7621 >= 0.7548)
   [1m[36m╔════════════════════════════════════════════════════════════════════════╗[0m
   [1m[36m║[0m  [1m📊 BUSINESS IMPACT — Generation 2                                      [36m║[0m
   [1m[36m╠════════════════════════════════════════════════════════════════════════╣[0m
-  [1m[36m║[0m  [1m📧 Email categorization accuracy:[0m  28.8% → [32m30.6%[0m  ([32m▲[0m [32m+1.8%[0m)            [36m║[0m
-  [1m[36m║[0m  [1m💬 Reply quality score:[0m  0.265 → [31m0.263[0m  [31m▼[0m  — customer satisfaction proxy       [36m║[0m
-  [1m[36m║[0m  [1m🚨 Escalation accuracy:[0m  21.8% → [32m25.5%[0m  [32m▲[0m  — incorrect escalations cost $150 each  [36m║[0m
+  [1m[36m║[0m  [1m📧 Email categorization accuracy:[0m  29.7% → [31m25.9%[0m  ([31m▼[0m [31m-3.8%[0m)            [36m║[0m
+  [1m[36m║[0m  [1m💬 Reply quality score:[0m  0.240 → [31m0.220[0m  [31m▼[0m  — customer satisfaction proxy       [36m║[0m
+  [1m[36m║[0m  [1m🚨 Escalation accuracy:[0m  24.6% → [31m19.8%[0m  [31m▼[0m  — incorrect escalations cost $150 each  [36m║[0m
   [1m[36m╠════════════════════════════════════════════════════════════════════════╣[0m
-  [1m[36m║[0m  [1m💰 Estimated savings per 1,000 emails:  [32m$5,655[0m                        [36m║[0m
+  [1m[36m║[0m  [1m💰 Estimated added cost per 1,000 emails:  [31m$7,200[0m                        [36m║[0m
   [1m[36m╚════════════════════════════════════════════════════════════════════════╝[0m
 
-Strategy accepted — improvement achieved
-Generation 2: ACCEPTED
-[STRATEGY ACCEPTED] Reasoning: Removed 'return' from refund signals to fix query misclassification. Added complaint phrase triggers ('not happy', 'gone downhill', 'quality has') to complaint signals. Added complaint phrases to always_escalate list to fix under-escalation on complaint emails.
-Curriculum: 7 scenarios upweighted, max_weight=10.0, mean_weight=1.28
+Strategy rejected — performance degraded
+Generation 2: REJECTED
+Curriculum: 7 scenarios upweighted, max_weight=10.0, mean_weight=1.35
 
 ✅ Converged at generation 2
 
 ================================================================================
 EVOLUTION SUMMARY
 ================================================================================
-Gen 0 | Total: 0.77         | Classify: 0.29 | Reply: 0.26 | Escalate: 0.22 | Failures: 7
-Gen 1 | Total: 0.82   (+7%) | Classify: 0.31 | Reply: 0.26 | Escalate: 0.26 | Failures: 3
-Gen 2 | Total: 0.82   (+7%) | Classify: 0.31 | Reply: 0.26 | Escalate: 0.26 | Failures: 3
+Gen 0 | Total: 0.78         | Classify: 0.30 | Reply: 0.24 | Escalate: 0.25 | Failures: 7
+Gen 1 | Total: 0.68  (-14%) | Classify: 0.26 | Reply: 0.22 | Escalate: 0.20 | Failures: 8
+Gen 2 | Total: 0.68  (-14%) | Classify: 0.26 | Reply: 0.22 | Escalate: 0.20 | Failures: 8
 ================================================================================
 
 ================================================================
 IMPROVED SUMMARY
 ================================================================
 Episodes       : 25
-Mean Total     : 0.824
-Mean Classify  : 0.306
-Mean Reply     : 0.263
-Mean Escalate  : 0.255
+Mean Total     : 0.784
+Mean Classify  : 0.297
+Mean Reply     : 0.240
+Mean Escalate  : 0.246
 
 Difficulty Breakdown
 ----------------------------------------------------------------
-easy     total=0.824  classify=0.306  reply=0.263  escalate=0.255
-medium   total=0.000  classify=0.000  reply=0.000  escalate=0.000
-hard     total=0.000  classify=0.000  reply=0.000  escalate=0.000
+easy     total=0.907  classify=0.356  reply=0.275  escalate=0.277
+medium   total=0.896  classify=0.367  reply=0.270  escalate=0.258
+hard     total=0.533  classify=0.161  reply=0.172  escalate=0.200
 
 ================================================================
 COMPARISON
 ================================================================
 STEP            BASELINE → IMPROVED      STATUS         DECISION
 ----------------------------------------------------------------
-Total           0.77 → 0.82             ✅ IMPROVED    ACCEPTED
-Classify        0.29 → 0.31             ✅             ACCEPTED
-Reply           0.26 → 0.26             ❌ REGRESSED   ACCEPTED
-Escalate        0.22 → 0.26             ✅             ACCEPTED
+Total           0.78 → 0.78             ✅ IMPROVED    REJECTED
+Classify        0.30 → 0.30             ✅             REJECTED
+Reply           0.24 → 0.24             ✅             REJECTED
+Escalate        0.25 → 0.25             ✅             REJECTED
 ----------------------------------------------------------------
-Overall Improvement: 7.01%
+Overall Improvement: 0.00%
 
-📄 Report written to RESULTS.md (3005 bytes)
+📄 Report written to RESULTS.md (3061 bytes)
+/Users/akshardhakad/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(

@@ -5,3 +5,4 @@ metadata:
   labels:
     app.kubernetes.io/name: meta-environment
     app.kubernetes.io/part-of: openenv
+    argocd.argoproj.io/sync-wave: "0" 

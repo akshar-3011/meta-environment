@@ -92,9 +92,11 @@ def print_reward_curve(evolution_history: List[Dict[str, Any]]) -> None:
     )
     print(f"  {_DIM}{'─' * 85}{_RESET}")
 
-    # One row per generation
-    best_gen = 0
-    best_total = 0.0
+    # Display-only best generation uses the highest total across *all*
+    # generations provided (accepted and rejected alike).
+    best_entry = max(evolution_history, key=lambda e: float(e.get("mean_total", 0.0)))
+    best_gen = int(best_entry.get("generation", 0))
+    best_total = float(best_entry.get("mean_total", 0.0))
 
     for entry in evolution_history:
         gen = entry.get("generation", 0)
@@ -102,10 +104,6 @@ def print_reward_curve(evolution_history: List[Dict[str, Any]]) -> None:
         classify = float(entry.get("mean_classify", 0))
         reply = float(entry.get("mean_reply", 0))
         escalate = float(entry.get("mean_escalate", 0))
-
-        if total >= best_total:
-            best_total = total
-            best_gen = gen
 
         gen_label = f"Gen {gen}"
         total_bar = f"[{_make_bar(total)}] {_format_val(total)}"

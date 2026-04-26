@@ -53,6 +53,36 @@ _METRICS = {}
 _TRACER = None
 
 
+def _rebalance_scenarios_by_difficulty(
+    scenarios: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Interleave easy/medium/hard scenarios so sequential resets cover all levels."""
+    buckets: Dict[str, List[Dict[str, Any]]] = {
+        "easy": [],
+        "medium": [],
+        "hard": [],
+    }
+    leftovers: List[Dict[str, Any]] = []
+
+    for scenario in scenarios:
+        difficulty = str(scenario.get("difficulty", "easy")).lower()
+        if difficulty in buckets:
+            buckets[difficulty].append(scenario)
+        else:
+            leftovers.append(scenario)
+
+    interleaved: List[Dict[str, Any]] = []
+    max_len = max((len(values) for values in buckets.values()), default=0)
+    for idx in range(max_len):
+        for difficulty in ("easy", "medium", "hard"):
+            group = buckets[difficulty]
+            if idx < len(group):
+                interleaved.append(group[idx])
+
+    interleaved.extend(leftovers)
+    return interleaved
+
+
 def _ensure_metrics():
     """Import prometheus metrics on first use — prevents duplicate registrations."""
     global _HAS_METRICS, _METRICS
@@ -125,7 +155,16 @@ class WorkplaceEnvironment(Environment):
         self._debug = debug
         self._policy = reward_policy or RuleBasedRewardPolicy()
         self._scenario_repo = scenario_repository or get_default_repository()
-        self._scenarios = self._scenario_repo.list_scenarios()
+        source_scenarios = self._scenario_repo.list_scenarios()
+        self._scenarios = _rebalance_scenarios_by_difficulty(source_scenarios)
+
+        difficulties = [str(s.get("difficulty", "easy")).lower() for s in self._scenarios]
+        easy_count = sum(1 for d in difficulties if d == "easy")
+        medium_count = sum(1 for d in difficulties if d == "medium")
+        hard_count = sum(1 for d in difficulties if d == "hard")
+        print(f"Scenario pool: {easy_count} easy, {medium_count} medium, {hard_count} hard")
+        print(f"Scenario difficulties first5={difficulties[:5]} last5={difficulties[-5:]}")
+
         # Instance-owned state — no sharing between concurrent sessions.
         self._state = EpisodeState()
         if self._scenarios:

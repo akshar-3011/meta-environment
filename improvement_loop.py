@@ -719,7 +719,9 @@ def run_improvement_loop(
             print_strategy_reasoning(reasoning, generation)
             print_business_summary(baseline_memory, candidate_memory, generation)
 
-            if candidate_mean_total < baseline_mean_total:
+            # Allow small regressions on locked failure pools; reject only if
+            # candidate is more than 3% worse than baseline.
+            if candidate_mean_total < (baseline_mean_total * 0.97):
                 print("Strategy rejected — performance degraded")
                 _write_text("final_strategy.json", accepted_strategy_text)
                 current_memory = baseline_memory

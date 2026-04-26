@@ -1,340 +1,707 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Meta-Environment — Self-Improving Customer Support Agent</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#0a0b0f;--surface:#12141a;--glass:rgba(255,255,255,0.04);
-  --glass-border:rgba(255,255,255,0.08);--accent:#6366f1;--accent2:#8b5cf6;
-  --accent3:#a78bfa;--green:#2d7d46;--green-bright:#34d399;--amber:#fbbf24;
-  --red:#c0392b;--red-bright:#f87171;--cyan:#22d3ee;
-  --text:#e2e8f0;--text-muted:#94a3b8;--text-dim:#64748b;
-}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-.bg-mesh{position:fixed;top:0;left:0;right:0;bottom:0;z-index:0;
-  background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(99,102,241,0.15),transparent),
-  radial-gradient(ellipse 60% 40% at 80% 50%,rgba(139,92,246,0.08),transparent)}
-.container{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:32px 20px 60px}
-
-/* Hero */
-.hero{text-align:center;padding:32px 0 24px}
-.hero-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;
-  border-radius:100px;background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.25);
-  font-size:11px;font-weight:500;color:var(--accent3);margin-bottom:16px}
-.hero-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--green-bright);animation:pulse 2s infinite}
-h1{font-size:clamp(28px,4vw,44px);font-weight:800;
-  background:linear-gradient(135deg,#fff 0%,var(--accent3) 50%,var(--cyan) 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  line-height:1.1;margin-bottom:10px}
-.hero p{font-size:16px;color:var(--text-muted);max-width:600px;margin:0 auto;line-height:1.5}
-
-/* Toggle row */
-.toggle-row{display:flex;justify-content:center;align-items:center;gap:12px;margin:16px 0 8px}
-.toggle-row label{font-size:13px;color:var(--text-muted);cursor:pointer}
-.toggle{position:relative;width:44px;height:24px;background:rgba(255,255,255,0.1);
-  border-radius:12px;cursor:pointer;transition:background 0.3s}
-.toggle.active{background:var(--accent)}
-.toggle .knob{position:absolute;top:3px;left:3px;width:18px;height:18px;
-  border-radius:50%;background:#fff;transition:transform 0.3s}
-.toggle.active .knob{transform:translateX(20px)}
-
-/* 3-panel grid */
-.panels{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:20px}
-@media(max-width:900px){.panels{grid-template-columns:1fr}}
-.panel{background:var(--glass);backdrop-filter:blur(20px);border:1px solid var(--glass-border);
-  border-radius:16px;padding:20px;transition:opacity 0.5s ease}
-.panel-muted{opacity:0.35;pointer-events:none}
-.panel-baseline{border-left:4px solid #64748b}
-.panel-optimizing{border-left:4px solid var(--amber)}
-.panel-improved{border-left:4px solid var(--green-bright)}
-.panel-header{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;
-  margin-bottom:16px;display:flex;align-items:center;gap:8px}
-.panel-baseline .panel-header{color:#94a3b8}
-.panel-optimizing .panel-header{color:var(--amber)}
-.panel-improved .panel-header{color:var(--green-bright)}
-
-/* Metrics inside panels */
-.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.metric-card{text-align:center;padding:14px 8px;background:rgba(255,255,255,0.03);
-  border-radius:10px;border:1px solid rgba(255,255,255,0.05)}
-.metric-card .val{font-size:26px;font-weight:800;color:var(--text)}
-.metric-card .lbl{font-size:11px;color:var(--text-dim);text-transform:uppercase;
-  letter-spacing:0.5px;margin-top:2px}
-.metric-card .delta{font-size:11px;margin-top:2px;font-weight:600}
-.metric-card .delta.up{color:var(--green-bright)}
-.metric-card .delta.down{color:var(--red-bright)}
-.metric-card .delta.flat{color:var(--text-dim)}
-.metric-card.full{grid-column:1/-1}
-
-/* Buttons */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;
-  cursor:pointer;border:none;transition:all 0.3s;width:100%;margin-top:12px}
-.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
-  box-shadow:0 4px 16px rgba(99,102,241,0.3)}
-.btn-primary:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 24px rgba(99,102,241,0.4)}
-.btn:disabled{opacity:0.5;cursor:not-allowed;transform:none!important}
-.btn-amber{background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff}
-.btn-green{background:linear-gradient(135deg,var(--green),#059669);color:#fff}
-
-/* Spinner */
-.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);
-  border-top-color:#fff;border-radius:50%;animation:spin 0.6s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-/* Reasoning block */
-.reasoning-block{margin-top:16px;background:rgba(0,0,0,0.4);border:1px solid var(--glass-border);
-  border-radius:12px;padding:16px;display:none}
-.reasoning-block.visible{display:block}
-.reasoning-header{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;
-  color:var(--amber);margin-bottom:8px}
-.reasoning-text{font-size:13px;color:var(--text-muted);line-height:1.6;font-style:italic}
-
-/* Status bar */
-.status-bar{text-align:center;margin-top:20px;padding:10px 16px;border-radius:10px;
-  background:rgba(255,255,255,0.03);border:1px solid var(--glass-border);
-  font-size:13px;color:var(--text-muted)}
-
-/* Links row */
-.links-row{display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap}
-.link-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;
-  border-radius:10px;background:var(--glass);border:1px solid var(--glass-border);
-  color:var(--text);font-size:13px;font-weight:500;text-decoration:none;transition:all 0.3s}
-.link-btn:hover{border-color:var(--accent);background:rgba(99,102,241,0.06)}
-
-/* Footer */
-.footer{text-align:center;padding-top:32px;color:var(--text-dim);font-size:12px}
-.footer a{color:var(--accent3);text-decoration:none}
-
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
-</style>
-</head>
-<body>
-<div class="bg-mesh"></div>
-<div class="container">
-
-  <!-- Hero -->
-  <div class="hero">
-    <div class="hero-badge"><span class="dot"></span> OpenEnv Compliant · Self-Improving</div>
-    <h1>Meta-Environment</h1>
-    <p>Watch an AI agent improve itself — classify emails, draft replies, decide escalations — with reward-driven strategy evolution.</p>
-  </div>
-
-  <!-- Demo toggle -->
-  <div class="toggle-row">
-    <label for="demoToggle">Demo Mode</label>
-    <div class="toggle active" id="demoToggle" onclick="toggleDemo()"><div class="knob"></div></div>
-    <span style="font-size:11px;color:var(--text-dim)" id="demoLabel">ON — max 3 gens, cached fallback</span>
-  </div>
-
-  <!-- 3 Panels -->
-  <div class="panels">
-
-    <!-- Panel 1: BASELINE -->
-    <div class="panel panel-baseline" id="panelBaseline">
-      <div class="panel-header">⬜ BASELINE</div>
-      <div class="metric-grid">
-        <div class="metric-card"><div class="val" id="bClassify">—</div><div class="lbl">Classify</div></div>
-        <div class="metric-card"><div class="val" id="bReply">—</div><div class="lbl">Reply</div></div>
-        <div class="metric-card"><div class="val" id="bEscalate">—</div><div class="lbl">Escalate</div></div>
-        <div class="metric-card"><div class="val" id="bFailed">—</div><div class="lbl">Failed</div></div>
-        <div class="metric-card full"><div class="val" id="bTotal">—</div><div class="lbl">Total Score</div></div>
-      </div>
-      <button class="btn btn-primary" id="btnBaseline" onclick="runBaseline()">▶ Run Baseline</button>
-    </div>
-
-    <!-- Panel 2: OPTIMIZING -->
-    <div class="panel panel-optimizing panel-muted" id="panelOptimizing">
-      <div class="panel-header">🟡 OPTIMIZING</div>
-      <div style="text-align:center;padding:32px 0;color:var(--text-dim);font-size:14px" id="optStatus">
-        Waiting for baseline...
-      </div>
-      <div class="reasoning-block" id="reasoningBlock">
-        <div class="reasoning-header">💡 What The System Learned</div>
-        <div class="reasoning-text" id="reasoningText"></div>
-      </div>
-      <button class="btn btn-amber" id="btnOptimize" onclick="runOptimize()" disabled>⚡ Optimize Strategy</button>
-    </div>
-
-    <!-- Panel 3: IMPROVED -->
-    <div class="panel panel-improved panel-muted" id="panelImproved">
-      <div class="panel-header">🟢 IMPROVED</div>
-      <div class="metric-grid">
-        <div class="metric-card"><div class="val" id="iClassify">—</div><div class="lbl">Classify</div><div class="delta flat" id="dClassify"></div></div>
-        <div class="metric-card"><div class="val" id="iReply">—</div><div class="lbl">Reply</div><div class="delta flat" id="dReply"></div></div>
-        <div class="metric-card"><div class="val" id="iEscalate">—</div><div class="lbl">Escalate</div><div class="delta flat" id="dEscalate"></div></div>
-        <div class="metric-card"><div class="val" id="iFailed">—</div><div class="lbl">Failed</div><div class="delta flat" id="dFailed"></div></div>
-        <div class="metric-card full"><div class="val" id="iTotal">—</div><div class="lbl">Total Score</div><div class="delta flat" id="dTotal"></div></div>
-      </div>
-      <button class="btn btn-green" id="btnImproved" onclick="runImproved()" disabled>🚀 Run Improved</button>
-    </div>
-  </div>
-
-  <!-- Status bar -->
-  <div class="status-bar" id="statusBar">Ready — click <b>Run Baseline</b> to start</div>
-
-  <!-- Links -->
-  <div class="links-row">
-    <a href="/docs" class="link-btn">📖 API Docs</a>
-    <a href="https://github.com/akshar-3011/meta-environment" class="link-btn" target="_blank">⭐ GitHub</a>
-    <a href="https://github.com/akshar-3011/meta-environment/blob/main/colab_training.ipynb" class="link-btn" target="_blank">📓 Colab</a>
-    <a href="https://github.com/akshar-3011/meta-environment/blob/main/RESULTS.md" class="link-btn" target="_blank">📊 Results</a>
-    <a href="/health" class="link-btn">💚 Health</a>
-  </div>
-
-  <div class="footer">
-    <p>Built with ❤️ by <a href="https://github.com/akshar-3011" target="_blank">Akshar Dhakad</a> · <a href="https://github.com/akshar-3011/meta-environment" target="_blank">Source Code</a></p>
-  </div>
-</div>
-
-<script>
-let demoMode = true;
-let baselineData = null;
-let strategyData = null;
-
-function toggleDemo() {
-  demoMode = !demoMode;
-  const el = document.getElementById('demoToggle');
-  const lbl = document.getElementById('demoLabel');
-  el.classList.toggle('active', demoMode);
-  lbl.textContent = demoMode ? 'ON — max 3 gens, cached fallback' : 'OFF — full run';
-}
-
-function setStatus(msg) { document.getElementById('statusBar').innerHTML = msg; }
-function setBtn(id, text, disabled) {
-  const b = document.getElementById(id);
-  b.innerHTML = text; b.disabled = disabled;
-}
-
-function pct(v) { return (v * 100).toFixed(1) + '%'; }
-function setMetric(id, val) { document.getElementById(id).textContent = val; }
-
-function setDelta(id, baseline, improved) {
-  const el = document.getElementById(id);
-  const d = improved - baseline;
-  const sign = d > 0.001 ? '+' : d < -0.001 ? '' : '';
-  el.textContent = sign + (d * 100).toFixed(1) + '%';
-  el.className = 'delta ' + (d > 0.001 ? 'up' : d < -0.001 ? 'down' : 'flat');
-}
-
-async function apiPost(path, body) {
-  const r = await fetch(path, {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: body ? JSON.stringify(body) : undefined
-  });
-  return r.json();
-}
-
-async function runEpisodes(n) {
-  let totals = {classify: 0, reply: 0, escalate: 0, total: 0, failed: 0};
-  for (let i = 0; i < n; i++) {
-    try {
-      await apiPost('/reset');
-      let epReward = 0;
-      for (const act of ['classify', 'reply', 'escalate']) {
-        const content = act === 'classify' ? 'refund' :
-          act === 'reply' ? 'Hello, we will process your refund within 3-5 business days. We apologize for the inconvenience. Regards, Support Team.' : 'no';
-        const res = await apiPost('/step', {action: {action_type: act, content: content}});
-        const rw = res?.observation?.reward || res?.reward || 0;
-        totals[act] += rw;
-        epReward += rw;
-      }
-      totals.total += epReward;
-      if (epReward < 0.6) totals.failed++;
-    } catch(e) { totals.failed++; }
-  }
-  const ep = n;
-  return {classify: totals.classify/ep, reply: totals.reply/ep,
-    escalate: totals.escalate/ep, total: totals.total/ep, failed: totals.failed};
-}
-
-async function runBaseline() {
-  setBtn('btnBaseline', '<span class="spinner"></span> Running baseline...', true);
-  setStatus('Running baseline evaluation on 5 scenarios...');
-  document.getElementById('panelOptimizing').classList.add('panel-muted');
-  document.getElementById('panelImproved').classList.add('panel-muted');
-
-  try {
-    baselineData = await runEpisodes(5);
-    setMetric('bClassify', pct(baselineData.classify));
-    setMetric('bReply', pct(baselineData.reply));
-    setMetric('bEscalate', pct(baselineData.escalate));
-    setMetric('bTotal', pct(baselineData.total));
-    setMetric('bFailed', baselineData.failed);
-    setBtn('btnBaseline', '✅ Baseline Complete', true);
-    setStatus('Baseline complete — click <b>Optimize Strategy</b> to improve');
-
-    document.getElementById('panelOptimizing').classList.remove('panel-muted');
-    setBtn('btnOptimize', '⚡ Optimize Strategy', false);
-    document.getElementById('optStatus').textContent = 'Ready to analyze failures and generate strategy';
-  } catch(e) {
-    setBtn('btnBaseline', '❌ Error — Retry', false);
-    setStatus('Baseline failed: ' + e.message);
-  }
-}
-
-async function runOptimize() {
-  setBtn('btnOptimize', '<span class="spinner"></span> Optimizing...', true);
-  document.getElementById('optStatus').innerHTML = '<span class="spinner"></span> Analyzing failures & generating strategy via LLM...';
-  setStatus('Analyzing failure patterns and generating improved strategy...');
-
-  // Simulate strategy optimization (the real optimizer runs server-side via improvement_loop.py)
-  await new Promise(r => setTimeout(r, 2000));
-
-  strategyData = {
-    reasoning: "Conservative keyword classification with structured reply templates and safe escalation defaults. Prioritizes precision on refund/complaint separation using 6+ signal phrases per category.",
-    classification_rules: {refund: ["refund","return","money back","charged","reimburse","credit"],
-      complaint: ["unacceptable","terrible","angry","broken","frustrated","awful"],
-      query: ["information","status","how to","question","help","policy"]}
-  };
-
-  document.getElementById('optStatus').textContent = 'Strategy generated ✅';
-  const rb = document.getElementById('reasoningBlock');
-  rb.classList.add('visible');
-  document.getElementById('reasoningText').textContent = strategyData.reasoning;
-
-  setBtn('btnOptimize', '✅ Strategy Ready', true);
-  setStatus('Strategy generated — click <b>Run Improved</b> to evaluate');
-
-  document.getElementById('panelImproved').classList.remove('panel-muted');
-  setBtn('btnImproved', '🚀 Run Improved', false);
-}
-
-async function runImproved() {
-  setBtn('btnImproved', '<span class="spinner"></span> Running improved...', true);
-  setStatus('Running improved evaluation on 5 scenarios...');
-
-  try {
-    const improved = await runEpisodes(5);
-    setMetric('iClassify', pct(improved.classify));
-    setMetric('iReply', pct(improved.reply));
-    setMetric('iEscalate', pct(improved.escalate));
-    setMetric('iTotal', pct(improved.total));
-    setMetric('iFailed', improved.failed);
-
-    if (baselineData) {
-      setDelta('dClassify', baselineData.classify, improved.classify);
-      setDelta('dReply', baselineData.reply, improved.reply);
-      setDelta('dEscalate', baselineData.escalate, improved.escalate);
-      setDelta('dTotal', baselineData.total, improved.total);
-      const fd = improved.failed - baselineData.failed;
-      const fdEl = document.getElementById('dFailed');
-      fdEl.textContent = (fd > 0 ? '+' : '') + fd;
-      fdEl.className = 'delta ' + (fd < 0 ? 'up' : fd > 0 ? 'down' : 'flat');
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meta-Environment — Self-Improving Customer Support Agent</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
     }
 
-    setBtn('btnImproved', '✅ Evaluation Complete', true);
-    setStatus('✅ Complete — see results in the <b>IMPROVED</b> panel');
-  } catch(e) {
-    setBtn('btnImproved', '❌ Error — Retry', false);
-    setStatus('Improved evaluation failed: ' + e.message);
-  }
-}
-</script>
+    :root {
+      --bg: #0a0b0f;
+      --surface: #12141a;
+      --glass: rgba(255, 255, 255, 0.04);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --accent: #6366f1;
+      --accent2: #8b5cf6;
+      --accent3: #a78bfa;
+      --green: #2d7d46;
+      --green-bright: #34d399;
+      --amber: #fbbf24;
+      --red: #c0392b;
+      --red-bright: #f87171;
+      --cyan: #22d3ee;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh
+    }
+
+    .bg-mesh {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 0;
+      background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.15), transparent),
+        radial-gradient(ellipse 60% 40% at 80% 50%, rgba(139, 92, 246, 0.08), transparent)
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 20px 60px
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 32px 0 24px
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: 100px;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--accent3);
+      margin-bottom: 16px
+    }
+
+    .hero-badge .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green-bright);
+      animation: pulse 2s infinite
+    }
+
+    h1 {
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff 0%, var(--accent3) 50%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+      margin-bottom: 10px
+    }
+
+    .hero p {
+      font-size: 16px;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.5
+    }
+
+    /* Toggle row */
+    .toggle-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin: 16px 0 8px
+    }
+
+    .toggle-row label {
+      font-size: 13px;
+      color: var(--text-muted);
+      cursor: pointer
+    }
+
+    .toggle {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.3s
+    }
+
+    .toggle.active {
+      background: var(--accent)
+    }
+
+    .toggle .knob {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform 0.3s
+    }
+
+    .toggle.active .knob {
+      transform: translateX(20px)
+    }
+
+    /* 3-panel grid */
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-top: 20px
+    }
+
+    @media(max-width:900px) {
+      .panels {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .panel {
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 20px;
+      transition: opacity 0.5s ease
+    }
+
+    .panel-muted {
+      opacity: 0.35;
+      pointer-events: none
+    }
+
+    .panel-baseline {
+      border-left: 4px solid #64748b
+    }
+
+    .panel-optimizing {
+      border-left: 4px solid var(--amber)
+    }
+
+    .panel-improved {
+      border-left: 4px solid var(--green-bright)
+    }
+
+    .panel-header {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    .panel-baseline .panel-header {
+      color: #94a3b8
+    }
+
+    .panel-optimizing .panel-header {
+      color: var(--amber)
+    }
+
+    .panel-improved .panel-header {
+      color: var(--green-bright)
+    }
+
+    /* Metrics inside panels */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px
+    }
+
+    .metric-card {
+      text-align: center;
+      padding: 14px 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.05)
+    }
+
+    .metric-card .val {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text)
+    }
+
+    .metric-card .lbl {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 2px
+    }
+
+    .metric-card .delta {
+      font-size: 11px;
+      margin-top: 2px;
+      font-weight: 600
+    }
+
+    .metric-card .delta.up {
+      color: var(--green-bright)
+    }
+
+    .metric-card .delta.down {
+      color: var(--red-bright)
+    }
+
+    .metric-card .delta.flat {
+      color: var(--text-dim)
+    }
+
+    .metric-card.full {
+      grid-column: 1/-1
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.3s;
+      width: 100%;
+      margin-top: 12px
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3)
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(99, 102, 241, 0.4)
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important
+    }
+
+    .btn-amber {
+      background: linear-gradient(135deg, #d97706, #f59e0b);
+      color: #fff
+    }
+
+    .btn-green {
+      background: linear-gradient(135deg, var(--green), #059669);
+      color: #fff
+    }
+
+    /* Spinner */
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    /* Reasoning block */
+    .reasoning-block {
+      margin-top: 16px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 16px;
+      display: none
+    }
+
+    .reasoning-block.visible {
+      display: block
+    }
+
+    .reasoning-header {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--amber);
+      margin-bottom: 8px
+    }
+
+    .reasoning-text {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      font-style: italic
+    }
+
+    /* Status bar */
+    .status-bar {
+      text-align: center;
+      margin-top: 20px;
+      padding: 10px 16px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--glass-border);
+      font-size: 13px;
+      color: var(--text-muted)
+    }
+
+    /* Links row */
+    .links-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 24px;
+      flex-wrap: wrap
+    }
+
+    .link-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 10px;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.3s
+    }
+
+    .link-btn:hover {
+      border-color: var(--accent);
+      background: rgba(99, 102, 241, 0.06)
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding-top: 32px;
+      color: var(--text-dim);
+      font-size: 12px
+    }
+
+    .footer a {
+      color: var(--accent3);
+      text-decoration: none
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: 0.4
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg-mesh"></div>
+  <div class="container">
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-badge"><span class="dot"></span> OpenEnv Compliant · Self-Improving</div>
+      <h1>Meta-Environment</h1>
+      <p>Watch an AI agent improve itself — classify emails, draft replies, decide escalations — with reward-driven
+        strategy evolution.</p>
+    </div>
+
+    <!-- Demo toggle -->
+    <div class="toggle-row">
+      <label for="demoToggle">Demo Mode</label>
+      <div class="toggle active" id="demoToggle" onclick="toggleDemo()">
+        <div class="knob"></div>
+      </div>
+      <span style="font-size:11px;color:var(--text-dim)" id="demoLabel">ON — max 3 gens, cached fallback</span>
+    </div>
+
+    <!-- 3 Panels -->
+    <div class="panels">
+
+      <!-- Panel 1: BASELINE -->
+      <div class="panel panel-baseline" id="panelBaseline">
+        <div class="panel-header">⬜ BASELINE</div>
+        <div class="metric-grid">
+          <div class="metric-card">
+            <div class="val" id="bClassify">—</div>
+            <div class="lbl">Classify</div>
+          </div>
+          <div class="metric-card">
+            <div class="val" id="bReply">—</div>
+            <div class="lbl">Reply</div>
+          </div>
+          <div class="metric-card">
+            <div class="val" id="bEscalate">—</div>
+            <div class="lbl">Escalate</div>
+          </div>
+          <div class="metric-card">
+            <div class="val" id="bFailed">—</div>
+            <div class="lbl">Failed</div>
+          </div>
+          <div class="metric-card full">
+            <div class="val" id="bTotal">—</div>
+            <div class="lbl">Total Score</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="btnBaseline" onclick="runBaseline()">▶ Run Baseline</button>
+      </div>
+
+      <!-- Panel 2: OPTIMIZING -->
+      <div class="panel panel-optimizing panel-muted" id="panelOptimizing">
+        <div class="panel-header">🟡 OPTIMIZING</div>
+        <div style="text-align:center;padding:32px 0;color:var(--text-dim);font-size:14px" id="optStatus">
+          Waiting for baseline...
+        </div>
+        <div class="reasoning-block" id="reasoningBlock">
+          <div class="reasoning-header">💡 What The System Learned</div>
+          <div class="reasoning-text" id="reasoningText"></div>
+        </div>
+        <button class="btn btn-amber" id="btnOptimize" onclick="runOptimize()" disabled>⚡ Optimize Strategy</button>
+      </div>
+
+      <!-- Panel 3: IMPROVED -->
+      <div class="panel panel-improved panel-muted" id="panelImproved">
+        <div class="panel-header">🟢 IMPROVED</div>
+        <div class="metric-grid">
+          <div class="metric-card">
+            <div class="val" id="iClassify">—</div>
+            <div class="lbl">Classify</div>
+            <div class="delta flat" id="dClassify"></div>
+          </div>
+          <div class="metric-card">
+            <div class="val" id="iReply">—</div>
+            <div class="lbl">Reply</div>
+            <div class="delta flat" id="dReply"></div>
+          </div>
+          <div class="metric-card">
+            <div class="val" id="iEscalate">—</div>
+            <div class="lbl">Escalate</div>
+            <div class="delta flat" id="dEscalate"></div>
+          </div>
+          <div class="metric-card">
+            <div class="val" id="iFailed">—</div>
+            <div class="lbl">Failed</div>
+            <div class="delta flat" id="dFailed"></div>
+          </div>
+          <div class="metric-card full">
+            <div class="val" id="iTotal">—</div>
+            <div class="lbl">Total Score</div>
+            <div class="delta flat" id="dTotal"></div>
+          </div>
+        </div>
+        <button class="btn btn-green" id="btnImproved" onclick="runImproved()" disabled>🚀 Run Improved</button>
+      </div>
+    </div>
+
+    <!-- Status bar -->
+    <div class="status-bar" id="statusBar">Ready — click <b>Run Baseline</b> to start</div>
+
+    <!-- Links -->
+    <div class="links-row">
+      <a href="/docs" class="link-btn">📖 API Docs</a>
+      <a href="https://github.com/akshar-3011/meta-environment" class="link-btn" target="_blank">⭐ GitHub</a>
+      <a href="https://github.com/akshar-3011/meta-environment/blob/main/colab_training.ipynb" class="link-btn"
+        target="_blank">📓 Colab</a>
+      <a href="https://github.com/akshar-3011/meta-environment/blob/main/RESULTS.md" class="link-btn" target="_blank">📊
+        Results</a>
+      <a href="/health" class="link-btn">💚 Health</a>
+    </div>
+
+    <div class="footer">
+      <p>Built with ❤️ by <a href="https://github.com/akshar-3011" target="_blank">Akshar Dhakad</a> · <a
+          href="https://github.com/akshar-3011/meta-environment" target="_blank">Source Code</a></p>
+    </div>
+  </div>
+
+  <script>
+    let demoMode = true;
+    let baselineData = null;
+    let strategyData = null;
+
+    function toggleDemo() {
+      demoMode = !demoMode;
+      const el = document.getElementById('demoToggle');
+      const lbl = document.getElementById('demoLabel');
+      el.classList.toggle('active', demoMode);
+      lbl.textContent = demoMode ? 'ON — max 3 gens, cached fallback' : 'OFF — full run';
+    }
+
+    function setStatus(msg) { document.getElementById('statusBar').innerHTML = msg; }
+    function setBtn(id, text, disabled) {
+      const b = document.getElementById(id);
+      b.innerHTML = text; b.disabled = disabled;
+    }
+
+    function pct(v) { return (v * 100).toFixed(1) + '%'; }
+    function setMetric(id, val) { document.getElementById(id).textContent = val; }
+
+    function setDelta(id, baseline, improved) {
+      const el = document.getElementById(id);
+      const d = improved - baseline;
+      const sign = d > 0.001 ? '+' : d < -0.001 ? '' : '';
+      el.textContent = sign + (d * 100).toFixed(1) + '%';
+      el.className = 'delta ' + (d > 0.001 ? 'up' : d < -0.001 ? 'down' : 'flat');
+    }
+
+    async function apiPost(path, body) {
+      const r = await fetch(path, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined
+      });
+      return r.json();
+    }
+
+    async function runEpisodes(n) {
+      let totals = { classify: 0, reply: 0, escalate: 0, total: 0, failed: 0 };
+      for (let i = 0; i < n; i++) {
+        try {
+          await apiPost('/reset');
+          let epReward = 0;
+          for (const act of ['classify', 'reply', 'escalate']) {
+            const content = act === 'classify' ? 'refund' :
+              act === 'reply' ? 'Hello, we will process your refund within 3-5 business days. We apologize for the inconvenience. Regards, Support Team.' : 'no';
+            const res = await apiPost('/step', { action: { action_type: act, content: content } });
+            const rw = res?.observation?.reward || res?.reward || 0;
+            totals[act] += rw;
+            epReward += rw;
+          }
+          totals.total += epReward;
+          if (epReward < 0.6) totals.failed++;
+        } catch (e) { totals.failed++; }
+      }
+      const ep = n;
+      return {
+        classify: totals.classify / ep, reply: totals.reply / ep,
+        escalate: totals.escalate / ep, total: totals.total / ep, failed: totals.failed
+      };
+    }
+
+    async function runBaseline() {
+      setBtn('btnBaseline', '<span class="spinner"></span> Running baseline...', true);
+      setStatus('Running baseline evaluation on 5 scenarios...');
+      document.getElementById('panelOptimizing').classList.add('panel-muted');
+      document.getElementById('panelImproved').classList.add('panel-muted');
+
+      try {
+        baselineData = await runEpisodes(5);
+        setMetric('bClassify', pct(baselineData.classify));
+        setMetric('bReply', pct(baselineData.reply));
+        setMetric('bEscalate', pct(baselineData.escalate));
+        setMetric('bTotal', pct(baselineData.total));
+        setMetric('bFailed', baselineData.failed);
+        setBtn('btnBaseline', '✅ Baseline Complete', true);
+        setStatus('Baseline complete — click <b>Optimize Strategy</b> to improve');
+
+        document.getElementById('panelOptimizing').classList.remove('panel-muted');
+        setBtn('btnOptimize', '⚡ Optimize Strategy', false);
+        document.getElementById('optStatus').textContent = 'Ready to analyze failures and generate strategy';
+      } catch (e) {
+        setBtn('btnBaseline', '❌ Error — Retry', false);
+        setStatus('Baseline failed: ' + e.message);
+      }
+    }
+
+    async function runOptimize() {
+      setBtn('btnOptimize', '<span class="spinner"></span> Optimizing...', true);
+      document.getElementById('optStatus').innerHTML = '<span class="spinner"></span> Analyzing failures & generating strategy via LLM...';
+      setStatus('Analyzing failure patterns and generating improved strategy...');
+
+      // Simulate strategy optimization (the real optimizer runs server-side via improvement_loop.py)
+      await new Promise(r => setTimeout(r, 2000));
+
+      strategyData = {
+        reasoning: "Conservative keyword classification with structured reply templates and safe escalation defaults. Prioritizes precision on refund/complaint separation using 6+ signal phrases per category.",
+        classification_rules: {
+          refund: ["refund", "return", "money back", "charged", "reimburse", "credit"],
+          complaint: ["unacceptable", "terrible", "angry", "broken", "frustrated", "awful"],
+          query: ["information", "status", "how to", "question", "help", "policy"]
+        }
+      };
+
+      document.getElementById('optStatus').textContent = 'Strategy generated ✅';
+      const rb = document.getElementById('reasoningBlock');
+      rb.classList.add('visible');
+      document.getElementById('reasoningText').textContent = strategyData.reasoning;
+
+      setBtn('btnOptimize', '✅ Strategy Ready', true);
+      setStatus('Strategy generated — click <b>Run Improved</b> to evaluate');
+
+      document.getElementById('panelImproved').classList.remove('panel-muted');
+      setBtn('btnImproved', '🚀 Run Improved', false);
+    }
+
+    async function runImproved() {
+      setBtn('btnImproved', '<span class="spinner"></span> Running improved...', true);
+      setStatus('Running improved evaluation on 5 scenarios...');
+
+      try {
+        const improved = await runEpisodes(5);
+        setMetric('iClassify', pct(improved.classify));
+        setMetric('iReply', pct(improved.reply));
+        setMetric('iEscalate', pct(improved.escalate));
+        setMetric('iTotal', pct(improved.total));
+        setMetric('iFailed', improved.failed);
+
+        if (baselineData) {
+          setDelta('dClassify', baselineData.classify, improved.classify);
+          setDelta('dReply', baselineData.reply, improved.reply);
+          setDelta('dEscalate', baselineData.escalate, improved.escalate);
+          setDelta('dTotal', baselineData.total, improved.total);
+          const fd = improved.failed - baselineData.failed;
+          const fdEl = document.getElementById('dFailed');
+          fdEl.textContent = (fd > 0 ? '+' : '') + fd;
+          fdEl.className = 'delta ' + (fd < 0 ? 'up' : fd > 0 ? 'down' : 'flat');
+        }
+
+        setBtn('btnImproved', '✅ Evaluation Complete', true);
+        setStatus('✅ Complete — see results in the <b>IMPROVED</b> panel');
+      } catch (e) {
+        setBtn('btnImproved', '❌ Error — Retry', false);
+        setStatus('Improved evaluation failed: ' + e.message);
+      }
+    }
+  </script>
 </body>
+
 </html>

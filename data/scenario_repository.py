@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 try:
     from ..core.models import Scenario
@@ -52,11 +52,15 @@ class ScenarioRepository(ABC):
 class StaticScenarioRepository(ScenarioRepository):
     """In-memory repository backed by static scenario constants."""
 
-    def __init__(self, scenarios: List[Dict[str, Any]]):
-        self._scenarios = scenarios
+    def __init__(self, scenarios: Optional[List[Dict[str, Any]]] = None):
+        self._scenarios = list(SCENARIOS if scenarios is None else scenarios)
 
     def list_scenarios(self) -> List[Dict[str, Any]]:
         return list(self._scenarios)
+
+    def get_all(self) -> List[Dict[str, Any]]:
+        """Compatibility alias for callers expecting get_all()."""
+        return self.list_scenarios()
 
 
 _DEFAULT_REPOSITORY = StaticScenarioRepository(SCENARIOS)
