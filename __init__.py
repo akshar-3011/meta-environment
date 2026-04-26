@@ -6,8 +6,13 @@
 
 """Workplace Env Environment."""
 
-from .client import WorkplaceEnv
-from .core.models import WorkplaceAction, WorkplaceObservation
+try:
+    from .client import WorkplaceEnv
+    from .core.models import WorkplaceAction, WorkplaceObservation
+except ImportError:  # pragma: no cover - pytest may import this file as top-level __init__.
+    from core.models import WorkplaceAction, WorkplaceObservation
+
+    WorkplaceEnv = None
 
 __all__ = [
     "WorkplaceAction",

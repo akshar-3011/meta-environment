@@ -7,12 +7,9 @@ pinned: false
 app_port: 7860
 ---
 
-> **Live Environment:** [akshar-3011-meta-environment.hf.space](https://akshar-3011-meta-environment.hf.space)
-> **GitHub:** [akshar-3011/meta-environment](https://github.com/akshar-3011/meta-environment)
-> **Hugging Face Notebook:** [https://huggingface.co/akshar-3011/meta-environment/blob/main/colab_training.ipynb](https://huggingface.co/akshar-3011/meta-environment/blob/main/colab_training.ipynb)
-> **Colab (Runnable):** [https://colab.research.google.com/github/akshar-3011/meta-environment/blob/main/colab_training.ipynb](https://colab.research.google.com/github/akshar-3011/meta-environment/blob/main/colab_training.ipynb)
-> **Blog Post:** [https://huggingface.co/Akshar-3011/workplace-env-agent](https://huggingface.co/Akshar-3011/workplace-env-agent)
-> **Mini-Blog:** [Self-Improving Customer Support Agent - HuggingFace](https://huggingface.co/Akshar-3011/workplace-env-agent) | Training evidence and reward curves committed to repo under `results/`
+## 🎬 Demo
+[![Demo Video](https://img.youtube.com/vi/SylYUxIRiUA/0.jpg)](https://youtu.be/SylYUxIRiUA)
+*A 2-minute live demo showing the self-improvement loop running and rewards improving in real time.*
 
 <div align="center">
 
@@ -29,6 +26,7 @@ Train and evaluate AI agents on real-world email triage workflows - classify int
 [![Python](https://img.shields.io/badge/python-≥3.10-blue)]()
 [![License](https://img.shields.io/badge/license-BSD-green)]()
 [![Docker](https://img.shields.io/badge/docker-ready-blue)]()
+[![Improvement](https://img.shields.io/badge/reward-78%25%20→%2081%25-brightgreen)]() [![Training](https://img.shields.io/badge/GRPO-55%20steps-blue)]() [![Scenarios](https://img.shields.io/badge/scenarios-100%20validated-orange)]()
 
 ## 🏆 Hackathon Theme
 
@@ -43,6 +41,13 @@ Customer support agents are static - they make the same mistakes repeatedly and 
 **What makes this novel:**The environment includes a self-improving meta-learning loop - the agent analyzes its own failures, generates improved decision strategies via LLM, and measurably increases reward across generations. Baseline: 78% → Optimized: 81% (+3%), failures reduced from 7 to 4.
 
 **Why it matters:**Every wrong escalation costs ~$150 in real support operations. An agent that learns to improve its own triage decisions has direct business impact.
+
+## 📊 Results at a Glance
+![Improvement loop: baseline 78% → optimized 81%, failures 7→4](results/reward_curve.png)
+*Improvement loop: baseline 78% → optimized 81%, failures 7→4*
+
+![GRPO training: Qwen2.5-3B, 55 steps, reward 0.37→0.43](results/training_curve.png)
+*GRPO training: Qwen2.5-3B, 55 steps, reward 0.37→0.43*
 
 [Quick Start](#-quick-start) · [Features](#-features) · [Benchmarks](#-benchmarks) · [Training](#-train-an-rl-agent) · [API Docs](#-api-endpoints) · [Contributing](#-contributing)
 
@@ -380,3 +385,12 @@ BSD-style License
 <div align="center">
   <sub>Built with  for the RL research community</sub>
 </div>
+
+## 🔗 All Links
+| Resource | Link |
+|---|---|
+| 🚀 Live Environment | https://akshar-3011-meta-environment.hf.space |
+| 📓 Colab Notebook | https://colab.research.google.com/github/akshar-3011/meta-environment/blob/main/colab_training.ipynb |
+| 📦 GitHub Repo | https://github.com/akshar-3011/meta-environment |
+| 📝 Blog Post | https://huggingface.co/Akshar-3011/workplace-env-agent |
+| 🎥 Video Demo | https://youtu.be/SylYUxIRiUA |
