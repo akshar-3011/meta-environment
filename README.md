@@ -30,6 +30,12 @@ Train and evaluate AI agents on real-world email triage workflows - classify int
 [![License](https://img.shields.io/badge/license-BSD-green)]()
 [![Docker](https://img.shields.io/badge/docker-ready-blue)]()
 
+## 🏆 Hackathon Theme
+
+This project addresses **Theme 4 — Self-Improvement**: an environment where agents learn to generate improved decision strategies, escalate difficulty through curriculum sampling, and drive their own capability growth through reward-driven meta-learning. Rather than optimizing a fixed task, the agent learns to rewrite its own rules based on failure analysis — recursive skill amplification in a real business domain.
+
+---
+
 ## What Problem Does This Solve?
 
 Customer support agents are static - they make the same mistakes repeatedly and never learn from reward signals. This environment trains LLMs to handle real email triage (classify intent → draft reply → decide escalation) with dense per-step rewards across 100 validated scenarios spanning easy, medium, and hard difficulty.
@@ -113,6 +119,21 @@ python benchmarks/load_test.py --mode direct --episodes 500
 ![Reward progression: baseline agent (78.3%) vs optimized agent (81.0%) after 2 improvement generations](results/reward_curve.png)
 
 *X-axis: improvement generation (0 = baseline). Y-axis: mean total reward (0-1). The optimized agent achieves +3% total reward improvement with failures reduced from 7 to 4.*
+
+### Before vs After: What the Agent Actually Learned
+
+**Same email, two agents:**
+
+> *"Your earbuds quality has really gone downhill. Not happy."*
+
+| | Baseline Agent | Improved Agent |
+|---|---|---|
+| **Classification** | `query` ❌ | `complaint` ✅ |
+| **Reply** | "Thank you for your question — we are happy to help!" ❌ | "We sincerely apologize and understand your frustration. We will resolve this immediately." ✅ |
+| **Escalation** | `no` ❌ | `yes` ✅ |
+| **Total Reward** | 0.32 | 0.81 |
+
+The system identified that "gone downhill" and "not happy" were missing from complaint signals, added them, and the agent immediately began classifying and escalating correctly.
 
 ### GRPO Training Evidence
 
