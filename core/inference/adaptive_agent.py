@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any, Dict, List, Tuple
 
 
@@ -36,6 +37,7 @@ class AdaptiveAgent:
 
             rules_raw = self.strategy.get("classification_rules", {})
             rules = rules_raw if isinstance(rules_raw, dict) else {}
+            strategy_signals = rules
 
             categories = ["refund", "complaint", "query"]
             scores: Dict[str, int] = {c: 0 for c in categories}
@@ -47,32 +49,41 @@ class AdaptiveAgent:
             if urgency == "high":
                 scores["complaint"] += 1
 
-            # ── Interrogative tiebreak ────────────────────────────────
-            # Prevent "return" keyword from misclassifying questions as refund.
-            sorted_cats = sorted(categories, key=lambda c: scores[c], reverse=True)
-            if len(sorted_cats) >= 2:
-                top_score = scores[sorted_cats[0]]
-                second_score = scores[sorted_cats[1]]
-                if top_score - second_score <= 1:  # tied or near-tied
-                    if "?" in email and sorted_cats[0] == "refund":
-                        scores["refund"] -= 2
-                    first_word = email.strip().split()[0] if email.strip() else ""
-                    if first_word in ("how", "what", "when", "where", "can", "do", "is", "are"):
-                        scores["query"] += 2
+            # Only apply interrogative boost when scores are tied
+            max_score = max(scores.values()) if scores else 0
+            tied_categories = [c for c, s in scores.items() if s == max_score]
+
+            if len(tied_categories) > 1:
+                # Multiple categories tied — use interrogative signal as tiebreak
+                email_lower = email.lower()
+                is_interrogative = (
+                    "?" in email or
+                    any(email_lower.startswith(w) for w in
+                        ["how", "what", "when", "where", "can", "do", "is", "are", "will"])
+                )
+                if is_interrogative and "query" in tied_categories:
+                    scores["query"] += 1
+
+            scores = {k: max(0, v) for k, v in scores.items()}
 
             if all(value == 0 for value in scores.values()):
                 default_category = str(rules.get("default", self._DEFAULT_CATEGORY)).lower()
                 return default_category if default_category in categories else self._DEFAULT_CATEGORY
 
             # Deterministic tie behavior by fixed category order.
-            best_category = categories[0]
-            best_score = scores[best_category]
+            selected_category = categories[0]
+            best_score = scores[selected_category]
             for category in categories[1:]:
                 if scores[category] > best_score:
-                    best_category = category
+                    selected_category = category
                     best_score = scores[category]
 
-            return best_category
+            if os.environ.get("AGENT_DEBUG"):
+                for cat, score in scores.items():
+                    print(f"[AGENT DEBUG] {cat}: score={score}, signals={strategy_signals.get(cat, [])[:3]}")
+                print(f"[AGENT DEBUG] Selected: {selected_category}")
+
+            return selected_category
         except Exception:
             return self._DEFAULT_CATEGORY
 
@@ -120,6 +131,7 @@ class AdaptiveAgent:
         try:
             email = str(observation.get("email", "")).lower()
             urgency = str(observation.get("urgency", "")).lower()
+            chosen_category = category
 
             rules_raw = self.strategy.get("escalation_rules", {})
             rules = rules_raw if isinstance(rules_raw, dict) else {}
@@ -134,7 +146,11 @@ class AdaptiveAgent:
                 if pattern and pattern.lower() in email:
                     return "no"
 
-            if self._safe_bool(rules.get("escalate_if_complaint", False)) and category == "complaint":
+            print(
+                f"[ESCALATE DEBUG] chosen_category={chosen_category}, "
+                f"escalate_if_complaint={rules.get('escalate_if_complaint')}"
+            )
+            if self._safe_bool(rules.get("escalate_if_complaint", False)) and chosen_category == "complaint":
                 return "yes"
 
             if self._safe_bool(rules.get("escalate_if_high_urgency", False)) and urgency == "high":

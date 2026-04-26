@@ -1,6 +1,6 @@
 # 📊 Meta-Environment: Improvement Run Results
 
-> Generated: 2026-04-25 22:10 UTC
+> Generated: 2026-04-26 02:54 UTC
 
 ## 1. System Overview
 
@@ -12,26 +12,26 @@
 
 | Generation | Total | Classify | Reply | Escalate | Failures | Strategy Change |
 |:---:|:---:|:---:|:---:|:---:|:---:|:---|
-| 0 | 0.7838 | 0.2971 | 0.2405 | 0.2462 | 7 | Baseline — no strategy applied. |
-| 1 | 0.6771 | 0.2589 | 0.2200 | 0.1982 | 8 | Removed 'return' from refund signals to fix query misclassification. Added co... |
-| 2 | 0.6771 | 0.2589 | 0.2200 | 0.1982 | 8 | Removed 'return' from refund signals to fix query misclassification. Added co... |
+| 0 | 0.7834 | 0.2971 | 0.2401 | 0.2462 | 7 | Baseline — no strategy applied. |
+| 1 | 0.8067 | 0.3085 | 0.2548 | 0.2434 | 4 | Removed 'return' from refund signals to fix query misclassification. Added co... |
+| 2 | 0.8067 | 0.3085 | 0.2548 | 0.2434 | 4 | Removed 'return' from refund signals to fix query misclassification. Added co... |
 
-**Best generation**: 0 (Total: 0.7838, +0.0% from baseline)
+**Best generation**: 1 (Total: 0.8067, +3.0% from baseline)
 
 ## 3. What the System Learned
 
-1. **Gen 1**: Removed 'return' from refund signals to fix query misclassification. Added complaint phrase triggers ('not happy', 'gone downhill', 'quality has') to complaint signals. Added complaint phrases to always_escalate list to fix under-escalation on complaint emails. *(🔄 regression retry triggered, golden score: 0.7406)*
-2. **Gen 2**: Removed 'return' from refund signals to fix query misclassification. Added complaint phrase triggers ('not happy', 'gone downhill', 'quality has') to complaint signals. Added complaint phrases to always_escalate list to fix under-escalation on complaint emails. *(🔄 regression retry triggered, golden score: 0.7406)*
+1. **Gen 1**: Removed 'return' from refund signals to fix query misclassification. Added complaint phrase triggers ('not happy', 'gone downhill', 'quality has') to complaint signals. Added complaint phrases to always_escalate list to fix under-escalation on complaint emails. *(golden score: 0.8153)*
+2. **Gen 2**: Removed 'return' from refund signals to fix query misclassification. Added complaint phrase triggers ('not happy', 'gone downhill', 'quality has') to complaint signals. Added complaint phrases to always_escalate list to fix under-escalation on complaint emails. *(golden score: 0.8153)*
 
 ## 4. Business Impact
 
 | Metric | Baseline | Final | Delta |
 |:---|:---:|:---:|:---:|
-| 📈 Email categorization accuracy | 29.7% | 29.7% | +0.0% |
-| 📈 Reply quality score | 0.240 | 0.240 | +0.000 |
-| 📈 Escalation accuracy | 24.6% | 24.6% | +0.0% |
+| 📈 Email categorization accuracy | 29.7% | 30.8% | +1.1% |
+| 📈 Reply quality score | 0.240 | 0.255 | +0.015 |
+| 📉 Escalation accuracy | 24.6% | 24.3% | -0.3% |
 
-> 💰 **Estimated savings per 1,000 emails: $0**
+> ⚠️ **Estimated added cost per 1,000 emails: $420**
 >
 > _Cost model: each incorrect escalation costs $150 in agent time and customer dissatisfaction._
 

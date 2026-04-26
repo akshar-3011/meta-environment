@@ -1,40 +1,34 @@
 [
   {
     "generation": 0,
-    "mean_total": 0.7838,
+    "mean_total": 0.7834,
     "mean_classify": 0.2971,
-    "mean_reply": 0.2405,
+    "mean_reply": 0.2401,
     "mean_escalate": 0.2462,
     "failure_count": 7,
     "strategy_reasoning": "Baseline — no strategy applied.",
-    "golden_score": 0.8236
+    "golden_score": 0.8167
   },
   {
     "generation": 1,
-    "mean_total": 0.6771,
-    "mean_classify": 0.2589,
-    "mean_reply": 0.22,
-    "mean_escalate": 0.1982,
-    "failure_count": 8,
+    "mean_total": 0.8067,
+    "mean_classify": 0.3085,
+    "mean_reply": 0.2548,
+    "mean_escalate": 0.2434,
+    "failure_count": 4,
     "strategy_reasoning": "Removed 'return' from refund signals to fix query misclassification. Added complaint phrase triggers ('not happy', 'gone downhill', 'quality has') to complaint signals. Added complaint phrases to always_escalate list to fix under-escalation on complaint emails.",
-    "golden_score": 0.7406,
-    "golden_passed": false,
-    "golden_score_attempt_1": 0.7406,
-    "golden_score_attempt_2": 0.7406,
-    "regression_retried": true
+    "golden_score": 0.8153,
+    "golden_passed": true
   },
   {
     "generation": 2,
-    "mean_total": 0.6771,
-    "mean_classify": 0.2589,
-    "mean_reply": 0.22,
-    "mean_escalate": 0.1982,
-    "failure_count": 8,
+    "mean_total": 0.8067,
+    "mean_classify": 0.3085,
+    "mean_reply": 0.2548,
+    "mean_escalate": 0.2434,
+    "failure_count": 4,
     "strategy_reasoning": "Removed 'return' from refund signals to fix query misclassification. Added complaint phrase triggers ('not happy', 'gone downhill', 'quality has') to complaint signals. Added complaint phrases to always_escalate list to fix under-escalation on complaint emails.",
-    "golden_score": 0.7406,
-    "golden_passed": false,
-    "golden_score_attempt_1": 0.7406,
-    "golden_score_attempt_2": 0.7406,
-    "regression_retried": true
+    "golden_score": 0.8153,
+    "golden_passed": true
   }
 ]

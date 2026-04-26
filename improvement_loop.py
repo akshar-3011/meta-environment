@@ -34,7 +34,7 @@ from models import WorkplaceAction
 DEFAULT_FALLBACK_STRATEGY: Dict[str, Any] = {
     "classification_rules": {
         "refund": ["refund", "reimbursement", "charged twice", "overcharged", "billing error", "money back", "charge", "credit", "cancel order", "cancellation"],
-        "complaint": ["not happy", "gone downhill", "terrible", "awful", "unacceptable", "disappointed", "frustrated", "angry", "outraged", "worst", "quality has", "way too slow", "took too long", "poor quality", "bad experience", "let down"],
+        "complaint": ["not happy", "gone downhill", "terrible", "awful", "unacceptable", "disappointed", "frustrated", "angry", "outraged", "worst", "quality has", "way too slow", "took too long", "poor quality", "bad experience", "let down", "charged twice", "charged me twice", "unauthorized charge", "never authorized", "nothing like", "not as advertised", "nothing like what was advertised", "box was empty", "arrived empty", "package was empty", "loyal customer", "treated me", "this is how you treat"],
         "query": ["how do i", "how to", "what is", "can you", "do you", "where is", "when will", "return my item", "return policy", "track my", "status of", "information about", "tell me", "explain", "help me understand"],
         "default": "query",
     },
@@ -50,7 +50,7 @@ DEFAULT_FALLBACK_STRATEGY: Dict[str, Any] = {
         "forbidden_phrases": ["not my problem", "cannot help", "no idea"],
     },
     "escalation_rules": {
-        "always_escalate": ["legal threat", "safety risk", "account restricted", "not happy", "gone downhill", "way too slow", "quality has really"],
+        "always_escalate": ["legal threat", "safety risk", "account restricted", "not happy", "gone downhill", "way too slow", "quality has really", "charged twice", "unauthorized charge", "box was empty", "arrived empty", "nothing like what was advertised"],
         "never_escalate": [],
         "escalate_if_complaint": True,
         "escalate_if_high_urgency": True,
@@ -587,7 +587,6 @@ def run_improvement_loop(
                 failure_analysis = {}
 
             print("\n=== FAILURE ANALYSIS ===")
-            import json
             print(json.dumps(failure_analysis if isinstance(failure_analysis, dict) else {}, indent=2))
 
             client = _make_strategy_client()

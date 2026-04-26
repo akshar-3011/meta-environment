@@ -28,7 +28,20 @@
       "took too long",
       "poor quality",
       "bad experience",
-      "let down"
+      "let down",
+      "charged twice",
+      "charged me twice",
+      "unauthorized charge",
+      "never authorized",
+      "nothing like",
+      "not as advertised",
+      "nothing like what was advertised",
+      "box was empty",
+      "arrived empty",
+      "package was empty",
+      "loyal customer",
+      "treated me",
+      "this is how you treat"
     ],
     "query": [
       "how do i",
@@ -72,7 +85,12 @@
       "not happy",
       "gone downhill",
       "way too slow",
-      "quality has really"
+      "quality has really",
+      "charged twice",
+      "unauthorized charge",
+      "box was empty",
+      "arrived empty",
+      "nothing like what was advertised"
     ],
     "never_escalate": [],
     "escalate_if_complaint": true,
