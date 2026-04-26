@@ -4,7 +4,7 @@
 
 ### 1. What is meta-environment?
 
-A production-grade reinforcement learning environment for training AI agents on customer support email triage. Agents learn to classify emails, draft empathetic replies, and make escalation decisions — with dense per-step rewards and 100 validated scenarios across 3 difficulty levels.
+A production-grade reinforcement learning environment for training AI agents on customer support email triage. Agents learn to classify emails, draft empathetic replies, and make escalation decisions - with dense per-step rewards and 100 validated scenarios across 3 difficulty levels.
 
 ---
 
@@ -89,7 +89,7 @@ python tools/generate_scenarios.py --count 20 --difficulty hard
 
 ### 6. Do I need an LLM API key?
 
-**No.** The environment works fully offline with rule-based grading. An LLM (HuggingFace or OpenAI) is only needed for:
+**No.**The environment works fully offline with rule-based grading. An LLM (HuggingFace or OpenAI) is only needed for:
 - The `/infer` endpoint (agent inference)
 - Automated scenario generation
 
@@ -147,17 +147,17 @@ See [SECURITY.md](SECURITY.md) for the full threat model.
 
 ### 9. How do I monitor the environment?
 
-**Prometheus metrics** at `/metrics`:
+**Prometheus metrics**at `/metrics`:
 ```bash
 curl http://localhost:8000/metrics
 ```
 
-**OpenTelemetry tracing** (configure endpoint):
+**OpenTelemetry tracing**(configure endpoint):
 ```bash
 export OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
 ```
 
-**Audit logs** (JSON to stdout for K8s log aggregation):
+**Audit logs**(JSON to stdout for K8s log aggregation):
 ```bash
 kubectl logs -l app.kubernetes.io/name=meta-environment | jq '.event'
 ```

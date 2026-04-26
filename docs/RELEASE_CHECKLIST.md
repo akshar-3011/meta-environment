@@ -1,4 +1,4 @@
-# Release Checklist — v1.0.0
+# Release Checklist - v1.0.0
 
 > Step-by-step procedure for publishing meta-environment.
 
@@ -9,7 +9,7 @@
 ```bash
 # 1. Run full test suite
 python -m pytest tests/ -v --tb=short
-# Expected: 232 passed ✅
+# Expected: 232 passed 
 
 # 2. Run all examples
 python examples/01_quickstart.py
@@ -62,7 +62,7 @@ git push space v1.0.0
 ```bash
 # Create release with pre-built assets
 gh release create v1.0.0 \
-  --title "v1.0.0 — Production Release" \
+  --title "v1.0.0 - Production Release" \
   --notes-file docs/CHANGELOG.md \
   --latest
 

@@ -37,7 +37,7 @@
 | `kubectl` | >= 1.28 | [Instructions](https://kubernetes.io/docs/tasks/tools/) |
 | `helm` | >= 3.14 | `brew install helm` |
 | `sops` | >= 3.8 | `brew install sops` (for secrets encryption) |
-| Cluster access | — | `KUBECONFIG` env var or `~/.kube/config` |
+| Cluster access | - | `KUBECONFIG` env var or `~/.kube/config` |
 
 ### Verify Access
 
@@ -74,7 +74,7 @@ helm upgrade --install meta-env ./helm/meta-environment \
   --wait --atomic --timeout 5m
 ```
 
-> **Note:** `--atomic` automatically rolls back if the deploy fails.
+> **Note:**`--atomic` automatically rolls back if the deploy fails.
 
 ### 3. Use Kustomize (alternative)
 
@@ -184,7 +184,7 @@ kubectl logs meta-env-abc123 --namespace meta-environment --previous
 ### Interactive Shell
 
 ```bash
-# Exec into a running pod (read-only FS — use /tmp for writes)
+# Exec into a running pod (read-only FS - use /tmp for writes)
 kubectl exec -it deploy/meta-env --namespace meta-environment -- /bin/sh
 
 # Run a one-off command
@@ -271,7 +271,7 @@ kubectl rollout undo deployment/meta-env --to-revision=5 --namespace meta-enviro
 The `.github/workflows/deploy-k8s.yml` workflow automates the full lifecycle:
 
 ```
-Tag Push (v*)  ──→  Build Image  ──→  Deploy (Helm)  ──→  Smoke Tests  ──→ ✅
+Tag Push (v*)  ──→  Build Image  ──→  Deploy (Helm)  ──→  Smoke Tests  ──→ 
                          │                  │                   │
                          │            --atomic flag        On failure
                          │            (auto-rollback)           │
@@ -312,10 +312,10 @@ Set these in GitHub repo settings → Secrets:
 | Memory request | 128Mi | 256Mi | 1Gi |
 | Log level | DEBUG | INFO | WARNING |
 | Trace sampling | 100% | 100% | 10% |
-| HPA | ❌ | ✅ | ✅ |
-| PDB | ❌ | min 1 | min 7 |
-| Network Policy | ❌ | ❌ | ✅ |
-| Ingress | ❌ | ✅ | ✅ + TLS |
+| HPA |  |  |  |
+| PDB |  | min 1 | min 7 |
+| Network Policy |  |  |  |
+| Ingress |  |  |  + TLS |
 
 ---
 

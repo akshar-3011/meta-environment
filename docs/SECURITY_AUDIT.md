@@ -11,12 +11,12 @@
 
 | Severity | Count | Fixed | Remaining |
 |---|---|---|---|
-| 🔴 Critical | 0 | — | 0 |
-| 🟠 High | 1 | ✅ | 0 |
-| 🟡 Medium | 2 | ✅ | 0 |
-| 🔵 Low | 3 | 1 fixed, 2 accepted | 0 |
+|  Critical | 0 | - | 0 |
+|  High | 1 |  | 0 |
+|  Medium | 2 |  | 0 |
+|  Low | 3 | 1 fixed, 2 accepted | 0 |
 
-**Overall Status: ✅ PASS** — All high/medium issues remediated. Low-severity items accepted with risk documentation.
+**Overall Status:  PASS**- All high/medium issues remediated. Low-severity items accepted with risk documentation.
 
 ---
 
@@ -26,10 +26,10 @@
 
 | Package | Version | CVE | Severity | Status |
 |---|---|---|---|---|
-| fastmcp | 3.1.1 | CVE-2026-27124 | Medium | ⚠️ Accepted — not used in production path; upgrade to 3.2.0 when stable |
+| fastmcp | 3.1.1 | CVE-2026-27124 | Medium |  Accepted - not used in production path; upgrade to 3.2.0 when stable |
 
 ### Notes
-- `openenv-workplace-env` (0.1.0) could not be audited (not on PyPI) — expected for private packages.
+- `openenv-workplace-env` (0.1.0) could not be audited (not on PyPI) - expected for private packages.
 - All other dependencies clean: `fastapi`, `uvicorn`, `pydantic`, `prometheus_client`, etc.
 
 ---
@@ -40,37 +40,37 @@
 - **Lines scanned**: 3,590
 - **Issues found**: 6 (1 high, 2 medium, 3 low)
 
-### Finding B324: Use of Weak MD5 Hash — **HIGH**
+### Finding B324: Use of Weak MD5 Hash - **HIGH**
 
 - **File**: `api/experiments.py:310`
 - **Issue**: `hashlib.md5()` used for experiment routing (consistent hashing)
 - **Risk**: MD5 is cryptographically weak for security purposes
-- **Remediation**: ✅ **Accepted** — MD5 is used for non-cryptographic bucketing (traffic splitting), not authentication. The hash is never exposed to clients. Using SHA-256 would add unnecessary overhead for this use case.
+- **Remediation**:  **Accepted**- MD5 is used for non-cryptographic bucketing (traffic splitting), not authentication. The hash is never exposed to clients. Using SHA-256 would add unnecessary overhead for this use case.
 - **Mitigation**: Added `usedforsecurity=False` annotation.
 
-### Finding B104: Binding to All Interfaces — **MEDIUM** (×2)
+### Finding B104: Binding to All Interfaces - **MEDIUM**(×2)
 
 - **File**: `core/config.py:63, 136`
 - **Issue**: Default API host is `0.0.0.0` (all interfaces)
 - **Risk**: Exposes service on all network interfaces
-- **Remediation**: ✅ **Mitigated** — This is intentional for container deployments (Docker/K8s). In production:
+- **Remediation**:  **Mitigated**- This is intentional for container deployments (Docker/K8s). In production:
   - NetworkPolicy restricts ingress to `ingress-nginx` namespace only
   - Service is ClusterIP (not NodePort/LoadBalancer)
   - K8s Ingress handles external TLS termination
 
-### Finding B101: Use of Assert — **LOW**
+### Finding B101: Use of Assert - **LOW**
 
 - **File**: `environment/gym_wrapper.py:94`
 - **Issue**: Assert statements removed in optimized bytecode
 - **Risk**: Assertion-based validation bypassed with `-O` flag
-- **Remediation**: ✅ **Accepted** — Gym wrappers are development/training tools, not production API surface. Assert is appropriate for invariant checking during training.
+- **Remediation**:  **Accepted**- Gym wrappers are development/training tools, not production API surface. Assert is appropriate for invariant checking during training.
 
-### Finding B110: Try/Except/Pass — **LOW** (×2)
+### Finding B110: Try/Except/Pass - **LOW**(×2)
 
 - **File**: `environment/workplace_environment.py:289, 302`
 - **Issue**: Broad exception catch with pass (silently swallows errors)
 - **Risk**: Errors in metrics/tracing silently ignored
-- **Remediation**: ✅ **Accepted** — These are intentional fallbacks for optional observability (Prometheus metrics, OTel tracing). The environment must remain functional even when monitoring infrastructure is unavailable.
+- **Remediation**:  **Accepted**- These are intentional fallbacks for optional observability (Prometheus metrics, OTel tracing). The environment must remain functional even when monitoring infrastructure is unavailable.
 
 ---
 
@@ -80,26 +80,26 @@
 
 | Header | Status |
 |---|---|
-| Content-Security-Policy | ❌ Missing |
-| Strict-Transport-Security | ❌ Missing |
-| X-Content-Type-Options | ❌ Missing |
-| X-Frame-Options | ❌ Missing |
-| X-XSS-Protection | ❌ Missing |
-| Referrer-Policy | ❌ Missing |
-| Cache-Control | ❌ Missing |
+| Content-Security-Policy |  Missing |
+| Strict-Transport-Security |  Missing |
+| X-Content-Type-Options |  Missing |
+| X-Frame-Options |  Missing |
+| X-XSS-Protection |  Missing |
+| Referrer-Policy |  Missing |
+| Cache-Control |  Missing |
 
 ### After Hardening
 
 | Header | Value | Status |
 |---|---|---|
-| Content-Security-Policy | `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'` | ✅ |
-| Strict-Transport-Security | `max-age=31536000; includeSubDomains; preload` | ✅ |
-| X-Content-Type-Options | `nosniff` | ✅ |
-| X-Frame-Options | `DENY` | ✅ |
-| X-XSS-Protection | `0` (modern browsers use CSP instead) | ✅ |
-| Referrer-Policy | `strict-origin-when-cross-origin` | ✅ |
-| Permissions-Policy | `camera=(), microphone=(), geolocation=()` | ✅ |
-| Cache-Control | `no-store, no-cache, must-revalidate` | ✅ |
+| Content-Security-Policy | `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'` |  |
+| Strict-Transport-Security | `max-age=31536000; includeSubDomains; preload` |  |
+| X-Content-Type-Options | `nosniff` |  |
+| X-Frame-Options | `DENY` |  |
+| X-XSS-Protection | `0` (modern browsers use CSP instead) |  |
+| Referrer-Policy | `strict-origin-when-cross-origin` |  |
+| Permissions-Policy | `camera=(), microphone=(), geolocation=()` |  |
+| Cache-Control | `no-store, no-cache, must-revalidate` |  |
 
 ---
 
@@ -133,11 +133,11 @@
 | `/infer` | 30/min | 60s | Per IP |
 | `/metrics` | 5/min | 60s | Per IP |
 | `/experiments` | 30/min | 60s | Per IP |
-| **Global** | 1000/min | 60s | Per API key |
+| **Global**| 1000/min | 60s | Per API key |
 
-- ✅ `Retry-After` header included in 429 responses
-- ✅ `X-RateLimit-Limit` and `X-RateLimit-Remaining` headers on all responses
-- ✅ Rate limit violations logged to audit trail
+-  `Retry-After` header included in 429 responses
+-  `X-RateLimit-Limit` and `X-RateLimit-Remaining` headers on all responses
+-  Rate limit violations logged to audit trail
 
 ---
 
@@ -148,9 +148,9 @@
 - Potential for resource exhaustion via large payloads
 
 ### After
-- ✅ 1MB max request body size enforced at middleware level
-- ✅ Returns 413 with descriptive error for oversized requests
-- ✅ Oversized requests logged to audit trail
+-  1MB max request body size enforced at middleware level
+-  Returns 413 with descriptive error for oversized requests
+-  Oversized requests logged to audit trail
 
 ---
 
@@ -162,9 +162,9 @@
 - API key compared in plaintext
 
 ### After
-- ✅ Auth success/failure logged to audit trail
-- ✅ API keys hashed (SHA-256) in logs — never stored in plaintext
-- ✅ Timing-safe comparison recommended (see Recommendations)
+-  Auth success/failure logged to audit trail
+-  API keys hashed (SHA-256) in logs - never stored in plaintext
+-  Timing-safe comparison recommended (see Recommendations)
 
 ---
 
@@ -172,14 +172,14 @@
 
 | Check | Status |
 |---|---|
-| Non-root user (uid 1000) | ✅ |
-| Read-only root filesystem | ✅ |
-| Drop ALL capabilities | ✅ |
-| No privilege escalation | ✅ |
-| Seccomp RuntimeDefault | ✅ |
-| Resource limits (CPU/memory) | ✅ |
-| ServiceAccount auto-mount disabled | ✅ |
-| NetworkPolicy (ingress restricted) | ✅ |
+| Non-root user (uid 1000) |  |
+| Read-only root filesystem |  |
+| Drop ALL capabilities |  |
+| No privilege escalation |  |
+| Seccomp RuntimeDefault |  |
+| Resource limits (CPU/memory) |  |
+| ServiceAccount auto-mount disabled |  |
+| NetworkPolicy (ingress restricted) |  |
 
 ---
 

@@ -43,7 +43,7 @@ uv sync --dev
 
 # Verify installation
 python -m pytest tests/ -v --tb=short
-# Expected: 232 passed ✅
+# Expected: 232 passed 
 ```
 
 ### Pre-commit Hooks (recommended)
@@ -60,7 +60,7 @@ pre-commit install
 
 ### IDE Setup
 
-**VS Code** (recommended settings):
+**VS Code**(recommended settings):
 ```json
 {
   "python.defaultInterpreterPath": ".venv/bin/python",
@@ -183,12 +183,12 @@ python data/merge_scenarios.py
 
 ### Scenario Guidelines
 
-- **Easy:** Single clear intent, neutral/positive sentiment, no ambiguity
-- **Medium:** Mixed signals, emotional language, some ambiguity
-- **Hard:** Sarcasm, multi-intent, adversarial, edge cases
-- **Avoid:** Duplicate themes, unrealistic scenarios, offensive content
-- **Length:** 3-8 sentences per email
-- **Labeling:** Each scenario must have exactly one correct label
+- **Easy:**Single clear intent, neutral/positive sentiment, no ambiguity
+- **Medium:**Mixed signals, emotional language, some ambiguity
+- **Hard:**Sarcasm, multi-intent, adversarial, edge cases
+- **Avoid:**Duplicate themes, unrealistic scenarios, offensive content
+- **Length:**3-8 sentences per email
+- **Labeling:**Each scenario must have exactly one correct label
 
 ---
 
@@ -217,13 +217,13 @@ mypy core/ api/ environment/ --ignore-missing-imports
 
 ### Conventions
 
-1. **Type hints** on all public functions
-2. **Docstrings** on all classes and public methods (Google style)
-3. **No `eval()`, `exec()`, `pickle`** in application code
-4. **Frozen dataclasses** for data models
-5. **Relative imports** within packages, absolute for cross-package
-6. **Constants** in UPPER_SNAKE_CASE at module level
-7. **Test classes** prefixed with `Test`, test methods with `test_`
+1. **Type hints**on all public functions
+2. **Docstrings**on all classes and public methods (Google style)
+3. **No `eval()`, `exec()`, `pickle`**in application code
+4. **Frozen dataclasses**for data models
+5. **Relative imports**within packages, absolute for cross-package
+6. **Constants**in UPPER_SNAKE_CASE at module level
+7. **Test classes**prefixed with `Test`, test methods with `test_`
 
 ### Example
 
@@ -300,9 +300,9 @@ git push origin feature/my-feature
 
 ### 5. Review
 
-- **1 approval required** from a maintainer
-- **CI must pass** (all tests, linting)
-- **Performance tests** must not regress >10%
+- **1 approval required**from a maintainer
+- **CI must pass**(all tests, linting)
+- **Performance tests**must not regress >10%
 
 ---
 
@@ -371,4 +371,4 @@ What was missing or incorrect.
 - Check [FAQ.md](docs/FAQ.md)
 - Check [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
 
-Thank you for contributing! 🎉
+Thank you for contributing! 

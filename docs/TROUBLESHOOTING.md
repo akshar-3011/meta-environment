@@ -8,7 +8,7 @@
 
 ### `ModuleNotFoundError: No module named 'openenv'`
 
-**Cause:** The OpenEnv core library is not installed.
+**Cause:**The OpenEnv core library is not installed.
 
 **Fix:**
 ```bash
@@ -19,7 +19,7 @@ pip install -e ".[dev]"
 
 ### `ImportError: cannot import name 'create_app'`
 
-**Cause:** Incompatible version of openenv-core.
+**Cause:**Incompatible version of openenv-core.
 
 **Fix:**
 ```bash
@@ -32,7 +32,7 @@ pip install --upgrade openenv-core>=0.2.2
 
 ### `ValueError: Duplicated timeseries in CollectorRegistry`
 
-**Cause:** Prometheus metrics are being registered twice (common during test runs or hot-reload).
+**Cause:**Prometheus metrics are being registered twice (common during test runs or hot-reload).
 
 **Fix:**
 ```python
@@ -43,7 +43,7 @@ pip install --upgrade openenv-core>=0.2.2
 
 ### `RuntimeError: Environment not reset`
 
-**Cause:** Calling `/step` before `/reset`.
+**Cause:**Calling `/step` before `/reset`.
 
 **Fix:**
 ```bash
@@ -55,9 +55,9 @@ curl -X POST http://localhost:8000/step -d '{"action": {"action_type": "classify
 
 ### `422 Unprocessable Entity: Invalid action type`
 
-**Cause:** Action type not one of `classify`, `reply`, `escalate`.
+**Cause:**Action type not one of `classify`, `reply`, `escalate`.
 
-**Fix:** Ensure `action_type` is exactly one of:
+**Fix:**Ensure `action_type` is exactly one of:
 - `"classify"` (step 1)
 - `"reply"` (step 2)
 - `"escalate"` (step 3)
@@ -70,7 +70,7 @@ Steps must be performed in order.
 
 ### `docker build` fails with `openenv-base not found`
 
-**Cause:** Base image not available locally.
+**Cause:**Base image not available locally.
 
 **Fix:**
 ```bash
@@ -83,7 +83,7 @@ docker build --build-arg BASE_IMAGE=python:3.11-slim -t meta-env .
 
 ### Container exits immediately
 
-**Cause:** Port conflict or missing dependencies.
+**Cause:**Port conflict or missing dependencies.
 
 **Fix:**
 ```bash
@@ -99,9 +99,9 @@ lsof -i :8000
 
 ### Health check fails in container
 
-**Cause:** Application hasn't started yet (startup time).
+**Cause:**Application hasn't started yet (startup time).
 
-**Fix:** The `startupProbe` in K8s allows 50 seconds (10 failures × 5s period). For Docker:
+**Fix:**The `startupProbe` in K8s allows 50 seconds (10 failures × 5s period). For Docker:
 ```bash
 docker run -p 8000:8000 meta-env
 # Wait 5 seconds, then:
@@ -114,7 +114,7 @@ curl http://localhost:8000/health
 
 ### `ImportError: stable_baselines3`
 
-**Cause:** SB3 not installed.
+**Cause:**SB3 not installed.
 
 **Fix:**
 ```bash
@@ -124,10 +124,10 @@ pip install stable-baselines3[extra]
 ### Agent reward doesn't improve
 
 **Possible causes:**
-1. **Wrong difficulty:** Start with `easy` difficulty first
-2. **Learning rate too high:** Try `3e-4` (default)
-3. **Too few timesteps:** Easy scenarios need ~10k steps to converge
-4. **Observation space mismatch:** Ensure your custom wrapper matches the expected observation format
+1. **Wrong difficulty:**Start with `easy` difficulty first
+2. **Learning rate too high:**Try `3e-4` (default)
+3. **Too few timesteps:**Easy scenarios need ~10k steps to converge
+4. **Observation space mismatch:**Ensure your custom wrapper matches the expected observation format
 
 **Fix:**
 ```bash
@@ -138,9 +138,9 @@ tensorboard --logdir ./logs/
 
 ### `KeyError: 'email'` in Gym wrapper
 
-**Cause:** Observation dict structure changed.
+**Cause:**Observation dict structure changed.
 
-**Fix:** Check that your environment version matches the wrapper version:
+**Fix:**Check that your environment version matches the wrapper version:
 ```python
 env = WorkplaceEnvironment()
 obs = env.reset()
@@ -168,9 +168,9 @@ export OTEL_TRACES_SAMPLE_RATE=0.1
 
 ### Memory growth over time
 
-**Cause:** Rate limiter or experiment store not garbage collecting.
+**Cause:**Rate limiter or experiment store not garbage collecting.
 
-**Fix:** The rate limiter has automatic GC (every 2× window). For long-running deployments:
+**Fix:**The rate limiter has automatic GC (every 2× window). For long-running deployments:
 ```bash
 # Check memory:
 kubectl top pods -l app.kubernetes.io/name=meta-environment
@@ -185,9 +185,9 @@ kubectl rollout restart deployment/meta-env
 
 ### Tests fail with `CollectorRegistry` error
 
-**Cause:** Prometheus metrics registered multiple times across test modules.
+**Cause:**Prometheus metrics registered multiple times across test modules.
 
-**Fix:** Run tests in isolation or with the `--forked` flag:
+**Fix:**Run tests in isolation or with the `--forked` flag:
 ```bash
 # Recommended:
 python -m pytest tests/ -v
@@ -198,9 +198,9 @@ python -m pytest tests/test_security.py -v  # Run specific file
 
 ### Rate limiter tests are flaky
 
-**Cause:** Time-sensitive sliding window calculations.
+**Cause:**Time-sensitive sliding window calculations.
 
-**Fix:** The tests use generous thresholds. If still flaky:
+**Fix:**The tests use generous thresholds. If still flaky:
 ```bash
 python -m pytest tests/test_security.py::TestStrictRateLimiter -v --count=3
 ```
@@ -211,7 +211,7 @@ python -m pytest tests/test_security.py::TestStrictRateLimiter -v --count=3
 
 ### Helm install fails
 
-**Cause:** Missing namespace or RBAC permissions.
+**Cause:**Missing namespace or RBAC permissions.
 
 **Fix:**
 ```bash

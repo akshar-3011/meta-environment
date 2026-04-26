@@ -1,6 +1,5 @@
 ---
 title: Workplace Env Environment Server
-emoji: 🏢
 colorFrom: blue
 colorTo: purple
 sdk: docker
@@ -8,20 +7,20 @@ pinned: false
 app_port: 7860
 ---
 
-> **🚀 Live Environment:** [akshar-3011-meta-environment.hf.space](https://akshar-3011-meta-environment.hf.space)
-> **📦 GitHub:** [akshar-3011/meta-environment](https://github.com/akshar-3011/meta-environment)
-> **📓 Hugging Face Notebook:** [https://huggingface.co/akshar-3011/meta-environment/blob/main/colab_training.ipynb](https://huggingface.co/akshar-3011/meta-environment/blob/main/colab_training.ipynb)
-> **📓 Colab (Runnable):** [https://colab.research.google.com/github/akshar-3011/meta-environment/blob/main/colab_training.ipynb](https://colab.research.google.com/github/akshar-3011/meta-environment/blob/main/colab_training.ipynb)
-> **📝 Blog Post:** [https://huggingface.co/Akshar-3011/workplace-env-agent](https://huggingface.co/Akshar-3011/workplace-env-agent)
-> **🎥 Mini-Blog:** [Self-Improving Customer Support Agent — HuggingFace](https://huggingface.co/Akshar-3011/workplace-env-agent) | Training evidence and reward curves committed to repo under `results/`
+> **Live Environment:** [akshar-3011-meta-environment.hf.space](https://akshar-3011-meta-environment.hf.space)
+> **GitHub:** [akshar-3011/meta-environment](https://github.com/akshar-3011/meta-environment)
+> **Hugging Face Notebook:** [https://huggingface.co/akshar-3011/meta-environment/blob/main/colab_training.ipynb](https://huggingface.co/akshar-3011/meta-environment/blob/main/colab_training.ipynb)
+> **Colab (Runnable):** [https://colab.research.google.com/github/akshar-3011/meta-environment/blob/main/colab_training.ipynb](https://colab.research.google.com/github/akshar-3011/meta-environment/blob/main/colab_training.ipynb)
+> **Blog Post:** [https://huggingface.co/Akshar-3011/workplace-env-agent](https://huggingface.co/Akshar-3011/workplace-env-agent)
+> **Mini-Blog:** [Self-Improving Customer Support Agent - HuggingFace](https://huggingface.co/Akshar-3011/workplace-env-agent) | Training evidence and reward curves committed to repo under `results/`
 
 <div align="center">
 
-# 🏢 Meta-Environment
+# Meta-Environment
 
 ### Production-Grade RL Environment for Customer Support Triage
 
-Train and evaluate AI agents on real-world email triage workflows — classify intent, draft empathetic replies, and make escalation decisions — with dense per-step rewards, 100 validated scenarios, and sub-millisecond latency.
+Train and evaluate AI agents on real-world email triage workflows - classify intent, draft empathetic replies, and make escalation decisions - with dense per-step rewards, 100 validated scenarios, and sub-millisecond latency.
 
 [![CI](https://github.com/akshar-3011/meta-environment/actions/workflows/ci.yml/badge.svg)](https://github.com/akshar-3011/meta-environment/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/badge/tests-232%20passed-brightgreen)]()
@@ -31,13 +30,13 @@ Train and evaluate AI agents on real-world email triage workflows — classify i
 [![License](https://img.shields.io/badge/license-BSD-green)]()
 [![Docker](https://img.shields.io/badge/docker-ready-blue)]()
 
-## 🎯 What Problem Does This Solve?
+## What Problem Does This Solve?
 
-Customer support agents are static — they make the same mistakes repeatedly and never learn from reward signals. This environment trains LLMs to handle real email triage (classify intent → draft reply → decide escalation) with dense per-step rewards across 100 validated scenarios spanning easy, medium, and hard difficulty.
+Customer support agents are static - they make the same mistakes repeatedly and never learn from reward signals. This environment trains LLMs to handle real email triage (classify intent → draft reply → decide escalation) with dense per-step rewards across 100 validated scenarios spanning easy, medium, and hard difficulty.
 
-**What makes this novel:** The environment includes a self-improving meta-learning loop — the agent analyzes its own failures, generates improved decision strategies via LLM, and measurably increases reward across generations. Baseline: 78% → Optimized: 81% (+3%), failures reduced from 7 to 4.
+**What makes this novel:**The environment includes a self-improving meta-learning loop - the agent analyzes its own failures, generates improved decision strategies via LLM, and measurably increases reward across generations. Baseline: 78% → Optimized: 81% (+3%), failures reduced from 7 to 4.
 
-**Why it matters:** Every wrong escalation costs ~$150 in real support operations. An agent that learns to improve its own triage decisions has direct business impact.
+**Why it matters:**Every wrong escalation costs ~$150 in real support operations. An agent that learns to improve its own triage decisions has direct business impact.
 
 [Quick Start](#-quick-start) · [Features](#-features) · [Benchmarks](#-benchmarks) · [Training](#-train-an-rl-agent) · [API Docs](#-api-endpoints) · [Contributing](#-contributing)
 
@@ -45,7 +44,7 @@ Customer support agents are static — they make the same mistakes repeatedly an
 
 ---
 
-## ⚡ Quick Start
+## Quick Start
 
 ### Fastest Path (3 commands)
 
@@ -60,8 +59,8 @@ python examples/01_quickstart.py
 ```bash
 docker build -t meta-env .
 docker run -p 7860:7860 meta-env
-# → http://localhost:7860/health  ✅
-# → http://localhost:7860/docs    📖
+# → http://localhost:7860/health  
+# → http://localhost:7860/docs    
 ```
 
 ### Verify Installation
@@ -73,24 +72,24 @@ curl -s http://localhost:7860/health | python3 -m json.tool
 
 ---
 
-## 🎯 Features
+## Features
 
 | Category | Capability |
 |---|---|
-| **Environment** | 3-step episodes: `classify → reply → escalate` with dense rewards |
-| **Scenarios** | 100 validated scenarios across 3 difficulty levels (easy/medium/hard) |
-| **Rewards** | Configurable weighted grading: 40% classify, 35% reply, 25% escalate |
-| **A/B Testing** | Experiment framework with 4 reward policies + statistical analysis |
-| **Training** | Gymnasium wrapper + multi-agent PPO pipeline (conservative/aggressive/balanced) |
-| **Observability** | Prometheus metrics, OpenTelemetry tracing, structured audit logging |
-| **Security** | API key auth, per-endpoint rate limiting, CSP/HSTS headers, error sanitization |
-| **Deployment** | Docker, Kubernetes (Helm chart), HPA autoscaling, zero-downtime deploys |
-| **Performance** | P50: 0.3ms, P99: 0.4ms, 3,000+ episodes/sec |
-| **Compliance** | OpenEnv-compliant, passes official validator |
+| **Environment**| 3-step episodes: `classify → reply → escalate` with dense rewards |
+| **Scenarios**| 100 validated scenarios across 3 difficulty levels (easy/medium/hard) |
+| **Rewards**| Configurable weighted grading: 40% classify, 35% reply, 25% escalate |
+| **A/B Testing**| Experiment framework with 4 reward policies + statistical analysis |
+| **Training**| Gymnasium wrapper + multi-agent PPO pipeline (conservative/aggressive/balanced) |
+| **Observability**| Prometheus metrics, OpenTelemetry tracing, structured audit logging |
+| **Security**| API key auth, per-endpoint rate limiting, CSP/HSTS headers, error sanitization |
+| **Deployment**| Docker, Kubernetes (Helm chart), HPA autoscaling, zero-downtime deploys |
+| **Performance**| P50: 0.3ms, P99: 0.4ms, 3,000+ episodes/sec |
+| **Compliance**| OpenEnv-compliant, passes official validator |
 
 ---
 
-## 📊 Benchmarks
+## Benchmarks
 
 ```bash
 python benchmarks/load_test.py --mode direct --episodes 500
@@ -98,26 +97,26 @@ python benchmarks/load_test.py --mode direct --episodes 500
 
 | Metric | Target | Actual |
 |---|---|---|
-| P50 episode latency | < 200ms | **0.3ms** |
-| P99 episode latency | < 500ms | **0.4ms** |
-| Throughput | > 100 eps/s | **3,022 eps/s** |
-| Memory per episode | < 50MB | **0.1MB** |
-| Scenarios | 39 | **100** |
-| Tests passing | — | **232/232** |
+| P50 episode latency | < 200ms | **0.3ms**|
+| P99 episode latency | < 500ms | **0.4ms**|
+| Throughput | > 100 eps/s | **3,022 eps/s**|
+| Memory per episode | < 50MB | **0.1MB**|
+| Scenarios | 39 | **100**|
+| Tests passing | - | **232/232**|
 
 ---
 
-## 📈 Improvement Results
+## Improvement Results
 
 ### Reward Progression
 
 ![Reward progression: baseline agent (78.3%) vs optimized agent (81.0%) after 2 improvement generations](results/reward_curve.png)
 
-*X-axis: improvement generation (0 = baseline). Y-axis: mean total reward (0–1). The optimized agent achieves +3% total reward improvement with failures reduced from 7 to 4.*
+*X-axis: improvement generation (0 = baseline). Y-axis: mean total reward (0-1). The optimized agent achieves +3% total reward improvement with failures reduced from 7 to 4.*
 
 ### GRPO Training Evidence
 
-![GRPO Training — Qwen2.5-3B on Workplace Environment (22 steps, 2 epochs)](results/training_curve.png)
+![GRPO Training - Qwen2.5-3B on Workplace Environment (22 steps, 2 epochs)](results/training_curve.png)
 
 *Model: Qwen2.5-3B-Instruct (4-bit + LoRA). Algorithm: GRPO via HuggingFace TRL. Hardware: Google Colab T4 GPU. The model learns to generate structured XML responses (classify/reply/escalate) scored by the live OpenEnv environment.*
 
@@ -125,7 +124,7 @@ python benchmarks/load_test.py --mode direct --episodes 500
 
 ---
 
-## 🤖 Train an RL Agent
+## Train an RL Agent
 
 ### Minimal Example (10 lines)
 
@@ -174,17 +173,17 @@ See [examples/](examples/) for complete runnable scripts.
 
 ---
 
-## 🔬 Reward Function
+## Reward Function
 
-Rewards are **dense** — every step returns a score in `[0.0, 1.0]`:
+Rewards are **dense**- every step returns a score in `[0.0, 1.0]`:
 
 | Step | Weight | Signal |
 |---|---|---|
-| `classify` | **0.40** | Exact match → 1.0; adjacent label → 0.2–0.4; wrong → 0.0 |
-| `reply` | **0.35** | Length, keywords, empathy, solution specificity, greeting/closing |
-| `escalate` | **0.25** | Correct decision → 0.9–1.0; trajectory bonus for consistent quality |
+| `classify` | **0.40**| Exact match → 1.0; adjacent label → 0.2-0.4; wrong → 0.0 |
+| `reply` | **0.35**| Length, keywords, empathy, solution specificity, greeting/closing |
+| `escalate` | **0.25**| Correct decision → 0.9-1.0; trajectory bonus for consistent quality |
 
-**Difficulty multipliers:** Easy ×1.0, Medium ×1.05, Hard ×1.12
+**Difficulty multipliers:**Easy ×1.0, Medium ×1.05, Hard ×1.12
 
 ### Experimental Policies (A/B Testing)
 
@@ -206,7 +205,7 @@ python tools/analyze_experiment.py --experiment-id <id>
 
 ---
 
-## 📡 API Endpoints
+## API Endpoints
 
 | Method | Path | Description |
 |---|---|---|
@@ -233,7 +232,7 @@ curl -s -X POST http://localhost:7860/step \
 # 3. Reply
 curl -s -X POST http://localhost:7860/step \
   -H "Content-Type: application/json" \
-  -d '{"action": {"action_type": "reply", "content": "We have processed your refund — expect it in 3–5 business days."}}'
+  -d '{"action": {"action_type": "reply", "content": "We have processed your refund - expect it in 3-5 business days."}}'
 
 # 4. Escalate
 curl -s -X POST http://localhost:7860/step \
@@ -243,7 +242,7 @@ curl -s -X POST http://localhost:7860/step \
 
 ---
 
-## 🛡️ Security
+## Security
 
 - API key authentication (`X-API-Key` header)
 - Per-endpoint rate limiting (e.g., `/reset`: 10/min, `/step`: 100/min)
@@ -257,7 +256,7 @@ See [docs/SECURITY.md](docs/SECURITY.md) for threat model and incident response.
 
 ---
 
-## 📦 Project Structure
+## Project Structure
 
 ```
 meta-environment/
@@ -295,20 +294,20 @@ meta-environment/
 
 ---
 
-## 🌍 Environment Variables
+## Environment Variables
 
 | Variable | Default | Description |
 |---|---|---|
 | `APP_ENV` | `development` | `production` enables JSON logging + security |
-| `API_KEY` | — | API key for authentication (empty = disabled) |
-| `CORS_ORIGINS` | — | Comma-separated CORS allowlist |
+| `API_KEY` | - | API key for authentication (empty = disabled) |
+| `CORS_ORIGINS` | - | Comma-separated CORS allowlist |
 | `RATE_LIMIT_PER_MINUTE` | `100` | Global per-IP rate limit |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | — | OpenTelemetry trace exporter |
-| `HF_TOKEN` | — | HuggingFace API key (for LLM inference) |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | - | OpenTelemetry trace exporter |
+| `HF_TOKEN` | - | HuggingFace API key (for LLM inference) |
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
 
@@ -319,7 +318,7 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
 
 ---
 
-## 📖 Documentation
+## Documentation
 
 | Document | Description |
 |---|---|
@@ -334,7 +333,7 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for:
 
 ---
 
-## 📝 Citation
+## Citation
 
 If you use this environment in academic research, please cite:
 
@@ -351,12 +350,12 @@ If you use this environment in academic research, please cite:
 
 ---
 
-## 📄 License
+## License
 
 BSD-style License
 
 ---
 
 <div align="center">
-  <sub>Built with ❤️ for the RL research community</sub>
+  <sub>Built with  for the RL research community</sub>
 </div>

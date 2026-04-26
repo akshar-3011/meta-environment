@@ -1,26 +1,26 @@
-# Production-Grade WorkplaceEnv — Upgrade Guide
+# Production-Grade WorkplaceEnv - Upgrade Guide
 
-## 🎯 Executive Summary
+## Executive Summary
 
-This upgrade transforms the WorkplaceEnv from a basic RL environment into a **production-grade, interpretable RL system** suitable for top-tier hackathon selection. 
+This upgrade transforms the WorkplaceEnv from a basic RL environment into a **production-grade, interpretable RL system**suitable for top-tier hackathon selection. 
 
 **Key improvements:**
-- ✅ Difficulty-based scenario progression (easy → medium → hard)
-- ✅ Weighted composite reward system (40% classify, 35% reply, 25% escalate)
-- ✅ Interpretable grading with component breakdowns
-- ✅ Rich observation metadata for agent learning
-- ✅ Deterministic, penalty-based scoring
-- ✅ Enhanced error handling and debugging
+-  Difficulty-based scenario progression (easy → medium → hard)
+-  Weighted composite reward system (40% classify, 35% reply, 25% escalate)
+-  Interpretable grading with component breakdowns
+-  Rich observation metadata for agent learning
+-  Deterministic, penalty-based scoring
+-  Enhanced error handling and debugging
 
 ---
 
-## 📋 What Changed
+## What Changed
 
-### 1. **Data Enhancement** (`data.py`)
+### 1. **Data Enhancement**(`data.py`)
 
-**Before:** Flat list of scenarios with only email + label.
+**Before:**Flat list of scenarios with only email + label.
 
-**After:** Rich scenarios with 8 metadata fields:
+**After:**Rich scenarios with 8 metadata fields:
 
 ```python
 {
@@ -43,7 +43,7 @@ This upgrade transforms the WorkplaceEnv from a basic RL environment into a **pr
 
 ---
 
-### 2. **Models Enhancement** (`models.py`)
+### 2. **Models Enhancement**(`models.py`)
 
 **New fields in `WorkplaceObservation`:**
 ```python
@@ -67,7 +67,7 @@ explanation: Optional[str]          # Reasoning for action
 
 ---
 
-### 3. **Grader Refactoring** (`graders/grader.py`)
+### 3. **Grader Refactoring**(`graders/grader.py`)
 
 #### A. Enhanced Classification Grader
 ```python
@@ -123,7 +123,7 @@ def calculate_step_reward(action_type, content, category, step_count, ...):
 
 ---
 
-### 4. **Environment Refactoring** (`server/workplace_env_environment.py`)
+### 4. **Environment Refactoring**(`server/workplace_env_environment.py`)
 
 #### A. Richer State Management
 
@@ -187,23 +187,23 @@ _debug_log(f"Step {step_num}: Reward={reward:.3f}, {explanation}")
 
 ---
 
-## 🎁 New Features
+## New Features
 
 ### 1. Difficulty Progression
 
 **Scenarios grouped by difficulty:**
-- **Easy** (4 scenarios): Clear intent, straightforward handling
-- **Medium** (7 scenarios): Mixed signals, requires judgment
-- **Hard** (4 scenarios): Ambiguous, edge cases, multi-intent
+- **Easy**(4 scenarios): Clear intent, straightforward handling
+- **Medium**(7 scenarios): Mixed signals, requires judgment
+- **Hard**(4 scenarios): Ambiguous, edge cases, multi-intent
 
 Agents learn better when exposed to graduated difficulty.
 
 ### 2. Weighted Reward System
 
 **Not all actions are equally important:**
-- **Classify (40%)**: Foundation—if wrong, everything downstream fails
-- **Reply (35%)**: Core task—quality response directly impacts satisfaction
-- **Escalate (25%)**: Decision-making—routing accuracy matters
+- **Classify (40%)**: Foundation-if wrong, everything downstream fails
+- **Reply (35%)**: Core task-quality response directly impacts satisfaction
+- **Escalate (25%)**: Decision-making-routing accuracy matters
 
 **Benefits:**
 - Agents learn the true priority of tasks
@@ -213,10 +213,10 @@ Agents learn better when exposed to graduated difficulty.
 ### 3. Penalty System
 
 **Discourage poor patterns:**
-- ❌ Misclassification → reply scoring penalty
-- ❌ Early escalation → escalation score penalty
-- ❌ Over-escalation → penalized if not needed
-- ❌ Missing keywords → consistency penalty
+-  Misclassification → reply scoring penalty
+-  Early escalation → escalation score penalty
+-  Over-escalation → penalized if not needed
+-  Missing keywords → consistency penalty
 
 ### 4. Rich Metadata in Observations
 
@@ -255,7 +255,7 @@ Each reward includes a detailed breakdown:
 
 ---
 
-## 🚀 How to Use
+## How to Use
 
 ### Running the Enhanced Agent
 
@@ -278,16 +278,16 @@ python inference_enhanced.py
 
 [RESET]
 
-📧 Email: Your service is terrible, I'm very unhappy
+ Email: Your service is terrible, I'm very unhappy
 
-📊 Scenario Metadata:
+ Scenario Metadata:
    Difficulty: medium
    Urgency: medium
    Sentiment: negative
    Complexity: 2/5
    Categories: ['refund', 'complaint', 'query']
 
-✅ True Label: complaint
+ True Label: complaint
    Requires Escalation: True
    Min Reply Length: 40
 
@@ -295,13 +295,13 @@ python inference_enhanced.py
 STEP 1: CLASSIFY
 ======================================================================
 
-📤 Agent Action:
+ Agent Action:
    Type: classify
    Content: complaint
    Confidence: 0.85
    Reasoning: Email contains negative sentiment...
 
-🎯 Reward: 1.000
+ Reward: 1.000
    Cumulative: 1.000
    Done: False
 
@@ -311,22 +311,22 @@ STEP 1: CLASSIFY
 EPISODE SUMMARY
 ======================================================================
 
-✅ Completed: 3/3 steps
+ Completed: 3/3 steps
 
-📊 Reward Breakdown:
+ Reward Breakdown:
    Classify:   1.000 (40% weight)
    Reply:      0.850 (35% weight)
    Escalate:   0.950 (25% weight)
 
    Total: 0.914
 
-💡 Interpretation:
-   🌟 Excellent! Agent handled complex scenario very well.
+ Interpretation:
+    Excellent! Agent handled complex scenario very well.
 ```
 
 ---
 
-## 📊 Reward Structure
+## Reward Structure
 
 ### Perfect Score (0.95+)
 - ✓ Correct classification
@@ -350,7 +350,7 @@ EPISODE SUMMARY
 
 ---
 
-## 🔍 Debug Mode
+## Debug Mode
 
 **Enable detailed logging:**
 
@@ -372,7 +372,7 @@ env = WorkplaceEnvironment(debug=True)
 
 ---
 
-## 💾 State Analysis
+## State Analysis
 
 **Get episode summary:**
 
@@ -405,20 +405,20 @@ print(json.dumps(summary, indent=2))
 
 ---
 
-## ✅ Production-Grade Features Checklist
+## Production-Grade Features Checklist
 
-- ✅ **Deterministic** — No randomness, reproducible results
-- ✅ **Interpretable** — Every reward has explanation
-- ✅ **Extensible** — Easy to add new scenarios/graders
-- ✅ **Robust** — Comprehensive error handling
-- ✅ **Efficient** — Minimal overhead, no external APIs
-- ✅ **Scalable** — Module-level singleton handles HTTP statefulness
-- ✅ **Observable** — Debug mode and rich metadata
-- ✅ **OpenEnv Compatible** — 100% compliant interface
+-  **Deterministic**- No randomness, reproducible results
+-  **Interpretable**- Every reward has explanation
+-  **Extensible**- Easy to add new scenarios/graders
+-  **Robust**- Comprehensive error handling
+-  **Efficient**- Minimal overhead, no external APIs
+-  **Scalable**- Module-level singleton handles HTTP statefulness
+-  **Observable**- Debug mode and rich metadata
+-  **OpenEnv Compatible**- 100% compliant interface
 
 ---
 
-## 🎓 Learning Opportunities for Agents
+## Learning Opportunities for Agents
 
 ### Easy Scenarios
 - Learn basic classification
@@ -437,7 +437,7 @@ print(json.dumps(summary, indent=2))
 
 ---
 
-## 📈 Recommended Training Strategy
+## Recommended Training Strategy
 
 1. **Phase 1 (Easy)**: Learn basic task structure
    - Random sampling from easy scenarios
@@ -453,7 +453,7 @@ print(json.dumps(summary, indent=2))
 
 ---
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 **Issue: Import errors**
 ```
@@ -475,37 +475,37 @@ Solution: HTTP calls use _SHARED_STATE singleton
 
 ---
 
-## 📚 Files Modified
+## Files Modified
 
-1. ✅ `data.py` — 18 scenarios with rich metadata
-2. ✅ `models.py` — Enhanced observation & action models
-3. ✅ `graders/grader.py` — Weighted composite rewards
-4. ✅ `server/workplace_env_environment.py` — Full refactor
-5. ✅ `graders/__init__.py` — New (package marker)
-6. ✅ `inference_enhanced.py` — New (example agent)
+1.  `data.py` - 18 scenarios with rich metadata
+2.  `models.py` - Enhanced observation & action models
+3.  `graders/grader.py` - Weighted composite rewards
+4.  `server/workplace_env_environment.py` - Full refactor
+5.  `graders/__init__.py` - New (package marker)
+6.  `inference_enhanced.py` - New (example agent)
 
 ---
 
-## 🏆 Why This Matters for Hackathons
+## Why This Matters for Hackathons
 
 This upgrade demonstrates:
 
-1. **Deep RL Understanding** — Thoughtful reward design, curriculum learning
-2. **Production Thinking** — Error handling, debugging, extensibility
-3. **Interpretability** — Every decision has explanation (increasingly important)
-4. **User Experience** — Rich metadata helps agents learn efficiently
-5. **Software Engineering** — Clean architecture, modularity, testing
+1. **Deep RL Understanding**- Thoughtful reward design, curriculum learning
+2. **Production Thinking**- Error handling, debugging, extensibility
+3. **Interpretability**- Every decision has explanation (increasingly important)
+4. **User Experience**- Rich metadata helps agents learn efficiently
+5. **Software Engineering**- Clean architecture, modularity, testing
 
 These are exactly what top hackathons look for in RL projects.
 
 ---
 
-## 📞 Support
+## Support
 
 For questions about specific components:
 
-- **Grading logic** → See `graders/grader.py` docstrings
-- **Reward calculation** → See `calculate_step_reward()` in grader.py
-- **Environment flow** → See step-by-step comments in workplace_env_environment.py
-- **Example usage** → Run `inference_enhanced.py`
+- **Grading logic**→ See `graders/grader.py` docstrings
+- **Reward calculation**→ See `calculate_step_reward()` in grader.py
+- **Environment flow**→ See step-by-step comments in workplace_env_environment.py
+- **Example usage**→ Run `inference_enhanced.py`
 

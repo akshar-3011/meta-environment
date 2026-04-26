@@ -81,8 +81,8 @@
 | File | Responsibility |
 |---|---|
 | `interfaces.py` | `RewardPolicy` protocol, `EvaluationContext` dataclass |
-| `framework.py` | `WeightedParallelGradingEngine` — sequential weighted aggregation |
-| `rule_based.py` | `RuleBasedRewardPolicy` — production grading (0.40/0.35/0.25) |
+| `framework.py` | `WeightedParallelGradingEngine` - sequential weighted aggregation |
+| `rule_based.py` | `RuleBasedRewardPolicy` - production grading (0.40/0.35/0.25) |
 
 ### 4. Configuration (`core/`)
 

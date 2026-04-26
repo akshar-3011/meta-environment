@@ -6,7 +6,7 @@
 
 ## Security Contact
 
-**📧 security@akshar-3011.dev**
+**security@akshar-3011.dev**
 
 For responsible disclosure, please email with:
 - Description of the vulnerability
@@ -14,7 +14,7 @@ For responsible disclosure, please email with:
 - Impact assessment
 - Your name/handle for credit (optional)
 
-We will acknowledge receipt within **24 hours** and provide a resolution timeline within **72 hours**.
+We will acknowledge receipt within **24 hours**and provide a resolution timeline within **72 hours**.
 
 ---
 
@@ -132,10 +132,10 @@ Internet
 
 | Level | Description | Response Time | Example |
 |---|---|---|---|
-| P0 | Data breach, RCE, auth bypass | **15 min** | API key compromise |
-| P1 | Service-wide DOS, data corruption | **1 hour** | Rate limiter failure |
-| P2 | Single-user impact, info disclosure | **4 hours** | Stack trace leak |
-| P3 | Low-impact, hardening gaps | **1 week** | Missing header |
+| P0 | Data breach, RCE, auth bypass | **15 min**| API key compromise |
+| P1 | Service-wide DOS, data corruption | **1 hour**| Rate limiter failure |
+| P2 | Single-user impact, info disclosure | **4 hours**| Stack trace leak |
+| P3 | Low-impact, hardening gaps | **1 week**| Missing header |
 
 ### Response Procedure
 
@@ -197,12 +197,12 @@ helm rollback meta-env --namespace meta-environment
 
 We follow a **90-day disclosure timeline**:
 
-1. **Report** the vulnerability to security@akshar-3011.dev
-2. We **acknowledge** within 24 hours
-3. We provide a **fix timeline** within 72 hours
-4. We release a **patch** within 90 days
-5. We **credit** the reporter (unless anonymity requested)
-6. Reporter may **publicly disclose** after patch release
+1. **Report**the vulnerability to security@akshar-3011.dev
+2. We **acknowledge**within 24 hours
+3. We provide a **fix timeline**within 72 hours
+4. We release a **patch**within 90 days
+5. We **credit**the reporter (unless anonymity requested)
+6. Reporter may **publicly disclose**after patch release
 
 ### In Scope
 

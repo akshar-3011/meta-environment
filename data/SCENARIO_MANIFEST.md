@@ -1,7 +1,7 @@
 # Scenario Manifest
 
-> **Total scenarios:** 100  
-> **Last updated:** 2026-04-09 19:51:36 UTC
+> **Total scenarios:**100  
+> **Last updated:**2026-04-09 19:51:36 UTC
 
 ---
 
@@ -12,7 +12,7 @@
 | Easy | 30 | 30.0% |
 | Medium | 35 | 35.0% |
 | Hard | 35 | 35.0% |
-| **Total** | **100** | **100%** |
+| **Total**| **100**| **100%**|
 
 ## Label Distribution
 
@@ -43,8 +43,8 @@
 
 | Check | Status |
 |---|---|
-| Pydantic validation | ✅ All pass |
-| Reward range [0.0, 1.0] | ✅ Verified |
-| Reward variance < 0.2 | ✅ Verified |
-| Escalation logic | ✅ Verified |
-| Semantic duplicates (Jaccard > 0.85) | ✅ None |
+| Pydantic validation |  All pass |
+| Reward range [0.0, 1.0] |  Verified |
+| Reward variance < 0.2 |  Verified |
+| Escalation logic |  Verified |
+| Semantic duplicates (Jaccard > 0.85) |  None |

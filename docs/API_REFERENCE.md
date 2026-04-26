@@ -28,7 +28,7 @@ Exempt paths: `/health`, `/docs`, `/openapi.json`, `/redoc`, `/metrics`, `/`
 
 Start a new episode. Returns the initial observation with a customer email.
 
-**Request Body:** `{}` (empty JSON object)
+**Request Body:**`{}` (empty JSON object)
 
 **Response:**
 ```json
@@ -50,7 +50,7 @@ Start a new episode. Returns the initial observation with a customer email.
 }
 ```
 
-**Rate Limit:** 10/min per IP
+**Rate Limit:**10/min per IP
 
 ---
 
@@ -70,8 +70,8 @@ Submit an action for the current episode step.
 
 | Field | Type | Required | Values |
 |---|---|---|---|
-| `action_type` | `string` | ✅ | `"classify"`, `"reply"`, `"escalate"` |
-| `content` | `string` | ✅ | Category label, reply text, or `"yes"`/`"no"` |
+| `action_type` | `string` |  | `"classify"`, `"reply"`, `"escalate"` |
+| `content` | `string` |  | Category label, reply text, or `"yes"`/`"no"` |
 
 **Response:**
 ```json
@@ -93,7 +93,7 @@ Submit an action for the current episode step.
 }
 ```
 
-**Rate Limit:** 100/min per IP
+**Rate Limit:**100/min per IP
 
 **Notes:**
 - Step 1 must be `classify`, step 2 must be `reply`, step 3 must be `escalate`
@@ -136,7 +136,7 @@ Liveness probe. Always returns 200 if the server is running.
 
 Prometheus metrics in exposition format.
 
-**Response:** (text/plain)
+**Response:**(text/plain)
 ```
 # HELP env_requests_total Total API requests
 # TYPE env_requests_total counter
@@ -146,7 +146,7 @@ env_requests_total{endpoint="/step",method="POST",status="200"} 42.0
 env_request_latency_seconds_bucket{endpoint="/step",le="0.01"} 40.0
 ```
 
-**Rate Limit:** 5/min per IP
+**Rate Limit:**5/min per IP
 
 ---
 
@@ -166,10 +166,10 @@ Create a new A/B experiment for reward policy testing.
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `name` | `string` | ✅ | Experiment name |
-| `policy_type` | `string` | ✅ | `"equal"`, `"escalation_first"`, `"reply_quality"` |
-| `traffic_split` | `float` | ✅ | Fraction of traffic for variant (0.0–1.0) |
-| `target_scenarios` | `string[]` | ❌ | Limit to specific scenarios |
+| `name` | `string` |  | Experiment name |
+| `policy_type` | `string` |  | `"equal"`, `"escalation_first"`, `"reply_quality"` |
+| `traffic_split` | `float` |  | Fraction of traffic for variant (0.0-1.0) |
+| `target_scenarios` | `string[]` |  | Limit to specific scenarios |
 
 **Response:**
 ```json
@@ -187,7 +187,7 @@ Create a new A/B experiment for reward policy testing.
 }
 ```
 
-**Constraints:** Maximum 2 concurrent active experiments.
+**Constraints:**Maximum 2 concurrent active experiments.
 
 ---
 

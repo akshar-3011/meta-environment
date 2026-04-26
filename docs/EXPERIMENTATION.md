@@ -6,7 +6,7 @@
 
 ## Overview
 
-The experimentation framework enables testing alternative reward weightings against the production baseline. Each variant differs **only** in how per-step rewards are weighted — the underlying grading logic (accuracy, semantic similarity, rule-based evaluation) remains identical.
+The experimentation framework enables testing alternative reward weightings against the production baseline. Each variant differs **only**in how per-step rewards are weighted - the underlying grading logic (accuracy, semantic similarity, rule-based evaluation) remains identical.
 
 ### Available Policies
 
@@ -139,10 +139,10 @@ episodes:
 
 | Rule | Value | Rationale |
 |---|---|---|
-| Max concurrent experiments | **2** | Prevent combinatorial explosion |
-| Min episodes per variant | **100** | Statistical power for t-test |
-| Significance level | **p < 0.05** | Standard threshold |
-| Max traffic split | **50%** | Protect production quality |
+| Max concurrent experiments | **2**| Prevent combinatorial explosion |
+| Min episodes per variant | **100**| Statistical power for t-test |
+| Significance level | **p < 0.05**| Standard threshold |
+| Max traffic split | **50%**| Protect production quality |
 
 ---
 
@@ -162,11 +162,11 @@ episodes:
 
   Statistics:
     t-statistic:    3.2100
-    p-value:        0.0014  ✅ significant
+    p-value:        0.0014   significant
     Lift:           +5.88%
 
   ═══════════════════════════════════════════════════════════════
-  🚀 RECOMMENDATION: DEPLOY_VARIANT
+   RECOMMENDATION: DEPLOY_VARIANT
      Variant is significantly better: +5.9% lift, p=0.0014 < 0.05
   ═══════════════════════════════════════════════════════════════
 ```
@@ -175,10 +175,10 @@ episodes:
 
 | Condition | Recommendation |
 |---|---|
-| < 100 episodes per variant | ⏳ `CONTINUE_TEST` |
-| p < 0.05, positive lift | 🚀 `DEPLOY_VARIANT` |
-| p < 0.05, negative lift | 🛑 `ABORT` |
-| p ≥ 0.05 | ⏳ `CONTINUE_TEST` |
+| < 100 episodes per variant |  `CONTINUE_TEST` |
+| p < 0.05, positive lift |  `DEPLOY_VARIANT` |
+| p < 0.05, negative lift |  `ABORT` |
+| p ≥ 0.05 |  `CONTINUE_TEST` |
 
 ---
 

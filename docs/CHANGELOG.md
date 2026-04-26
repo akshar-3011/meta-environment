@@ -7,9 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.0.0] — 2026-04-10
+## [1.0.0] - 2026-04-10
 
-### 🎉 First Production Release
+### First Production Release
 
 Production-grade OpenEnv-compliant RL environment for customer support triage
 with 100 scenarios, dense rewards, sub-millisecond latency, and full
@@ -33,13 +33,13 @@ observability stack.
 - Statistical analysis tool (Welch's t-test, automated deploy/continue/abort)
 
 #### API
-- POST `/reset` — start new episode
-- POST `/step` — submit action
-- GET `/state` — episode state
-- GET `/health` — liveness probe
-- GET `/metrics` — Prometheus metrics
-- POST `/experiments` — create A/B experiment
-- GET `/experiments/{id}` — experiment status
+- POST `/reset` - start new episode
+- POST `/step` - submit action
+- GET `/state` - episode state
+- GET `/health` - liveness probe
+- GET `/metrics` - Prometheus metrics
+- POST `/experiments` - create A/B experiment
+- GET `/experiments/{id}` - experiment status
 
 #### Security
 - API key authentication with audit logging
@@ -81,36 +81,36 @@ observability stack.
 - FAQ (10 questions)
 - Contributing guide
 
-### Fixed (Critical Bugs C1–C10)
-- **C1:** Docker container wouldn't start (missing `__main__.py`)
-- **C2:** Deterministic rewards broken by race condition in grading
-- **C3:** Reset crashed on invalid scenario ID
-- **C4:** Step function didn't validate action order
-- **C5:** Escalation timing window was dead (always false)
-- **C6:** Thread pool caused GIL contention in grading
-- **C7:** Retry loops in inference client had no backoff
-- **C8:** Consistency penalty scaled incorrectly above 1.0
-- **C9:** Route conflicts between `/state` and `/step`
-- **C10:** Docker healthcheck path was wrong
+### Fixed (Critical Bugs C1-C10)
+- **C1:**Docker container wouldn't start (missing `__main__.py`)
+- **C2:**Deterministic rewards broken by race condition in grading
+- **C3:**Reset crashed on invalid scenario ID
+- **C4:**Step function didn't validate action order
+- **C5:**Escalation timing window was dead (always false)
+- **C6:**Thread pool caused GIL contention in grading
+- **C7:**Retry loops in inference client had no backoff
+- **C8:**Consistency penalty scaled incorrectly above 1.0
+- **C9:**Route conflicts between `/state` and `/step`
+- **C10:**Docker healthcheck path was wrong
 
-### Changed (High-Impact Refactors N1–N10)
-- **N1:** Sequential grading engine (+30% throughput)
-- **N2:** Pydantic validation at scenario load time (not runtime)
-- **N3:** Frozen dataclass models (immutable state)
-- **N4:** Literal action types (type-safe)
-- **N5:** JSON structured logging (machine-parseable)
-- **N6:** Reloadable config singleton
-- **N7:** Real `/infer` scores (not hardcoded)
-- **N8:** Prometheus lazy registration (no duplicate errors)
-- **N9:** Scenario count expanded from 39 to 100
-- **N10:** Test coverage expanded from 68 to 232 tests
+### Changed (High-Impact Refactors N1-N10)
+- **N1:**Sequential grading engine (+30% throughput)
+- **N2:**Pydantic validation at scenario load time (not runtime)
+- **N3:**Frozen dataclass models (immutable state)
+- **N4:**Literal action types (type-safe)
+- **N5:**JSON structured logging (machine-parseable)
+- **N6:**Reloadable config singleton
+- **N7:**Real `/infer` scores (not hardcoded)
+- **N8:**Prometheus lazy registration (no duplicate errors)
+- **N9:**Scenario count expanded from 39 to 100
+- **N10:**Test coverage expanded from 68 to 232 tests
 
 ### Performance
 | Metric | v0.x | v1.0.0 |
 |---|---|---|
-| P50 latency | ~150ms | **0.3ms** |
-| P99 latency | ~400ms | **0.4ms** |
-| Throughput | ~80 eps/s | **3,022 eps/s** |
-| Memory/episode | ~30MB | **0.1MB** |
-| Test count | 68 | **232** |
-| Scenarios | 39 | **100** |
+| P50 latency | ~150ms | **0.3ms**|
+| P99 latency | ~400ms | **0.4ms**|
+| Throughput | ~80 eps/s | **3,022 eps/s**|
+| Memory/episode | ~30MB | **0.1MB**|
+| Test count | 68 | **232**|
+| Scenarios | 39 | **100**|
