@@ -1,4 +1,4 @@
-What if an AI agent could read its own failure report and rewrite its own decision rules? This project explores that loop in a customer support triage environment where the agent turns concrete mistakes into better classification, reply, and escalation behavior.
+What if an AI agent could read its own failure report and rewrite its own decision rules — and then prove it got better? This project does exactly that. A self-improving customer support agent that analyses failures, generates improved strategies via LLM, and shows measurable reward improvement across generations.
 
 # Self-Improving Customer Support Agent
 ### A Reward-Driven Meta-Learning Environment
@@ -47,9 +47,9 @@ The **reinforcement learning platform**lets the agent improve itself across gene
 
 ---
 
-## What The Numbers Mean
+## What The Numbers Actually Mean
 
-At 10,000 emails per day, a 3% improvement means 300 fewer incorrect escalation decisions. At $150 per incorrect escalation, that is 300 × $150 = **$45,000 saved per day**.
+78% → 81% sounds like a small improvement. In a real operation handling 10,000 emails per day, that 3% improvement means 300 fewer misclassified emails, 300 fewer wrong escalation decisions, and approximately $45,000 saved per day — at $150 per incorrect escalation. The system pays for itself in hours.
 
 ---
 

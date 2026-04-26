@@ -8,10 +8,8 @@ app_port: 7860
 ---
 
 ## 🎬 Demo
-
-[![Demo Video](https://img.youtube.com/vi/YOUR_VIDEO_ID/0.jpg)](https://youtu.be/YOUR_VIDEO_ID)
-
-*2-minute live demo showing the self-improvement loop running and reward improving in real time.*
+[![Demo Video](https://img.youtube.com/vi/SylYUxIRiUA/0.jpg)](https://youtu.be/SylYUxIRiUA)
+*A 2-minute live demo showing the self-improvement loop running and rewards improving in real time.*
 
 <div align="center">
 
@@ -28,9 +26,7 @@ Train and evaluate AI agents on real-world email triage workflows - classify int
 [![Python](https://img.shields.io/badge/python-≥3.10-blue)]()
 [![License](https://img.shields.io/badge/license-BSD-green)]()
 [![Docker](https://img.shields.io/badge/docker-ready-blue)]()
-[![Improvement](https://img.shields.io/badge/reward%20improvement-78%25%20%E2%86%92%2081%25-brightgreen)]()
-[![Training](https://img.shields.io/badge/GRPO%20training-55%20steps-blue)]()
-[![Scenarios](https://img.shields.io/badge/scenarios-100%20validated-orange)]()
+[![Improvement](https://img.shields.io/badge/reward-78%25%20→%2081%25-brightgreen)]() [![Training](https://img.shields.io/badge/GRPO-55%20steps-blue)]() [![Scenarios](https://img.shields.io/badge/scenarios-100%20validated-orange)]()
 
 ## 🏆 Hackathon Theme
 
@@ -47,13 +43,10 @@ Customer support agents are static - they make the same mistakes repeatedly and 
 **Why it matters:**Every wrong escalation costs ~$150 in real support operations. An agent that learns to improve its own triage decisions has direct business impact.
 
 ## 📊 Results at a Glance
-
 ![Improvement loop: baseline 78% → optimized 81%, failures 7→4](results/reward_curve.png)
-
 *Improvement loop: baseline 78% → optimized 81%, failures 7→4*
 
 ![GRPO training: Qwen2.5-3B, 55 steps, reward 0.37→0.43](results/training_curve.png)
-
 *GRPO training: Qwen2.5-3B, 55 steps, reward 0.37→0.43*
 
 [Quick Start](#-quick-start) · [Features](#-features) · [Benchmarks](#-benchmarks) · [Training](#-train-an-rl-agent) · [API Docs](#-api-endpoints) · [Contributing](#-contributing)
@@ -389,19 +382,15 @@ BSD-style License
 
 ---
 
-## 🔗 All Links
-
-| Resource | Link | Description |
-|---|---|---|
-| Live Environment | [akshar-3011-meta-environment.hf.space](https://akshar-3011-meta-environment.hf.space) | Hosted Hugging Face Space for the live API environment |
-| Colab Notebook | [colab_training.ipynb](https://colab.research.google.com/github/akshar-3011/meta-environment/blob/main/colab_training.ipynb) | Runnable notebook for GRPO training |
-| GitHub Repo | [akshar-3011/meta-environment](https://github.com/akshar-3011/meta-environment) | Source code, tests, and deployment assets |
-| Blog Post | [Self-Improving Customer Support Agent](https://huggingface.co/Akshar-3011/workplace-env-agent) | Hugging Face write-up with project narrative |
-| Video Demo | [Demo Video](https://youtu.be/YOUR_VIDEO_ID) | 2-minute live demo of the self-improvement loop |
-| Evaluation Report | [RESULTS.md](RESULTS.md) | Reward curves, generation results, and evaluation details |
-
----
-
 <div align="center">
   <sub>Built with  for the RL research community</sub>
 </div>
+
+## 🔗 All Links
+| Resource | Link |
+|---|---|
+| 🚀 Live Environment | https://akshar-3011-meta-environment.hf.space |
+| 📓 Colab Notebook | https://colab.research.google.com/github/akshar-3011/meta-environment/blob/main/colab_training.ipynb |
+| 📦 GitHub Repo | https://github.com/akshar-3011/meta-environment |
+| 📝 Blog Post | https://huggingface.co/Akshar-3011/workplace-env-agent |
+| 🎥 Video Demo | https://youtu.be/SylYUxIRiUA |
