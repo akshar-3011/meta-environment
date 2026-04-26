@@ -10,6 +10,11 @@ import argparse
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+# Ensure local package imports resolve even when this module is loaded directly.
+_ROOT_DIR = Path(__file__).resolve().parent
+if str(_ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(_ROOT_DIR))
+
 from core.graders import RuleBasedRewardPolicy
 from core.improvement.curriculum import CurriculumSampler
 from core.improvement.failure_analyzer import FailureAnalyzer
