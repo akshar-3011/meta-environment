@@ -104,18 +104,22 @@ def _make_strategy_client() -> Any:
 
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
-        print("[CLIENT DEBUG] No ANTHROPIC_API_KEY in environment")
+        if os.environ.get("OPTIMIZER_DEBUG"):
+            print("[CLIENT DEBUG] No ANTHROPIC_API_KEY in environment")
         return _NoopClient()
 
-    print(f"[CLIENT DEBUG] Attempting to create Anthropic client with key length: {len(api_key)}")
+    if os.environ.get("OPTIMIZER_DEBUG"):
+        print(f"[CLIENT DEBUG] Attempting to create Anthropic client with key length: {len(api_key)}")
     try:
         from anthropic import Anthropic  # type: ignore[import-not-found]
 
         client = Anthropic(api_key=api_key)
-        print(f"[CLIENT DEBUG] Anthropic client created successfully: {type(client)}")
+        if os.environ.get("OPTIMIZER_DEBUG"):
+            print(f"[CLIENT DEBUG] Anthropic client created successfully: {type(client)}")
         return client
     except Exception as e:
-        print(f"[CLIENT DEBUG] Anthropic() constructor failed: {type(e).__name__}: {e}")
+        if os.environ.get("OPTIMIZER_DEBUG"):
+            print(f"[CLIENT DEBUG] Anthropic() constructor failed: {type(e).__name__}: {e}")
         return _NoopClient()
 
 
