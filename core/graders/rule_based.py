@@ -40,6 +40,27 @@ REQUIRED_KEYWORDS = {
     ]
 }
 
+# --- Reply quality keywords (separate from classification signals) ---
+# These are checked against reply TEXT, not the incoming email.
+# Overlap with other categories is fine here — the reply grader is category-aware.
+REPLY_KEYWORDS = {
+    "refund": [
+        "apologize", "sorry", "refund", "process", "business days",
+        "resolve", "reimbursement", "credit", "inconvenience",
+        "immediately", "priority", "contact", "reach out"
+    ],
+    "complaint": [
+        "sorry", "apologize", "understand", "resolve", "immediately",
+        "priority", "unacceptable", "team", "contact", "within 24",
+        "assure", "dedicated", "escalate", "commitment", "experience"
+    ],
+    "query": [
+        "happy to help", "please", "contact", "let us know",
+        "information", "answer", "clarify", "provide", "details",
+        "assist", "guide", "explain", "available", "reach out", "support"
+    ]
+}
+
 ESCALATION_REQUIRED = {
     "complaint": True,
     "refund": False,
@@ -190,8 +211,8 @@ class RuleBasedRewardPolicy(RewardPolicy):
         else:
             details["conciseness_component"] = 0.0
 
-        # Keyword match: steeper curve, stronger variation based on matched keywords
-        keywords = REQUIRED_KEYWORDS.get(context.actual_category, [])
+        # Keyword match: use REPLY_KEYWORDS (not classification signals) for reply quality scoring
+        keywords = REPLY_KEYWORDS.get(context.actual_category, [])
         matched = sum(1 for kw in keywords if kw in text)
         if matched >= 3:
             keyword_score = min(0.60, 0.15 * matched)
