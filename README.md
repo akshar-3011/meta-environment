@@ -115,6 +115,12 @@ python benchmarks/load_test.py --mode direct --episodes 500
 
 *X-axis: improvement generation (0 = baseline). Y-axis: mean total reward (0–1). The optimized agent achieves +3% total reward improvement with failures reduced from 7 to 4.*
 
+### GRPO Training Evidence
+
+![GRPO Training — Qwen2.5-3B on Workplace Environment (22 steps, 2 epochs)](results/training_curve.png)
+
+*Model: Qwen2.5-3B-Instruct (4-bit + LoRA). Algorithm: GRPO via HuggingFace TRL. Hardware: Google Colab T4 GPU. The model learns to generate structured XML responses (classify/reply/escalate) scored by the live OpenEnv environment.*
+
 > See [RESULTS.md](RESULTS.md) for the full multi-generation evolution table, business impact analysis, and strategy reasoning.
 
 ---
