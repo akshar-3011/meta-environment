@@ -13,7 +13,7 @@ app_port: 7860
 > **📓 Hugging Face Notebook:** [https://huggingface.co/akshar-3011/meta-environment/blob/main/colab_training.ipynb](https://huggingface.co/akshar-3011/meta-environment/blob/main/colab_training.ipynb)
 > **📓 Colab (Runnable):** [https://colab.research.google.com/github/akshar-3011/meta-environment/blob/main/colab_training.ipynb](https://colab.research.google.com/github/akshar-3011/meta-environment/blob/main/colab_training.ipynb)
 > **📝 Blog Post:** [https://huggingface.co/Akshar-3011/workplace-env-agent](https://huggingface.co/Akshar-3011/workplace-env-agent)
-> **🎥 Mini-Blog / Video:** [https://huggingface.co/Akshar-3011/workplace-env-agent](https://huggingface.co/Akshar-3011/workplace-env-agent)
+> **🎥 Mini-Blog:** [Self-Improving Customer Support Agent — HuggingFace](https://huggingface.co/Akshar-3011/workplace-env-agent) | Training evidence and reward curves committed to repo under `results/`
 
 <div align="center">
 
@@ -30,6 +30,14 @@ Train and evaluate AI agents on real-world email triage workflows — classify i
 [![Python](https://img.shields.io/badge/python-≥3.10-blue)]()
 [![License](https://img.shields.io/badge/license-BSD-green)]()
 [![Docker](https://img.shields.io/badge/docker-ready-blue)]()
+
+## 🎯 What Problem Does This Solve?
+
+Customer support agents are static — they make the same mistakes repeatedly and never learn from reward signals. This environment trains LLMs to handle real email triage (classify intent → draft reply → decide escalation) with dense per-step rewards across 100 validated scenarios spanning easy, medium, and hard difficulty.
+
+**What makes this novel:** The environment includes a self-improving meta-learning loop — the agent analyzes its own failures, generates improved decision strategies via LLM, and measurably increases reward across generations. Baseline: 78% → Optimized: 81% (+3%), failures reduced from 7 to 4.
+
+**Why it matters:** Every wrong escalation costs ~$150 in real support operations. An agent that learns to improve its own triage decisions has direct business impact.
 
 [Quick Start](#-quick-start) · [Features](#-features) · [Benchmarks](#-benchmarks) · [Training](#-train-an-rl-agent) · [API Docs](#-api-endpoints) · [Contributing](#-contributing)
 
@@ -101,9 +109,11 @@ python benchmarks/load_test.py --mode direct --episodes 500
 
 ## 📈 Improvement Results
 
-The self-improvement loop evaluates a baseline agent, analyzes failures, and generates optimized strategies across multiple generations:
+### Reward Progression
 
-![Reward progression: baseline vs improved generations](results/reward_curve.png)
+![Reward progression: baseline agent (78.3%) vs optimized agent (81.0%) after 2 improvement generations](results/reward_curve.png)
+
+*X-axis: improvement generation (0 = baseline). Y-axis: mean total reward (0–1). The optimized agent achieves +3% total reward improvement with failures reduced from 7 to 4.*
 
 > See [RESULTS.md](RESULTS.md) for the full multi-generation evolution table, business impact analysis, and strategy reasoning.
 
