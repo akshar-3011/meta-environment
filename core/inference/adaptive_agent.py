@@ -146,10 +146,11 @@ class AdaptiveAgent:
                 if pattern and pattern.lower() in email:
                     return "no"
 
-            print(
-                f"[ESCALATE DEBUG] chosen_category={chosen_category}, "
-                f"escalate_if_complaint={rules.get('escalate_if_complaint')}"
-            )
+            if os.environ.get("AGENT_DEBUG"):
+                print(
+                    f"[ESCALATE DEBUG] chosen_category={chosen_category}, "
+                    f"escalate_if_complaint={rules.get('escalate_if_complaint')}"
+                )
             if self._safe_bool(rules.get("escalate_if_complaint", False)) and chosen_category == "complaint":
                 return "yes"
 

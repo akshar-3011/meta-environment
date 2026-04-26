@@ -51,15 +51,15 @@ python examples/01_quickstart.py
 
 ```bash
 docker build -t meta-env .
-docker run -p 8000:8000 meta-env
-# → http://localhost:8000/health  ✅
-# → http://localhost:8000/docs    📖
+docker run -p 7860:7860 meta-env
+# → http://localhost:7860/health  ✅
+# → http://localhost:7860/docs    📖
 ```
 
 ### Verify Installation
 
 ```bash
-curl -s http://localhost:8000/health | python3 -m json.tool
+curl -s http://localhost:7860/health | python3 -m json.tool
 # {"status": "ok"}
 ```
 
@@ -181,7 +181,7 @@ Rewards are **dense** — every step returns a score in `[0.0, 1.0]`:
 
 ```bash
 # Create experiment:
-curl -X POST http://localhost:8000/experiments \
+curl -X POST http://localhost:7860/experiments \
   -d '{"name":"test-equal","policy_type":"equal","traffic_split":0.2}'
 
 # Analyze results:
@@ -207,20 +207,20 @@ python tools/analyze_experiment.py --experiment-id <id>
 
 ```bash
 # 1. Start episode
-curl -s -X POST http://localhost:8000/reset | python3 -m json.tool
+curl -s -X POST http://localhost:7860/reset | python3 -m json.tool
 
 # 2. Classify
-curl -s -X POST http://localhost:8000/step \
+curl -s -X POST http://localhost:7860/step \
   -H "Content-Type: application/json" \
   -d '{"action": {"action_type": "classify", "content": "refund"}}'
 
 # 3. Reply
-curl -s -X POST http://localhost:8000/step \
+curl -s -X POST http://localhost:7860/step \
   -H "Content-Type: application/json" \
   -d '{"action": {"action_type": "reply", "content": "We have processed your refund — expect it in 3–5 business days."}}'
 
 # 4. Escalate
-curl -s -X POST http://localhost:8000/step \
+curl -s -X POST http://localhost:7860/step \
   -H "Content-Type: application/json" \
   -d '{"action": {"action_type": "escalate", "content": "no"}}'
 ```

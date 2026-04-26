@@ -50,7 +50,7 @@ jobs:
 
       - name: Verify healthcheck
         run: |
-          docker run -d --name hc_test -p 8000:8000 ${{ steps.tag.outputs.sha_tag }}
+          docker run -d --name hc_test -p 7860:7860 ${{ steps.tag.outputs.sha_tag }}
           sleep 5
-          curl -f http://localhost:8000/health || exit 1
+          curl -f http://localhost:7860/health || exit 1
           docker stop hc_test && docker rm hc_test

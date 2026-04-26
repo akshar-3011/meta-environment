@@ -1,6 +1,7 @@
 """Environment orchestration with explicit state and dependency injection."""
 
 import json
+import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -162,8 +163,9 @@ class WorkplaceEnvironment(Environment):
         easy_count = sum(1 for d in difficulties if d == "easy")
         medium_count = sum(1 for d in difficulties if d == "medium")
         hard_count = sum(1 for d in difficulties if d == "hard")
-        print(f"Scenario pool: {easy_count} easy, {medium_count} medium, {hard_count} hard")
-        print(f"Scenario difficulties first5={difficulties[:5]} last5={difficulties[-5:]}")
+        if os.environ.get("ENV_DEBUG"):
+            print(f"Scenario pool: {easy_count} easy, {medium_count} medium, {hard_count} hard")
+            print(f"Scenario difficulties first5={difficulties[:5]} last5={difficulties[-5:]}")
 
         # Instance-owned state — no sharing between concurrent sessions.
         self._state = EpisodeState()

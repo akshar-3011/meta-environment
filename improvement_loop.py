@@ -163,6 +163,8 @@ def run_evaluation(
     else:
         env = WorkplaceEnvironment(reward_policy=policy)
 
+    runtime_errors = 0
+
     for episode_idx in range(max(0, int(n_episodes))):
         obs = _obs_to_dict(env.reset())
 
@@ -194,7 +196,8 @@ def run_evaluation(
                         and isinstance(item[0], str)
                     ):
                         planned_actions.append((item[0], _safe_string(item[1], "")))
-        except Exception:
+        except Exception as e:
+            print(f"[EVAL ERROR] Episode {episode_idx} — build_actions failed: {type(e).__name__}: {e}")
             planned_actions = []
 
         # Deterministic action order and safe defaults.
@@ -210,9 +213,11 @@ def run_evaluation(
             try:
                 step_obs = _obs_to_dict(env.step(action))
                 reward_value = float(step_obs.get("reward") or 0.0)
-            except Exception:
+            except Exception as e:
+                print(f"[EVAL ERROR] Episode {episode_idx} step '{action_type}' — runtime error: {type(e).__name__}: {e}")
                 step_obs = {}
                 reward_value = 0.0
+                runtime_errors += 1
 
             if action_type == "classify":
                 classify_action = content
@@ -248,6 +253,9 @@ def run_evaluation(
             escalate_breakdown=escalate_breakdown,
         )
         memory.add(record)
+
+    if runtime_errors > 0:
+        print(f"[EVAL WARNING] {runtime_errors} runtime errors occurred — these are NOT policy failures")
 
     return memory
 
@@ -854,20 +862,20 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    import os
-    test_key = os.environ.get("ANTHROPIC_API_KEY", "")
-    print(f"[STARTUP DEBUG] Key in environment: length={len(test_key)}, starts_with={test_key[:12] if test_key else 'EMPTY'}")
-    try:
-        from anthropic import Anthropic as _TestAnthropic
-        _test_client = _TestAnthropic(api_key=test_key)
-        _test_resp = _test_client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=10,
-            messages=[{"role": "user", "content": "say hi"}]
-        )
-        print(f"[STARTUP DEBUG] API test PASSED: {_test_resp.content[0].text}")
-    except Exception as e:
-        print(f"[STARTUP DEBUG] API test FAILED: {type(e).__name__}: {e}")
+    if os.environ.get("OPTIMIZER_DEBUG"):
+        test_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        print(f"[STARTUP DEBUG] Key in environment: length={len(test_key)}, starts_with={test_key[:12] if test_key else 'EMPTY'}")
+        try:
+            from anthropic import Anthropic as _TestAnthropic
+            _test_client = _TestAnthropic(api_key=test_key)
+            _test_resp = _test_client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=10,
+                messages=[{"role": "user", "content": "say hi"}]
+            )
+            print(f"[STARTUP DEBUG] API test PASSED: {_test_resp.content[0].text}")
+        except Exception as e:
+            print(f"[STARTUP DEBUG] API test FAILED: {type(e).__name__}: {e}")
 
     run_improvement_loop(
         n_episodes=args.episodes,
