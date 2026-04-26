@@ -205,8 +205,11 @@ class StrategyOptimizer:
         if n_classification == fallback["classification_rules"]:
             return False, "classification rules identical to fallback"
 
-        # Ensure strategy is richer than fallback in at least one meaningful dimension.
-        richer_signals = False
+        # Accept if strategy differs from fallback in ANY meaningful way:
+        # 1. Different signal phrases (additions OR removals)
+        # 2. Different min_length
+        # 3. Different escalation rules
+        has_signal_change = False
         for category in ("refund", "complaint", "query"):
             current = {str(s).strip().lower() for s in n_classification.get(category, []) if str(s).strip()}
             base = {
@@ -214,17 +217,26 @@ class StrategyOptimizer:
                 for s in fallback["classification_rules"].get(category, [])
                 if str(s).strip()
             }
-            if len(current) > len(base) or not current.issubset(base):
-                richer_signals = True
+            if current != base:
+                has_signal_change = True
                 break
 
         n_reply_req = normalized.get("reply_requirements", {})
-        richer_reply = int(n_reply_req.get("min_length", 0)) > int(
+        has_length_change = int(n_reply_req.get("min_length", 0)) != int(
             fallback["reply_requirements"].get("min_length", 0)
         )
 
-        if not (richer_signals or richer_reply):
-            return False, "strategy not more specific than baseline"
+        n_escalation = normalized.get("escalation_rules", {})
+        f_escalation = fallback.get("escalation_rules", {})
+        has_escalation_change = (
+            n_escalation.get("escalate_if_complaint") != f_escalation.get("escalate_if_complaint")
+            or n_escalation.get("escalate_if_high_urgency") != f_escalation.get("escalate_if_high_urgency")
+            or set(str(x) for x in n_escalation.get("always_escalate", [])) !=
+               set(str(x) for x in f_escalation.get("always_escalate", []))
+        )
+
+        if not any([has_signal_change, has_length_change, has_escalation_change]):
+            return False, "strategy identical to fallback — no meaningful changes"
 
         return True, "ok"
 

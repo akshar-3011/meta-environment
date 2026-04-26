@@ -505,8 +505,19 @@ def run_improvement_loop(
     # Lock subsequent evaluations to the hardest baseline scenarios
     # so the reward delta is maximized and consistent across runs.
     locked_pool = _build_locked_pool(baseline_memory, threshold=0.60)
+    locked_pool_baseline_mean: Optional[float] = None
     if locked_pool:
         print(f"Demo locked to {len(locked_pool)} failure scenarios for consistent delta measurement.")
+        _flush()
+        # Compute baseline score on the locked pool for a fair apples-to-apples comparison.
+        locked_baseline_memory = run_evaluation(
+            agent=baseline_agent,
+            n_episodes=len(locked_pool),
+            strategy_version="baseline_locked",
+            locked_scenario_ids=locked_pool,
+        )
+        locked_pool_baseline_mean = _memory_means(locked_baseline_memory)["total"]
+        print(f"[LOCKED POOL] Baseline mean on {len(locked_pool)} failure scenarios: {locked_pool_baseline_mean:.3f}")
         _flush()
 
     baseline_means = _memory_means(baseline_memory)
@@ -719,9 +730,14 @@ def run_improvement_loop(
             print_strategy_reasoning(reasoning, generation)
             print_business_summary(baseline_memory, candidate_memory, generation)
 
-            # Allow small regressions on locked failure pools; reject only if
-            # candidate is more than 3% worse than baseline.
-            if candidate_mean_total < (baseline_mean_total * 0.97):
+            # Compare against the locked-pool baseline when active (apples-to-apples),
+            # otherwise fall back to full-corpus baseline. Reject only if >3% worse.
+            comparison_baseline = (
+                locked_pool_baseline_mean
+                if locked_pool is not None and locked_pool_baseline_mean is not None
+                else baseline_mean_total
+            )
+            if candidate_mean_total < (comparison_baseline * 0.97):
                 print("Strategy rejected — performance degraded")
                 _write_text("final_strategy.json", accepted_strategy_text)
                 current_memory = baseline_memory
