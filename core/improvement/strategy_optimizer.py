@@ -86,7 +86,8 @@ class StrategyOptimizer:
     ) -> Dict[str, Any]:
         import os
         api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-        print(f"[OPTIMIZER DEBUG] API key present: {bool(api_key)}, length: {len(api_key)}")
+        if os.environ.get("OPTIMIZER_DEBUG"):
+            print(f"[OPTIMIZER DEBUG] API key present: {bool(api_key)}, length: {len(api_key)}")
 
         user_prompt = self._build_user_prompt(
             failure_analysis=failure_analysis,
