@@ -523,11 +523,12 @@ def run_improvement_loop(
     baseline_means = _memory_means(baseline_memory)
     baseline_mean_total = baseline_means["total"]
     accepted_strategy_text = _read_text_if_exists("final_strategy.json")
+    if accepted_strategy_text is None:
+        accepted_strategy_text = json.dumps(DEFAULT_FALLBACK_STRATEGY, ensure_ascii=False, indent=2)
 
     current_memory = baseline_memory
     current_strategy: Optional[Dict[str, Any]] = None
-    best_strategy: Optional[Dict[str, Any]] = None
-    best_score: float = 0.0
+    best_strategy: Dict[str, Any] = dict(DEFAULT_FALLBACK_STRATEGY)
     improved_memory = baseline_memory
     final_memory = baseline_memory
     final_decision = "REJECTED"
@@ -546,6 +547,7 @@ def run_improvement_loop(
         / len(baseline_golden_memory.records)
         if baseline_golden_memory.records else 0.0
     )
+    best_score: float = baseline_golden_score  # initialize after baseline_golden_score is known
     print(f"\n[REGRESSION] Baseline golden score: {baseline_golden_score:.3f}")
 
     # ── Evolution history tracking ────────────────────────────────────────
@@ -681,10 +683,10 @@ def run_improvement_loop(
                 )
                 golden_score = retry_golden_score
 
-                # If retry also failed, revert to best known strategy
-                if not retry_passed and best_strategy is not None:
+                # If retry also failed, revert to best known strategy (always defined — fallback at minimum)
+                if not retry_passed:
                     print(
-                        f"[REGRESSION] Strategy rejected — reverting to best known strategy "
+                        f"[REGRESSION] Reverting to best known strategy "
                         f"(score: {best_score:.3f})"
                     )
                     current_strategy = best_strategy
