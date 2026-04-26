@@ -1,3 +1,5 @@
+What if an AI agent could read its own failure report and rewrite its own decision rules? This project explores that loop in a customer support triage environment where the agent turns concrete mistakes into better classification, reply, and escalation behavior.
+
 # Self-Improving Customer Support Agent
 ### A Reward-Driven Meta-Learning Environment
 
@@ -12,7 +14,7 @@ When they fail on edge cases (ambiguous complaints, multi-intent queries, false 
 
 ## The Solution: Meta-Environment
 
-We built a **reinforcement learning platform**where the agent improves itself across generations. It operates in a 3-step action loop:
+The **reinforcement learning platform**lets the agent improve itself across generations. It operates in a 3-step action loop:
 1. **Classify**the email (refund / complaint / query)
 2. **Compose**a professional reply
 3. **Escalate**or resolve
@@ -42,6 +44,12 @@ We built a **reinforcement learning platform**where the agent improves itself ac
 | **2**| 0.3200 | 0.0640 | 0.1961 | 0.0599 | 21 | Retry with regression guard (rejected) |
 
 > **Note:**The system strictly rejects strategies that fail regression tests, ensuring monotonic improvement. In live mode with API keys, it generates genuinely novel strategies that reliably outperform the baseline.
+
+---
+
+## What The Numbers Mean
+
+At 10,000 emails per day, a 3% improvement means 300 fewer incorrect escalation decisions. At $150 per incorrect escalation, that is 300 × $150 = **$45,000 saved per day**.
 
 ---
 
